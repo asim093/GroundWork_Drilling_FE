@@ -40,5 +40,12 @@ api.interceptors.response.use(
   }
 );
 
-export const extractErrorMessage = (error, fallback = 'Something went wrong. Please try again.') =>
-  error.response?.data?.message || error.message || fallback;
+export const extractErrorMessage = (error, fallback = 'Something went wrong. Please try again.') => {
+  const data = error.response?.data;
+
+  if (data?.errors?.length) {
+    return data.errors.map((item) => item.message).join('. ');
+  }
+
+  return data?.message || error.message || fallback;
+};
