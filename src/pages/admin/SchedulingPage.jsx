@@ -8,11 +8,11 @@ import {
   Select,
   Stack,
   Table,
-  Text,
-  TextInput
+  Text
 } from '@mantine/core';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
+import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { SCHEDULING_STATUS_OPTIONS, SCHEDULING_STATUS_COLORS } from '../../constants/scheduling.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
@@ -24,7 +24,7 @@ import { notifyError } from '../../lib/toast.js';
 
 export const SchedulingPage = () => {
   usePageTitle('Scheduling');
-  const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
+  const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter, setFilters } =
     useListParams({ sort: 'scheduledDate', order: 'asc', filters: currentMonthRange() });
   const [result, setResult] = useState({ data: [], pagination: null });
   const [jobs, setJobs] = useState([]);
@@ -99,19 +99,9 @@ export const SchedulingPage = () => {
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
           <Group gap="sm" wrap="wrap" align="flex-end">
-            <TextInput
-              label="From"
-              type="date"
-              value={filters.from || ''}
-              onChange={(event) => setFilter('from', event.currentTarget.value)}
-              w={160}
-            />
-            <TextInput
-              label="To"
-              type="date"
-              value={filters.to || ''}
-              onChange={(event) => setFilter('to', event.currentTarget.value)}
-              w={160}
+            <DateRangePicker
+              value={{ from: filters.from, to: filters.to }}
+              onChange={(range) => setFilters(range)}
             />
             <Select
               label="Job"

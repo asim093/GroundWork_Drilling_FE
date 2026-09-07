@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Card,
   Center,
   Group,
   Loader,
+  Paper,
   SegmentedControl,
   SimpleGrid,
   Stack,
   Table,
-  Text,
-  TextInput,
-  Title
+  Text
 } from '@mantine/core';
 import { PeriodSummary } from '../../components/reports/PeriodSummary.jsx';
 import { BonusBadge } from '../../components/reports/BonusBadge.jsx';
+import { BonusEligibilityPanel } from '../../components/reports/BonusEligibilityPanel.jsx';
+import { ConsumablesList } from '../../components/reports/ConsumablesList.jsx';
+import { StatCard } from '../../components/dashboard/StatCard.jsx';
+import { SectionCard } from '../../components/SectionCard.jsx';
+import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange, formatDate } from '../../lib/dateRange.js';
 import { getMonthlyComparison, getReportSummary } from '../../services/reportService.js';
@@ -73,23 +76,10 @@ export const ReportsPage = () => {
 
   return (
     <Stack gap="xl">
-      <Stack gap="md">
-        <Card withBorder radius="md" p="md">
-          <Group gap="sm" wrap="wrap" align="flex-end">
-            <TextInput
-              label="From"
-              type="date"
-              value={range.from}
-              onChange={(event) => setRange((prev) => ({ ...prev, from: event.currentTarget.value }))}
-              w={160}
-            />
-            <TextInput
-              label="To"
-              type="date"
-              value={range.to}
-              onChange={(event) => setRange((prev) => ({ ...prev, to: event.currentTarget.value }))}
-              w={160}
-            />
+      <Stack gap="lg">
+        <Paper withBorder radius="lg" p="lg">
+          <Group gap="lg" wrap="wrap" align="flex-end">
+            <DateRangePicker value={range} onChange={setRange} />
             <Stack gap={4}>
               <Text size="sm" fw={500}>
                 Group by
@@ -97,113 +87,139 @@ export const ReportsPage = () => {
               <SegmentedControl data={GROUP_BY_OPTIONS} value={groupBy} onChange={setGroupBy} />
             </Stack>
           </Group>
-        </Card>
+        </Paper>
 
         {loadingSummary || !summary ? (
           <Center py="xl">
             <Loader />
           </Center>
         ) : (
-          <Stack gap="md">
-            <PeriodSummary title="Selected period totals" summary={summary} />
+          <Stack gap="lg">
+            <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="lg">
+              <StatCard label="Submitted entries" value={summary.entryCount} icon="clipboard" color="teal" />
+              <StatCard
+                label="Hours on site"
+                value={summary.totals.hoursOnSite}
+                icon="reports"
+                color="blue"
+              />
+              <StatCard
+                label="Standby hours"
+                value={summary.totals.standbyHours}
+                icon="reports"
+                color="orange"
+              />
+              <StatCard
+                label="Bonus eligible"
+                value={summary.bonusEligibility.eligible}
+                hint={`${summary.bonusEligibility['not-eligible']} not eligible · ${summary.bonusEligibility['not-available']} not available`}
+                icon="calendar"
+                color="green"
+              />
+            </SimpleGrid>
+
+            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+              <SectionCard title="Bonus eligibility">
+                <BonusEligibilityPanel counts={summary.bonusEligibility} />
+              </SectionCard>
+              <SectionCard title="Consumables used">
+                <ConsumablesList consumables={summary.consumables} />
+              </SectionCard>
+            </SimpleGrid>
 
             {summary.groups?.length ? (
-              <Card withBorder radius="md" p="md">
-                <Stack gap="sm">
-                  <Text fw={700}>Breakdown {groupBy === 'user' ? 'by user' : 'by job'}</Text>
-                  <Table.ScrollContainer minWidth={720}>
-                    <Table verticalSpacing="sm">
-                      <Table.Thead>
-                        <Table.Tr>
-                          <Table.Th>{groupBy === 'user' ? 'Operator' : 'Job'}</Table.Th>
-                          <Table.Th>Entries</Table.Th>
-                          <Table.Th>Hours on site</Table.Th>
-                          <Table.Th>Standby hours</Table.Th>
-                          <Table.Th>Eligible</Table.Th>
-                          <Table.Th>Not eligible</Table.Th>
-                          <Table.Th>Not available</Table.Th>
-                        </Table.Tr>
-                      </Table.Thead>
-                      <Table.Tbody>
-                        {summary.groups.map((group) => (
-                          <Table.Tr key={group.key}>
-                            <Table.Td>{group.label}</Table.Td>
-                            <Table.Td>{group.entryCount}</Table.Td>
-                            <Table.Td>{group.totals.hoursOnSite}</Table.Td>
-                            <Table.Td>{group.totals.standbyHours}</Table.Td>
-                            <Table.Td>{group.bonusEligibility.eligible}</Table.Td>
-                            <Table.Td>{group.bonusEligibility['not-eligible']}</Table.Td>
-                            <Table.Td>{group.bonusEligibility['not-available']}</Table.Td>
-                          </Table.Tr>
-                        ))}
-                      </Table.Tbody>
-                    </Table>
-                  </Table.ScrollContainer>
-                </Stack>
-              </Card>
-            ) : null}
-
-            <Card withBorder radius="md" p="md">
-              <Stack gap="sm">
-                <Text fw={700}>Bonus eligibility by entry</Text>
-                <Table.ScrollContainer minWidth={640}>
+              <SectionCard title={`Breakdown ${groupBy === 'user' ? 'by user' : 'by job'}`}>
+                <Table.ScrollContainer minWidth={720}>
                   <Table verticalSpacing="sm">
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th>Date</Table.Th>
-                        <Table.Th>Job #</Table.Th>
-                        <Table.Th>Operator</Table.Th>
-                        <Table.Th>Recovery %</Table.Th>
-                        <Table.Th>Eligibility</Table.Th>
+                        <Table.Th>{groupBy === 'user' ? 'Operator' : 'Job'}</Table.Th>
+                        <Table.Th>Entries</Table.Th>
+                        <Table.Th>Hours on site</Table.Th>
+                        <Table.Th>Standby hours</Table.Th>
+                        <Table.Th>Eligible</Table.Th>
+                        <Table.Th>Not eligible</Table.Th>
+                        <Table.Th>Not available</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                      {summary.entries.length ? (
-                        summary.entries.map((entry) => (
-                          <Table.Tr key={entry.entryId}>
-                            <Table.Td>{formatDate(entry.date)}</Table.Td>
-                            <Table.Td>{entry.jobNumber || '—'}</Table.Td>
-                            <Table.Td>{entry.operator || '—'}</Table.Td>
-                            <Table.Td>
-                              {entry.recoveryPercent === null ? (
-                                <Text c="dimmed" size="sm">
-                                  Not entered
-                                </Text>
-                              ) : (
-                                `${entry.recoveryPercent}%`
-                              )}
-                            </Table.Td>
-                            <Table.Td>
-                              <BonusBadge eligibility={entry.eligibility} size="sm" />
-                            </Table.Td>
-                          </Table.Tr>
-                        ))
-                      ) : (
-                        <Table.Tr>
-                          <Table.Td colSpan={5}>
-                            <Text c="dimmed" ta="center" py="md">
-                              No submitted entries in this period
-                            </Text>
-                          </Table.Td>
+                      {summary.groups.map((group) => (
+                        <Table.Tr key={group.key}>
+                          <Table.Td>{group.label}</Table.Td>
+                          <Table.Td>{group.entryCount}</Table.Td>
+                          <Table.Td>{group.totals.hoursOnSite}</Table.Td>
+                          <Table.Td>{group.totals.standbyHours}</Table.Td>
+                          <Table.Td>{group.bonusEligibility.eligible}</Table.Td>
+                          <Table.Td>{group.bonusEligibility['not-eligible']}</Table.Td>
+                          <Table.Td>{group.bonusEligibility['not-available']}</Table.Td>
                         </Table.Tr>
-                      )}
+                      ))}
                     </Table.Tbody>
                   </Table>
                 </Table.ScrollContainer>
-              </Stack>
-            </Card>
+              </SectionCard>
+            ) : null}
+
+            <SectionCard title="Bonus eligibility by entry">
+              <Table.ScrollContainer minWidth={640}>
+                <Table verticalSpacing="sm">
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Date</Table.Th>
+                      <Table.Th>Job #</Table.Th>
+                      <Table.Th>Operator</Table.Th>
+                      <Table.Th>Recovery %</Table.Th>
+                      <Table.Th>Eligibility</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {summary.entries.length ? (
+                      summary.entries.map((entry) => (
+                        <Table.Tr key={entry.entryId}>
+                          <Table.Td>{formatDate(entry.date)}</Table.Td>
+                          <Table.Td>{entry.jobNumber || '—'}</Table.Td>
+                          <Table.Td>{entry.operator || '—'}</Table.Td>
+                          <Table.Td>
+                            {entry.recoveryPercent === null ? (
+                              <Text c="dimmed" size="sm">
+                                Not entered
+                              </Text>
+                            ) : (
+                              `${entry.recoveryPercent}%`
+                            )}
+                          </Table.Td>
+                          <Table.Td>
+                            <BonusBadge eligibility={entry.eligibility} size="sm" />
+                          </Table.Td>
+                        </Table.Tr>
+                      ))
+                    ) : (
+                      <Table.Tr>
+                        <Table.Td colSpan={5}>
+                          <Text c="dimmed" ta="center" py="md">
+                            No submitted entries in this period
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    )}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            </SectionCard>
           </Stack>
         )}
       </Stack>
 
       <Stack gap="md">
-        <Title order={4}>Monthly comparison</Title>
+        <Text fw={700} fz="lg">
+          Monthly comparison
+        </Text>
         {loadingComparison || !comparison ? (
           <Center py="xl">
             <Loader />
           </Center>
         ) : (
-          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
             <PeriodSummary title={comparison.current.label} summary={comparison.current} compact />
             <PeriodSummary title={comparison.previous.label} summary={comparison.previous} compact />
           </SimpleGrid>

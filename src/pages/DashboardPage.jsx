@@ -7,7 +7,6 @@ import {
   Center,
   Group,
   Loader,
-  Paper,
   Progress,
   SimpleGrid,
   Stack,
@@ -16,6 +15,7 @@ import {
   ThemeIcon
 } from '@mantine/core';
 import { StatCard } from '../components/dashboard/StatCard.jsx';
+import { SectionCard } from '../components/SectionCard.jsx';
 import { NavIcon } from '../components/NavIcon.jsx';
 import { SCHEDULING_STATUS_COLORS } from '../constants/scheduling.js';
 import { TIME_LOG_STATUS_COLORS } from '../constants/timeLogs.js';
@@ -26,18 +26,6 @@ import { formatDate } from '../lib/dateRange.js';
 import { getDashboard } from '../services/dashboardService.js';
 import { extractErrorMessage } from '../services/api.js';
 import { notifyError } from '../lib/toast.js';
-
-const SectionCard = ({ title, action, children }) => (
-  <Paper withBorder radius="lg" p="lg">
-    <Stack gap="md">
-      <Group justify="space-between" align="center">
-        <Text fw={700}>{title}</Text>
-        {action}
-      </Group>
-      {children}
-    </Stack>
-  </Paper>
-);
 
 const RecentTable = ({ rows, linkBase, showOperator, emptyText }) => {
   if (!rows.length) {

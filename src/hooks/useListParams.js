@@ -28,6 +28,14 @@ export const useListParams = ({ sort, order = 'asc', limit = 10, filters = {} })
     }));
   }, []);
 
+  const setFilters = useCallback((patch) => {
+    setState((prev) => ({
+      ...prev,
+      page: 1,
+      filters: { ...prev.filters, ...patch }
+    }));
+  }, []);
+
   const queryParams = useMemo(
     () => ({
       page: state.page,
@@ -49,6 +57,7 @@ export const useListParams = ({ sort, order = 'asc', limit = 10, filters = {} })
     setPage,
     setLimit,
     toggleSort,
-    setFilter
+    setFilter,
+    setFilters
   };
 };

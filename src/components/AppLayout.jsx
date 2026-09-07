@@ -6,7 +6,6 @@ import {
   Avatar,
   Box,
   Burger,
-  Center,
   Divider,
   Group,
   NavLink,
@@ -121,16 +120,46 @@ export const AppLayout = ({ navItems = [], children }) => {
       </AppShell.Header>
 
       <AppShell.Navbar p={railMode ? 'xs' : 'sm'}>
-        <AppShell.Section grow component={ScrollArea}>
+        <AppShell.Section>
           {railMode ? (
-            <Center pb="sm">
+            <Stack gap={6} align="center" pb="sm">
               <BrandMark size={30} />
-            </Center>
+              <Tooltip label="Expand sidebar" position="right" withArrow>
+                <ActionIcon
+                  visibleFrom="sm"
+                  onClick={toggleExpanded}
+                  variant="default"
+                  radius="md"
+                  size="md"
+                  aria-label="Expand sidebar"
+                >
+                  <NavIcon name="chevronRight" size={16} />
+                </ActionIcon>
+              </Tooltip>
+              <Divider w="100%" />
+            </Stack>
           ) : (
-            <Text size="xs" fw={600} c="dimmed" tt="uppercase" px="sm" pb={6}>
-              Menu
-            </Text>
+            <Group justify="space-between" align="center" px="sm" pb={6}>
+              <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+                Menu
+              </Text>
+              <Tooltip label="Collapse sidebar" position="right" withArrow>
+                <ActionIcon
+                  visibleFrom="sm"
+                  onClick={toggleExpanded}
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  aria-label="Collapse sidebar"
+                >
+                  <NavIcon name="chevronLeft" size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
           )}
+        </AppShell.Section>
+
+        <AppShell.Section grow component={ScrollArea}>
           <Stack gap={railMode ? 8 : 4} align={railMode ? 'center' : 'stretch'}>
             {navItems.map((item) => {
               const active = isActive(pathname, item);
@@ -216,28 +245,6 @@ export const AppLayout = ({ navItems = [], children }) => {
           )}
         </AppShell.Section>
       </AppShell.Navbar>
-
-      <Tooltip label={expanded ? 'Collapse sidebar' : 'Expand sidebar'} position="right">
-        <ActionIcon
-          visibleFrom="sm"
-          onClick={toggleExpanded}
-          variant="default"
-          radius="xl"
-          size="md"
-          aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
-          style={{
-            position: 'fixed',
-            top: '50%',
-            left: (expanded ? NAVBAR_WIDTH : RAIL_WIDTH) - 14,
-            transform: 'translateY(-50%)',
-            zIndex: 300,
-            transition: 'left 150ms ease',
-            boxShadow: 'var(--mantine-shadow-sm)'
-          }}
-        >
-          <NavIcon name={expanded ? 'chevronLeft' : 'chevronRight'} size={16} />
-        </ActionIcon>
-      </Tooltip>
 
       <AppShell.Main>{children}</AppShell.Main>
     </AppShell>
