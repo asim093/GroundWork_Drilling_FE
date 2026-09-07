@@ -1,34 +1,9 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Button, Group, Stack } from '@mantine/core';
+import { Outlet } from 'react-router-dom';
 import { AppLayout } from './AppLayout.jsx';
-
-const NAV_ITEMS = [
-  { to: '/admin/users', label: 'Users' },
-  { to: '/admin/jobs', label: 'Jobs' },
-  { to: '/admin/scheduling', label: 'Scheduling' },
-  { to: '/admin/reports', label: 'Reports' }
-];
-
-const NavButton = ({ to, label }) => {
-  const { pathname } = useLocation();
-  const active = pathname === to || pathname.startsWith(`${to}/`);
-
-  return (
-    <Button component={Link} to={to} variant={active ? 'light' : 'subtle'} size="sm">
-      {label}
-    </Button>
-  );
-};
+import { ADMIN_NAV } from '../constants/nav.js';
 
 export const AdminLayout = () => (
-  <AppLayout title="Admin">
-    <Stack gap="lg">
-      <Group gap="xs">
-        {NAV_ITEMS.map((item) => (
-          <NavButton key={item.to} to={item.to} label={item.label} />
-        ))}
-      </Group>
-      <Outlet />
-    </Stack>
+  <AppLayout navItems={ADMIN_NAV}>
+    <Outlet />
   </AppLayout>
 );

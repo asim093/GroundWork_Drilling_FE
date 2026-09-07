@@ -1,32 +1,9 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Button, Group, Stack } from '@mantine/core';
+import { Outlet } from 'react-router-dom';
 import { AppLayout } from './AppLayout.jsx';
-
-const NAV_ITEMS = [
-  { to: '/operator/jobs', label: 'Assigned Jobs' },
-  { to: '/operator/submissions', label: 'My Submissions' }
-];
-
-const NavButton = ({ to, label }) => {
-  const { pathname } = useLocation();
-  const active = pathname === to || pathname.startsWith(`${to}/`);
-
-  return (
-    <Button component={Link} to={to} variant={active ? 'light' : 'subtle'} size="sm">
-      {label}
-    </Button>
-  );
-};
+import { OPERATOR_NAV } from '../constants/nav.js';
 
 export const OperatorLayout = () => (
-  <AppLayout title="Operator">
-    <Stack gap="lg">
-      <Group gap="xs">
-        {NAV_ITEMS.map((item) => (
-          <NavButton key={item.to} to={item.to} label={item.label} />
-        ))}
-      </Group>
-      <Outlet />
-    </Stack>
+  <AppLayout navItems={OPERATOR_NAV}>
+    <Outlet />
   </AppLayout>
 );

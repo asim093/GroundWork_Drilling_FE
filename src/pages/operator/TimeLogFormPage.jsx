@@ -17,6 +17,7 @@ import {
   Title
 } from '@mantine/core';
 import { AppLayout } from '../../components/AppLayout.jsx';
+import { OPERATOR_NAV } from '../../constants/nav.js';
 import { ActivityLinesSection } from '../../components/timelog/ActivityLinesSection.jsx';
 import { ConsumablesSection } from '../../components/timelog/ConsumablesSection.jsx';
 import { TIME_LOG_STATUS_COLORS } from '../../constants/timeLogs.js';
@@ -132,7 +133,7 @@ export const TimeLogFormPage = () => {
 
   if (loading) {
     return (
-      <AppLayout title="Operator">
+      <AppLayout navItems={OPERATOR_NAV}>
         <Center py="xl">
           <Loader />
         </Center>
@@ -160,7 +161,7 @@ export const TimeLogFormPage = () => {
   );
 
   return (
-    <AppLayout title="Operator">
+    <AppLayout navItems={OPERATOR_NAV}>
       <Stack gap="lg" maw={640} mx="auto">
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Button variant="subtle" onClick={() => navigate(-1)}>
