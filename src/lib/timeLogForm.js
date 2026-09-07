@@ -13,8 +13,6 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 export const emptyTimeLogForm = () => ({
   date: todayIso(),
   shift: null,
-  metersDrilled: '',
-  metersRecovered: '',
   timeIn: '',
   timeOut: '',
   assistantName: '',
@@ -37,8 +35,6 @@ export const emptyTimeLogForm = () => ({
 export const timeLogFormFromEntry = (entry) => ({
   date: entry.date ? entry.date.slice(0, 10) : todayIso(),
   shift: entry.shift || null,
-  metersDrilled: toInputValue(entry.metersDrilled),
-  metersRecovered: toInputValue(entry.metersRecovered),
   timeIn: entry.timeIn || '',
   timeOut: entry.timeOut || '',
   assistantName: entry.assistantName || '',
@@ -60,7 +56,9 @@ export const timeLogFormFromEntry = (entry) => ({
   activityLines: (entry.activityLines || []).map((line) => ({
     boreholeRef: line.boreholeRef || '',
     description: line.description || '',
-    depth: toInputValue(line.depth),
+    depthFrom: toInputValue(line.depthFrom),
+    depthTo: toInputValue(line.depthTo),
+    recoveryMeters: toInputValue(line.recoveryMeters),
     timeFrom: line.timeFrom || '',
     timeTo: line.timeTo || '',
     chargeTime: toInputValue(line.chargeTime),
@@ -82,8 +80,6 @@ export const timeLogFormFromEntry = (entry) => ({
 export const timeLogPayloadFromForm = (form) => ({
   date: form.date,
   shift: form.shift || null,
-  metersDrilled: toNumberOrNull(form.metersDrilled),
-  metersRecovered: toNumberOrNull(form.metersRecovered),
   timeIn: form.timeIn,
   timeOut: form.timeOut,
   assistantName: form.assistantName,
@@ -105,7 +101,9 @@ export const timeLogPayloadFromForm = (form) => ({
   activityLines: form.activityLines.map((line) => ({
     boreholeRef: line.boreholeRef,
     description: line.description,
-    depth: toNumberOrNull(line.depth),
+    depthFrom: toNumberOrNull(line.depthFrom),
+    depthTo: toNumberOrNull(line.depthTo),
+    recoveryMeters: toNumberOrNull(line.recoveryMeters),
     timeFrom: line.timeFrom,
     timeTo: line.timeTo,
     chargeTime: toNumberOrNull(line.chargeTime),

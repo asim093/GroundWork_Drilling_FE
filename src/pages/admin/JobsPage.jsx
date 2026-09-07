@@ -18,6 +18,7 @@ import { AssignUsersModal } from '../../components/admin/AssignUsersModal.jsx';
 import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
+import { NavIcon } from '../../components/NavIcon.jsx';
 import { listJobs } from '../../services/jobService.js';
 import { listUsers } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
@@ -34,6 +35,8 @@ export const JobsPage = () => {
   const [loading, setLoading] = useState(true);
   const [formModal, setFormModal] = useState({ open: false, job: null });
   const [assignModal, setAssignModal] = useState({ open: false, job: null });
+
+  const openNewJob = useCallback(() => setFormModal({ open: true, job: null }), []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,27 +102,25 @@ export const JobsPage = () => {
     <Stack gap="md">
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="wrap" align="flex-end">
+          <Group gap="sm" wrap="wrap" align="center">
             <Select
-              label="Status"
               placeholder="All statuses"
               data={JOB_STATUS_OPTIONS}
               value={filters.status || null}
               onChange={(value) => setFilter('status', value)}
               clearable
-              w={170}
+              w={180}
             />
             <Select
-              label="Operator"
               placeholder="All operators"
               data={operators.map((operator) => ({ value: operator.id, label: operator.name }))}
               value={filters.assignedUser || null}
               onChange={(value) => setFilter('assignedUser', value)}
               searchable
               clearable
-              w={200}
+              w={220}
             />
-            <Button ml="auto" onClick={() => setFormModal({ open: true, job: null })}>
+            <Button ml="auto" leftSection={<NavIcon name="plus" size={16} />} onClick={openNewJob}>
               New job
             </Button>
           </Group>
@@ -190,6 +191,7 @@ export const JobsPage = () => {
       <JobFormModal
         opened={formModal.open}
         job={formModal.job}
+        operators={operators}
         onClose={() => setFormModal({ open: false, job: null })}
         onSaved={load}
       />

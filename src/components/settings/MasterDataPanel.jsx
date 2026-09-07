@@ -16,6 +16,7 @@ import {
 import { SortableTh } from '../list/SortableTh.jsx';
 import { ListPagination } from '../list/ListPagination.jsx';
 import { useListParams } from '../../hooks/useListParams.js';
+import { NavIcon } from '../NavIcon.jsx';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
@@ -50,10 +51,11 @@ export const MasterDataPanel = ({ service, singular, plural }) => {
     load();
   }, [load]);
 
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     setName('');
     setModal({ open: true, record: null });
-  };
+  }, []);
+
 
   const openEdit = (record) => {
     setName(record.name);
@@ -135,24 +137,22 @@ export const MasterDataPanel = ({ service, singular, plural }) => {
   return (
     <Card withBorder radius="md" p="md">
       <Stack gap="md">
-        <Group gap="sm" wrap="wrap" align="flex-end">
+        <Group gap="sm" wrap="wrap" align="center">
           <TextInput
-            label="Search"
-            placeholder="Name"
+            placeholder={`Search ${plural.toLowerCase()}`}
             value={filters.search || ''}
             onChange={(event) => setFilter('search', event.currentTarget.value)}
-            w={220}
+            w={340}
           />
           <Select
-            label="State"
-            placeholder="Any"
+            placeholder="Any state"
             data={ACTIVE_FILTER_OPTIONS}
             value={filters.active || null}
             onChange={(value) => setFilter('active', value)}
             clearable
-            w={140}
+            w={150}
           />
-          <Button ml="auto" onClick={openCreate}>
+          <Button ml="auto" leftSection={<NavIcon name="plus" size={16} />} onClick={openCreate}>
             New {singular.toLowerCase()}
           </Button>
         </Group>

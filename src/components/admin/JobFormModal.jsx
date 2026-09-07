@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Autocomplete, Button, Group, Modal, Select, Stack, TextInput } from '@mantine/core';
+import {
+  Autocomplete,
+  Button,
+  Group,
+  Modal,
+  MultiSelect,
+  Select,
+  SimpleGrid,
+  Stack,
+  TextInput
+} from '@mantine/core';
 import { createJob, updateJob } from '../../services/jobService.js';
 import { locationsService, rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
@@ -14,10 +24,11 @@ const emptyForm = {
   clientJobNumber: '',
   drillType: '',
   scheduledDate: '',
-  status: 'scheduled'
+  status: 'scheduled',
+  assignedUserIds: []
 };
 
-export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
+export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) => {
   const isEdit = Boolean(job);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -39,7 +50,8 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
             clientJobNumber: job.clientJobNumber || '',
             drillType: job.drillType || '',
             scheduledDate: job.scheduledDate ? job.scheduledDate.slice(0, 10) : '',
-            status: job.status || 'scheduled'
+            status: job.status || 'scheduled',
+            assignedUserIds: (job.assignedUserIds || []).map((entry) => entry.id || entry)
           }
         : emptyForm
     );
@@ -69,7 +81,8 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
       clientJobNumber: form.clientJobNumber.trim(),
       drillType: form.drillType.trim(),
       scheduledDate: form.scheduledDate || '',
-      status: form.status
+      status: form.status,
+      assignedUserIds: form.assignedUserIds
     };
 
     try {
@@ -90,60 +103,86 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
     }
   };
 
+  const operatorOptions = operators.map((operator) => ({
+    value: operator.id,
+    label: `${operator.name} (${operator.email})`
+  }));
+
   return (
-    <Modal opened={opened} onClose={onClose} title={isEdit ? 'Edit job' : 'Create job'} centered>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={isEdit ? 'Edit job' : 'Create job'}
+      centered
+      size="lg"
+    >
       <form onSubmit={handleSubmit}>
         <Stack gap="md">
-          <TextInput
-            label="Job number"
-            required
-            value={form.jobNumber}
-            onChange={(event) => setField('jobNumber')(event.currentTarget.value)}
-          />
-          <TextInput
-            label="Client name"
-            required
-            value={form.clientName}
-            onChange={(event) => setField('clientName')(event.currentTarget.value)}
-          />
-          <Autocomplete
-            label="Job location"
-            placeholder="Select or type a location"
-            data={locationOptions}
-            value={form.jobLocation}
-            onChange={setField('jobLocation')}
-          />
-          <Select
-            label="Rig number"
-            placeholder="Not assigned"
-            data={rigOptions}
-            value={form.rigNumber}
-            onChange={setField('rigNumber')}
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            <TextInput
+              label="Job number"
+              required
+              value={form.jobNumber}
+              onChange={(event) => setField('jobNumber')(event.currentTarget.value)}
+            />
+            <TextInput
+              label="Client name"
+              required
+              value={form.clientName}
+              onChange={(event) => setField('clientName')(event.currentTarget.value)}
+            />
+            <Autocomplete
+              label="Job location"
+              placeholder="Select or type a location"
+              data={locationOptions}
+              value={form.jobLocation}
+              onChange={setField('jobLocation')}
+            />
+            <Select
+              label="Rig number"
+              placeholder="Not assigned"
+              data={rigOptions}
+              value={form.rigNumber}
+              onChange={setField('rigNumber')}
+              clearable
+            />
+            <TextInput
+              label="Client job number"
+              value={form.clientJobNumber}
+              onChange={(event) => setField('clientJobNumber')(event.currentTarget.value)}
+            />
+            <TextInput
+              label="Drill type"
+              value={form.drillType}
+              onChange={(event) => setField('drillType')(event.currentTarget.value)}
+            />
+            <TextInput
+              label="Scheduled date"
+              type="date"
+              value={form.scheduledDate}
+              onChange={(event) => setField('scheduledDate')(event.currentTarget.value)}
+            />
+            <Select
+              label="Status"
+              data={JOB_STATUS_OPTIONS}
+              value={form.status}
+              onChange={(value) => setField('status')(value || 'scheduled')}
+              allowDeselect={false}
+            />
+          </SimpleGrid>
+
+          <MultiSelect
+            label="Assigned operators"
+            description="Operators can also be assigned later from the Assign button."
+            placeholder={operatorOptions.length ? 'Select operators' : 'No active operators available'}
+            data={operatorOptions}
+            value={form.assignedUserIds}
+            onChange={setField('assignedUserIds')}
+            searchable
             clearable
+            maxDropdownHeight={200}
           />
-          <TextInput
-            label="Client job number"
-            value={form.clientJobNumber}
-            onChange={(event) => setField('clientJobNumber')(event.currentTarget.value)}
-          />
-          <TextInput
-            label="Drill type"
-            value={form.drillType}
-            onChange={(event) => setField('drillType')(event.currentTarget.value)}
-          />
-          <TextInput
-            label="Scheduled date"
-            type="date"
-            value={form.scheduledDate}
-            onChange={(event) => setField('scheduledDate')(event.currentTarget.value)}
-          />
-          <Select
-            label="Status"
-            data={JOB_STATUS_OPTIONS}
-            value={form.status}
-            onChange={(value) => setField('status')(value || 'scheduled')}
-            allowDeselect={false}
-          />
+
           <Group justify="flex-end" gap="sm">
             <Button variant="default" onClick={onClose} type="button">
               Cancel

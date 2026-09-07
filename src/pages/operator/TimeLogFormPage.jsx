@@ -11,6 +11,7 @@ import {
   Loader,
   NumberInput,
   Select,
+  SimpleGrid,
   Stack,
   Switch,
   Text,
@@ -29,6 +30,13 @@ import {
   timeLogPayloadFromForm
 } from '../../lib/timeLogForm.js';
 import {
+  shiftRecoveryPercent,
+  totalDrilledMeters,
+  totalLineHours,
+  totalRecoveryMeters,
+  validateActivityLines
+} from '../../lib/timeLogMath.js';
+import {
   createTimeLog,
   getAssignedJob,
   getTimeLog,
@@ -37,6 +45,8 @@ import {
 } from '../../services/timeLogService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
+
+const GRID = { base: 1, sm: 2 };
 
 export const TimeLogFormPage = () => {
   usePageTitle('Time & material log');
@@ -48,20 +58,14 @@ export const TimeLogFormPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [lineErrors, setLineErrors] = useState({});
 
   const readOnly = entry?.status === 'submitted';
 
-  const drilledNum = Number(form.metersDrilled);
-  const recoveredNum = Number(form.metersRecovered);
-  const recoveryPreview =
-    form.metersDrilled !== '' &&
-    form.metersDrilled !== null &&
-    drilledNum > 0 &&
-    form.metersRecovered !== '' &&
-    form.metersRecovered !== null &&
-    !Number.isNaN(recoveredNum)
-      ? Math.round((recoveredNum / drilledNum) * 10000) / 100
-      : null;
+  const totalDrilled = totalDrilledMeters(form.activityLines);
+  const totalRecovered = totalRecoveryMeters(form.activityLines);
+  const totalHours = totalLineHours(form.activityLines);
+  const recoveryPreview = shiftRecoveryPercent(form.activityLines);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,7 +105,30 @@ export const TimeLogFormPage = () => {
   const setFuel = (key, value) =>
     setForm((prev) => ({ ...prev, fuel: { ...prev.fuel, [key]: value } }));
 
+  const parseServerLineErrors = (error) => {
+    const serverErrors = error?.response?.data?.errors;
+    if (!Array.isArray(serverErrors)) {
+      return null;
+    }
+    const byLine = {};
+    serverErrors.forEach(({ field, message }) => {
+      const match = /^activityLines\[(\d+)\]\.(\w+)$/.exec(field || '');
+      if (match) {
+        const index = Number(match[1]);
+        byLine[index] = { ...byLine[index], [match[2]]: message };
+      }
+    });
+    return Object.keys(byLine).length ? byLine : null;
+  };
+
   const persist = async () => {
+    const clientLineErrors = validateActivityLines(form.activityLines);
+    if (clientLineErrors) {
+      setLineErrors(clientLineErrors);
+      throw new Error('Fix the highlighted activity line values before saving');
+    }
+    setLineErrors({});
+
     const payload = timeLogPayloadFromForm(form);
 
     if (entry) {
@@ -123,6 +150,10 @@ export const TimeLogFormPage = () => {
       await persist();
       notifySuccess('Draft saved');
     } catch (error) {
+      const serverLineErrors = parseServerLineErrors(error);
+      if (serverLineErrors) {
+        setLineErrors(serverLineErrors);
+      }
       notifyError(extractErrorMessage(error, 'Unable to save draft'));
     } finally {
       setSaving(false);
@@ -140,6 +171,10 @@ export const TimeLogFormPage = () => {
       notifySuccess('Time log submitted');
       navigate('/operator/submissions');
     } catch (error) {
+      const serverLineErrors = parseServerLineErrors(error);
+      if (serverLineErrors) {
+        setLineErrors(serverLineErrors);
+      }
       notifyError(extractErrorMessage(error, 'Unable to submit time log'));
     } finally {
       setSubmitting(false);
@@ -177,7 +212,7 @@ export const TimeLogFormPage = () => {
 
   return (
     <AppLayout navItems={OPERATOR_NAV}>
-      <Stack gap="lg" maw={720}>
+      <Stack gap="lg">
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Button variant="subtle" onClick={() => navigate(-1)}>
             Back
@@ -200,95 +235,87 @@ export const TimeLogFormPage = () => {
         ) : null}
 
         <Fieldset legend="Job details">
-          <Stack gap="sm">
-            <TextInput label="Job number" value={job?.jobNumber || ''} readOnly disabled />
-            <TextInput label="Client" value={job?.clientName || ''} readOnly disabled />
-            <TextInput label="Job location" value={job?.jobLocation || ''} readOnly disabled />
+          <Stack gap="md">
+            <SimpleGrid cols={GRID} spacing="md">
+              <TextInput label="Job number" value={job?.jobNumber || ''} readOnly disabled />
+              <TextInput label="Client" value={job?.clientName || ''} readOnly disabled />
+              <TextInput label="Job location" value={job?.jobLocation || ''} readOnly disabled />
+              <TextInput label="Rig number" value={job?.rigNumber?.name || '—'} readOnly disabled />
+            </SimpleGrid>
             <Divider my="xs" />
-            <TextInput
-              label="Date"
-              type="date"
-              value={form.date}
-              disabled={readOnly}
-              onChange={(event) => setField('date', event.currentTarget.value)}
-            />
-            <Select
-              label="Shift"
-              placeholder="Select shift"
-              data={SHIFT_OPTIONS}
-              value={form.shift}
-              disabled={readOnly}
-              onChange={(value) => setField('shift', value)}
-              clearable
-            />
-            {timeField('timeIn', 'Time in')}
-            {timeField('timeOut', 'Time out')}
+            <SimpleGrid cols={GRID} spacing="md">
+              <TextInput
+                label="Date"
+                type="date"
+                value={form.date}
+                disabled={readOnly}
+                onChange={(event) => setField('date', event.currentTarget.value)}
+              />
+              <Select
+                label="Shift"
+                placeholder="Select shift"
+                data={SHIFT_OPTIONS}
+                value={form.shift}
+                disabled={readOnly}
+                onChange={(value) => setField('shift', value)}
+                clearable
+              />
+              {timeField('timeIn', 'Time in')}
+              {timeField('timeOut', 'Time out')}
+            </SimpleGrid>
           </Stack>
         </Fieldset>
 
         <Fieldset legend="Hours">
-          <Stack gap="sm">
-            {timeField('timeStarted', 'Time started')}
-            {timeField('timeFinished', 'Time finished')}
-            {numberField('hoursOnSite', 'Hours on site')}
-            {numberField('standbyHours', 'Standby hours')}
-            {numberField('otherHours', 'Other hours')}
+          <Stack gap="md">
+            <SimpleGrid cols={GRID} spacing="md">
+              {timeField('timeStarted', 'Time started')}
+              {timeField('timeFinished', 'Time finished')}
+              {numberField('hoursOnSite', 'Hours on site')}
+              {numberField('standbyHours', 'Standby hours')}
+              {numberField('otherHours', 'Other hours')}
+            </SimpleGrid>
             <Divider my="xs" label="Assistant" labelPosition="left" />
-            <TextInput
-              label="Assistant name"
-              value={form.assistantName}
-              disabled={readOnly}
-              onChange={(event) => setField('assistantName', event.currentTarget.value)}
-            />
-            {timeField('assistantTimeIn', 'Assistant time in')}
-            {timeField('assistantTimeOut', 'Assistant time out')}
+            <SimpleGrid cols={GRID} spacing="md">
+              <TextInput
+                label="Assistant name"
+                value={form.assistantName}
+                disabled={readOnly}
+                onChange={(event) => setField('assistantName', event.currentTarget.value)}
+              />
+              {timeField('assistantTimeIn', 'Assistant time in')}
+              {timeField('assistantTimeOut', 'Assistant time out')}
+            </SimpleGrid>
             <Divider my="xs" label="Mileage" labelPosition="left" />
-            {numberField('mileageStart', 'Mileage start')}
-            {numberField('mileageEnd', 'Mileage end')}
-            {numberField('mileageTotal', 'Mileage total')}
+            <SimpleGrid cols={GRID} spacing="md">
+              {numberField('mileageStart', 'Mileage start')}
+              {numberField('mileageEnd', 'Mileage end')}
+              {numberField('mileageTotal', 'Mileage total')}
+            </SimpleGrid>
           </Stack>
         </Fieldset>
 
         <Fieldset legend="Well tag">
-          <Stack gap="sm">
-            <Switch
-              label="Installed"
-              checked={form.wellTag.installed}
-              disabled={readOnly}
-              onChange={(event) => setWellTag('installed', event.currentTarget.checked)}
-            />
-            <Switch
-              label="Decommissioned"
-              checked={form.wellTag.decommissioned}
-              disabled={readOnly}
-              onChange={(event) => setWellTag('decommissioned', event.currentTarget.checked)}
-            />
+          <Stack gap="md">
+            <SimpleGrid cols={GRID} spacing="md">
+              <Switch
+                label="Installed"
+                checked={form.wellTag.installed}
+                disabled={readOnly}
+                onChange={(event) => setWellTag('installed', event.currentTarget.checked)}
+              />
+              <Switch
+                label="Decommissioned"
+                checked={form.wellTag.decommissioned}
+                disabled={readOnly}
+                onChange={(event) => setWellTag('decommissioned', event.currentTarget.checked)}
+              />
+            </SimpleGrid>
             <TextInput
               label="Locates provided by"
               value={form.wellTag.locatesProvidedBy}
               disabled={readOnly}
               onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
-            />
-            <Divider my="xs" label="Recovery" labelPosition="left" />
-            <NumberInput
-              label="Meters drilled"
-              min={0}
-              value={form.metersDrilled}
-              disabled={readOnly}
-              onChange={(value) => setField('metersDrilled', value)}
-            />
-            <NumberInput
-              label="Meters recovered"
-              min={0}
-              value={form.metersRecovered}
-              disabled={readOnly}
-              onChange={(value) => setField('metersRecovered', value)}
-            />
-            <TextInput
-              label="Recovery %"
-              value={recoveryPreview === null ? 'Enter meters drilled and recovered' : `${recoveryPreview}%`}
-              readOnly
-              disabled
             />
           </Stack>
         </Fieldset>
@@ -296,11 +323,38 @@ export const TimeLogFormPage = () => {
         <ActivityLinesSection
           lines={form.activityLines}
           disabled={readOnly}
-          onChange={(lines) => setField('activityLines', lines)}
+          errors={lineErrors}
+          onChange={(lines) => {
+            setLineErrors({});
+            setField('activityLines', lines);
+          }}
         />
 
+        <Fieldset legend="Shift totals (calculated)">
+          <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
+            <TextInput label="Total drilled" value={`${totalDrilled} m`} readOnly disabled />
+            <TextInput
+              label="Total recovered"
+              value={totalRecovered === null ? 'Not entered' : `${totalRecovered} m`}
+              readOnly
+              disabled
+            />
+            <TextInput label="Total hours" value={`${totalHours} h`} readOnly disabled />
+            <TextInput
+              label="Recovery %"
+              value={recoveryPreview === null ? 'Not available' : `${recoveryPreview}%`}
+              readOnly
+              disabled
+            />
+          </SimpleGrid>
+          <Text size="xs" c="dimmed" mt="xs">
+            These totals are calculated from the activity lines above and cannot be edited
+            directly.
+          </Text>
+        </Fieldset>
+
         <Fieldset legend="Fuel">
-          <Stack gap="sm">
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
             <NumberInput
               label="Dyed (L)"
               value={form.fuel.dyedLt}
@@ -319,7 +373,7 @@ export const TimeLogFormPage = () => {
               disabled={readOnly}
               onChange={(value) => setFuel('gasolineLt', value)}
             />
-          </Stack>
+          </SimpleGrid>
         </Fieldset>
 
         <ConsumablesSection
@@ -329,7 +383,7 @@ export const TimeLogFormPage = () => {
         />
 
         {readOnly ? null : (
-          <Card withBorder radius="md" p="md" pos="sticky" bottom={0}>
+          <Card withBorder radius="md" p="md">
             <Group grow>
               <Button variant="default" onClick={handleSaveDraft} loading={saving}>
                 Save draft

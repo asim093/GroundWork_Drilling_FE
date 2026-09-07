@@ -92,7 +92,6 @@ export const AppLayout = ({ navItems = [], children }) => {
             style={{
               width: railMode ? RAIL_WIDTH : NAVBAR_WIDTH,
               flexShrink: 0,
-              transition: 'width 150ms ease',
               borderRight: '1px solid var(--mantine-color-gray-3)',
               height: '100%'
             }}
@@ -121,7 +120,7 @@ export const AppLayout = ({ navItems = [], children }) => {
       <AppShell.Navbar p={railMode ? 'xs' : 'sm'}>
         {railMode ? null : (
           <AppShell.Section>
-            <Text size="xs" fw={600} c="dimmed" tt="uppercase" px="sm" pb={6}>
+            <Text size="xs" fw={600} c="dimmed" px="sm" pb={6}>
               Menu
             </Text>
           </AppShell.Section>

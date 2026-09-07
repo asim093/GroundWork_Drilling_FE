@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Group, Modal, MultiSelect, Stack, Text } from '@mantine/core';
+import { Badge, Button, Group, Modal, MultiSelect, Stack, Text } from '@mantine/core';
 import { setJobAssignments } from '../../services/jobService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
@@ -34,12 +34,17 @@ export const AssignUsersModal = ({ opened, onClose, job, operators, onSaved }) =
     }
   };
 
+  const selectedOperators = selected
+    .map((id) => operators.find((operator) => operator.id === id))
+    .filter(Boolean);
+
   return (
     <Modal
       opened={opened}
       onClose={onClose}
       title={job ? `Assign operators — ${job.jobNumber}` : 'Assign operators'}
       centered
+      size="lg"
     >
       <Stack gap="md">
         <Text size="sm" c="dimmed">
@@ -52,8 +57,45 @@ export const AssignUsersModal = ({ opened, onClose, job, operators, onSaved }) =
           placeholder={options.length ? 'Select operators' : 'No active operators available'}
           searchable
           clearable
+          hidePickedOptions
+          maxDropdownHeight={200}
+          comboboxProps={{ withinPortal: false }}
           nothingFoundMessage="No operators found"
         />
+
+        <Stack gap={6}>
+          <Text size="xs" fw={600} c="dimmed">
+            Assigned ({selectedOperators.length})
+          </Text>
+          {selectedOperators.length ? (
+            <Group gap={6} wrap="wrap">
+              {selectedOperators.map((operator) => (
+                <Badge
+                  key={operator.id}
+                  variant="light"
+                  rightSection={
+                    <Text
+                      component="span"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() =>
+                        setSelected((prev) => prev.filter((id) => id !== operator.id))
+                      }
+                    >
+                      ×
+                    </Text>
+                  }
+                >
+                  {operator.name}
+                </Badge>
+              ))}
+            </Group>
+          ) : (
+            <Text size="sm" c="dimmed">
+              No operators assigned yet.
+            </Text>
+          )}
+        </Stack>
+
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onClose} type="button">
             Cancel

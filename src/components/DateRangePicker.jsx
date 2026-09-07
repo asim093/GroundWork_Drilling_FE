@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Divider, Popover, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Divider, Popover, Stack, TextInput } from '@mantine/core';
 import { NavIcon } from './NavIcon.jsx';
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -34,7 +34,7 @@ const formatDate = (value) =>
     ? new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Any';
 
-export const DateRangePicker = ({ value, onChange, label = 'Date range' }) => {
+export const DateRangePicker = ({ value, onChange }) => {
   const [opened, setOpened] = useState(false);
   const [draft, setDraft] = useState(value);
   const presets = buildPresets();
@@ -59,59 +59,55 @@ export const DateRangePicker = ({ value, onChange, label = 'Date range' }) => {
   };
 
   return (
-    <Stack gap={4}>
-      <Text size="sm" fw={500}>
-        {label}
-      </Text>
-      <Popover
-        opened={opened}
-        onChange={handleOpenChange}
-        position="bottom-start"
-        shadow="md"
-        withArrow
-      >
-        <Popover.Target>
-          <Button
-            variant="default"
-            justify="space-between"
-            rightSection={<NavIcon name="calendar" size={16} />}
-            onClick={() => handleOpenChange(!opened)}
-            miw={250}
-          >
-            {formatDate(value.from)} – {formatDate(value.to)}
-          </Button>
-        </Popover.Target>
-        <Popover.Dropdown>
-          <Stack gap="xs" w={250}>
-            {presets.map((preset) => (
-              <Button
-                key={preset.label}
-                variant="subtle"
-                justify="flex-start"
-                onClick={() => applyPreset(preset)}
-              >
-                {preset.label}
-              </Button>
-            ))}
-            <Divider label="Custom range" labelPosition="center" />
-            <TextInput
-              label="From"
-              type="date"
-              value={draft.from || ''}
-              onChange={(event) => setDraft((prev) => ({ ...prev, from: event.currentTarget.value }))}
-            />
-            <TextInput
-              label="To"
-              type="date"
-              value={draft.to || ''}
-              onChange={(event) => setDraft((prev) => ({ ...prev, to: event.currentTarget.value }))}
-            />
-            <Button onClick={applyCustom} disabled={!draft.from || !draft.to}>
-              Apply range
+    <Popover
+      opened={opened}
+      onChange={handleOpenChange}
+      position="bottom-start"
+      shadow="md"
+      withArrow
+    >
+      <Popover.Target>
+        <Button
+          variant="default"
+          radius="sm"
+          justify="space-between"
+          rightSection={<NavIcon name="calendar" size={16} />}
+          onClick={() => handleOpenChange(!opened)}
+          miw={250}
+        >
+          {formatDate(value.from)} – {formatDate(value.to)}
+        </Button>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Stack gap="xs" w={250}>
+          {presets.map((preset) => (
+            <Button
+              key={preset.label}
+              variant="subtle"
+              justify="flex-start"
+              onClick={() => applyPreset(preset)}
+            >
+              {preset.label}
             </Button>
-          </Stack>
-        </Popover.Dropdown>
-      </Popover>
-    </Stack>
+          ))}
+          <Divider label="Custom range" labelPosition="center" />
+          <TextInput
+            label="From"
+            type="date"
+            value={draft.from || ''}
+            onChange={(event) => setDraft((prev) => ({ ...prev, from: event.currentTarget.value }))}
+          />
+          <TextInput
+            label="To"
+            type="date"
+            value={draft.to || ''}
+            onChange={(event) => setDraft((prev) => ({ ...prev, to: event.currentTarget.value }))}
+          />
+          <Button onClick={applyCustom} disabled={!draft.from || !draft.to}>
+            Apply range
+          </Button>
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
   );
 };

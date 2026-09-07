@@ -18,6 +18,7 @@ import { UserFormModal } from '../../components/admin/UserFormModal.jsx';
 import { useListParams } from '../../hooks/useListParams.js';
 import { EMPLOYEE_TYPE_OPTIONS } from '../../constants/employees.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
+import { NavIcon } from '../../components/NavIcon.jsx';
 import { listUsers, updateUser, resendInvite } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
@@ -40,6 +41,8 @@ export const UsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState({ open: false, user: null });
   const [busyId, setBusyId] = useState(null);
+
+  const openNewOperator = useCallback(() => setModal({ open: true, user: null }), []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -153,42 +156,42 @@ export const UsersPage = () => {
     <Stack gap="md">
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="wrap" align="flex-end">
+          <Group gap="sm" wrap="wrap" align="center">
             <TextInput
-              label="Search"
-              placeholder="Name or email"
+              placeholder="Search name or email"
               value={filters.search || ''}
               onChange={(event) => setFilter('search', event.currentTarget.value)}
-              w={220}
+              w={340}
             />
             <Select
-              label="Account"
-              placeholder="Any"
+              placeholder="Any account"
               data={STATUS_FILTER_OPTIONS}
               value={filters.status || null}
               onChange={(value) => setFilter('status', value)}
               clearable
-              w={160}
+              w={170}
             />
             <Select
-              label="State"
-              placeholder="Any"
+              placeholder="Any state"
               data={ACTIVE_FILTER_OPTIONS}
               value={filters.active || null}
               onChange={(value) => setFilter('active', value)}
               clearable
-              w={140}
+              w={150}
             />
             <Select
-              label="Employee type"
-              placeholder="Any"
+              placeholder="Any employee type"
               data={EMPLOYEE_TYPE_OPTIONS}
               value={filters.employeeType || null}
               onChange={(value) => setFilter('employeeType', value)}
               clearable
-              w={180}
+              w={200}
             />
-            <Button ml="auto" onClick={() => setModal({ open: true, user: null })}>
+            <Button
+              ml="auto"
+              leftSection={<NavIcon name="plus" size={16} />}
+              onClick={openNewOperator}
+            >
               New operator
             </Button>
           </Group>

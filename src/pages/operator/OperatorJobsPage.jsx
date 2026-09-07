@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Badge,
@@ -10,7 +10,8 @@ import {
   Select,
   Stack,
   Table,
-  Text
+  Text,
+  TextInput
 } from '@mantine/core';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
@@ -23,6 +24,8 @@ import { notifyError } from '../../lib/toast.js';
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
 
+const POLL_INTERVAL = 15000;
+
 export const OperatorJobsPage = () => {
   usePageTitle('Assigned jobs');
   const navigate = useNavigate();
@@ -30,22 +33,47 @@ export const OperatorJobsPage = () => {
     useListParams({ sort: 'scheduledDate', order: 'asc' });
   const [result, setResult] = useState({ data: [], pagination: null });
   const [loading, setLoading] = useState(true);
+  const paramsRef = useRef(queryParams);
+  paramsRef.current = queryParams;
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async ({ silent } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
 
     try {
-      const response = await listAssignedJobs(queryParams);
+      const response = await listAssignedJobs(paramsRef.current);
       setResult(response);
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to load assigned jobs'));
+      if (!silent) {
+        notifyError(extractErrorMessage(error, 'Unable to load assigned jobs'));
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  }, [queryParams]);
+  }, []);
 
   useEffect(() => {
     load();
+  }, [load, queryParams]);
+
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === 'visible') {
+        load({ silent: true });
+      }
+    };
+    const timer = setInterval(tick, POLL_INTERVAL);
+    document.addEventListener('visibilitychange', tick);
+    window.addEventListener('focus', tick);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', tick);
+      window.removeEventListener('focus', tick);
+    };
   }, [load]);
 
   const rows = result.data.map((job) => (
@@ -53,6 +81,7 @@ export const OperatorJobsPage = () => {
       <Table.Td>{job.jobNumber}</Table.Td>
       <Table.Td>{job.clientName}</Table.Td>
       <Table.Td>{job.jobLocation || '—'}</Table.Td>
+      <Table.Td>{job.rigNumber?.name || '—'}</Table.Td>
       <Table.Td>{formatDate(job.scheduledDate)}</Table.Td>
       <Table.Td>
         <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'blue'}>
@@ -73,15 +102,20 @@ export const OperatorJobsPage = () => {
     <Stack gap="md">
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="wrap" align="flex-end">
+          <Group gap="sm" wrap="wrap" align="center">
+            <TextInput
+              placeholder="Search job #, client or location"
+              value={filters.search || ''}
+              onChange={(event) => setFilter('search', event.currentTarget.value)}
+              w={360}
+            />
             <Select
-              label="Status"
               placeholder="All statuses"
               data={JOB_STATUS_OPTIONS}
               value={filters.status || null}
               onChange={(value) => setFilter('status', value)}
               clearable
-              w={200}
+              w={190}
             />
           </Group>
 
@@ -90,13 +124,14 @@ export const OperatorJobsPage = () => {
               <Loader />
             </Center>
           ) : (
-            <Table.ScrollContainer minWidth={720}>
+            <Table.ScrollContainer minWidth={820}>
               <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
                     <SortableTh field="jobNumber" label="Job #" sort={sort} order={order} onSort={toggleSort} />
                     <SortableTh field="clientName" label="Client" sort={sort} order={order} onSort={toggleSort} />
                     <Table.Th>Location</Table.Th>
+                    <Table.Th>Rig</Table.Th>
                     <SortableTh
                       field="scheduledDate"
                       label="Scheduled"
@@ -113,7 +148,7 @@ export const OperatorJobsPage = () => {
                     rows
                   ) : (
                     <Table.Tr>
-                      <Table.Td colSpan={6}>
+                      <Table.Td colSpan={7}>
                         <Text c="dimmed" ta="center" py="md">
                           No assigned jobs match the current filters
                         </Text>

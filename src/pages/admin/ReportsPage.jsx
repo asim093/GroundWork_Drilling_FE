@@ -78,14 +78,9 @@ export const ReportsPage = () => {
     <Stack gap="xl">
       <Stack gap="lg">
         <Paper withBorder radius="lg" p="lg">
-          <Group gap="lg" wrap="wrap" align="flex-end">
+          <Group gap="lg" wrap="wrap" align="center">
             <DateRangePicker value={range} onChange={setRange} />
-            <Stack gap={4}>
-              <Text size="sm" fw={500}>
-                Group by
-              </Text>
-              <SegmentedControl data={GROUP_BY_OPTIONS} value={groupBy} onChange={setGroupBy} />
-            </Stack>
+            <SegmentedControl data={GROUP_BY_OPTIONS} value={groupBy} onChange={setGroupBy} />
           </Group>
         </Paper>
 
@@ -194,13 +189,16 @@ export const ReportsPage = () => {
             ) : null}
 
             <SectionCard title="Bonus eligibility by entry">
-              <Table.ScrollContainer minWidth={640}>
+              <Table.ScrollContainer minWidth={900}>
                 <Table verticalSpacing="sm">
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th>Date</Table.Th>
                       <Table.Th>Job #</Table.Th>
                       <Table.Th>Operator</Table.Th>
+                      <Table.Th>Drilled (m)</Table.Th>
+                      <Table.Th>Recovered (m)</Table.Th>
+                      <Table.Th>Hours (calc)</Table.Th>
                       <Table.Th>Recovery %</Table.Th>
                       <Table.Th>Eligibility</Table.Th>
                     </Table.Tr>
@@ -212,6 +210,9 @@ export const ReportsPage = () => {
                           <Table.Td>{formatDate(entry.date)}</Table.Td>
                           <Table.Td>{entry.jobNumber || '—'}</Table.Td>
                           <Table.Td>{entry.operator || '—'}</Table.Td>
+                          <Table.Td>{entry.metersDrilled ?? '—'}</Table.Td>
+                          <Table.Td>{entry.metersRecovered ?? '—'}</Table.Td>
+                          <Table.Td>{entry.totalHours ?? '—'}</Table.Td>
                           <Table.Td>
                             {entry.recoveryPercent === null ? (
                               <Text c="dimmed" size="sm">
@@ -228,7 +229,7 @@ export const ReportsPage = () => {
                       ))
                     ) : (
                       <Table.Tr>
-                        <Table.Td colSpan={5}>
+                        <Table.Td colSpan={8}>
                           <Text c="dimmed" ta="center" py="md">
                             No submitted entries in this period
                           </Text>

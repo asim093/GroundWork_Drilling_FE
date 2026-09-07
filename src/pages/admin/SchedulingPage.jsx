@@ -98,29 +98,27 @@ export const SchedulingPage = () => {
     <Stack gap="md">
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="wrap" align="flex-end">
+          <Group gap="sm" wrap="wrap" align="center">
             <DateRangePicker
               value={{ from: filters.from, to: filters.to }}
               onChange={(range) => setFilters(range)}
             />
             <Select
-              label="Job"
               placeholder="All jobs"
               data={jobs.map((job) => ({ value: job.id, label: `${job.jobNumber} — ${job.clientName}` }))}
               value={filters.job || null}
               onChange={(value) => setFilter('job', value)}
               searchable
               clearable
-              w={220}
+              w={240}
             />
             <Select
-              label="Status"
               placeholder="All statuses"
               data={SCHEDULING_STATUS_OPTIONS}
               value={filters.status || null}
               onChange={(value) => setFilter('status', value)}
               clearable
-              w={160}
+              w={180}
             />
           </Group>
 
