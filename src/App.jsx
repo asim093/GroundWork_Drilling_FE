@@ -10,6 +10,7 @@ import { UsersPage } from './pages/admin/UsersPage.jsx';
 import { JobsPage } from './pages/admin/JobsPage.jsx';
 import { SchedulingPage } from './pages/admin/SchedulingPage.jsx';
 import { ReportsPage } from './pages/admin/ReportsPage.jsx';
+import { SettingsPage } from './pages/admin/SettingsPage.jsx';
 import { OperatorJobsPage } from './pages/operator/OperatorJobsPage.jsx';
 import { MySubmissionsPage } from './pages/operator/MySubmissionsPage.jsx';
 import { TimeLogFormPage } from './pages/operator/TimeLogFormPage.jsx';
@@ -28,6 +29,7 @@ const App = () => (
         <Route path="jobs" element={<JobsPage />} />
         <Route path="scheduling" element={<SchedulingPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Route>
 

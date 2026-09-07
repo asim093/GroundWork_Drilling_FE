@@ -16,6 +16,7 @@ import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { UserFormModal } from '../../components/admin/UserFormModal.jsx';
 import { useListParams } from '../../hooks/useListParams.js';
+import { EMPLOYEE_TYPE_OPTIONS } from '../../constants/employees.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { listUsers, updateUser, resendInvite } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
@@ -95,6 +96,20 @@ export const UsersPage = () => {
       <Table.Td>{user.email}</Table.Td>
       <Table.Td>{user.phone || '—'}</Table.Td>
       <Table.Td>
+        {user.employeeType ? (
+          <Stack gap={0}>
+            <Text size="sm">{user.employeeType}</Text>
+            {user.employeeCategory ? (
+              <Text size="xs" c="dimmed">
+                {user.employeeCategory}
+              </Text>
+            ) : null}
+          </Stack>
+        ) : (
+          '—'
+        )}
+      </Table.Td>
+      <Table.Td>
         <Group gap={6} wrap="nowrap">
           <Badge variant="light" color={user.active ? 'green' : 'gray'}>
             {user.active ? 'Active' : 'Inactive'}
@@ -164,6 +179,15 @@ export const UsersPage = () => {
               clearable
               w={140}
             />
+            <Select
+              label="Employee type"
+              placeholder="Any"
+              data={EMPLOYEE_TYPE_OPTIONS}
+              value={filters.employeeType || null}
+              onChange={(value) => setFilter('employeeType', value)}
+              clearable
+              w={180}
+            />
             <Button ml="auto" onClick={() => setModal({ open: true, user: null })}>
               New operator
             </Button>
@@ -174,13 +198,14 @@ export const UsersPage = () => {
               <Loader />
             </Center>
           ) : (
-            <Table.ScrollContainer minWidth={820}>
+            <Table.ScrollContainer minWidth={940}>
               <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
                     <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
                     <SortableTh field="email" label="Email" sort={sort} order={order} onSort={toggleSort} />
                     <Table.Th>Phone</Table.Th>
+                    <Table.Th>Employee type</Table.Th>
                     <Table.Th>Status</Table.Th>
                     <SortableTh
                       field="createdAt"
@@ -197,7 +222,7 @@ export const UsersPage = () => {
                     rows
                   ) : (
                     <Table.Tr>
-                      <Table.Td colSpan={6}>
+                      <Table.Td colSpan={7}>
                         <Text c="dimmed" ta="center" py="md">
                           No operators match the current filters
                         </Text>

@@ -5,6 +5,7 @@ import {
   CopyButton,
   Group,
   Modal,
+  Select,
   Stack,
   Switch,
   Text,
@@ -13,8 +14,19 @@ import {
 import { createUser, updateUser } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
+import {
+  EMPLOYEE_CATEGORY_OPTIONS,
+  EMPLOYEE_TYPE_OPTIONS
+} from '../../constants/employees.js';
 
-const emptyForm = { name: '', email: '', phone: '', active: true };
+const emptyForm = {
+  name: '',
+  email: '',
+  phone: '',
+  employeeType: null,
+  employeeCategory: null,
+  active: true
+};
 
 export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
   const isEdit = Boolean(user);
@@ -34,6 +46,8 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
             name: user.name || '',
             email: user.email || '',
             phone: user.phone || '',
+            employeeType: user.employeeType || null,
+            employeeCategory: user.employeeCategory || null,
             active: user.active
           }
         : emptyForm
@@ -52,6 +66,8 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
           name: form.name.trim(),
           email: form.email.trim(),
           phone: form.phone.trim(),
+          employeeType: form.employeeType,
+          employeeCategory: form.employeeCategory,
           active: form.active
         });
         notifySuccess('Operator updated');
@@ -61,7 +77,9 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
         const { data, invite } = await createUser({
           name: form.name.trim(),
           email: form.email.trim(),
-          phone: form.phone.trim() || undefined
+          phone: form.phone.trim() || undefined,
+          employeeType: form.employeeType || undefined,
+          employeeCategory: form.employeeCategory || undefined
         });
         notifySuccess(
           invite.delivered
@@ -129,6 +147,22 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
               label="Phone"
               value={form.phone}
               onChange={(event) => setField('phone')(event.currentTarget.value)}
+            />
+            <Select
+              label="Employee type"
+              placeholder="Not set"
+              data={EMPLOYEE_TYPE_OPTIONS}
+              value={form.employeeType}
+              onChange={setField('employeeType')}
+              clearable
+            />
+            <Select
+              label="Employee category"
+              placeholder="Not set"
+              data={EMPLOYEE_CATEGORY_OPTIONS}
+              value={form.employeeCategory}
+              onChange={setField('employeeCategory')}
+              clearable
             />
             {isEdit ? (
               <Switch

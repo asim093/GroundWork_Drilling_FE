@@ -3,7 +3,8 @@ export const ADMIN_NAV = [
   { to: '/admin/users', label: 'Operators', icon: 'users' },
   { to: '/admin/jobs', label: 'Jobs', icon: 'jobs' },
   { to: '/admin/scheduling', label: 'Scheduling', icon: 'calendar' },
-  { to: '/admin/reports', label: 'Reports', icon: 'reports' }
+  { to: '/admin/reports', label: 'Reports', icon: 'reports' },
+  { to: '/admin/settings', label: 'Settings', icon: 'settings' }
 ];
 
 export const OPERATOR_NAV = [

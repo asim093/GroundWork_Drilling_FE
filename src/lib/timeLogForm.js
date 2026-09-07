@@ -12,6 +12,9 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export const emptyTimeLogForm = () => ({
   date: todayIso(),
+  shift: null,
+  metersDrilled: '',
+  metersRecovered: '',
   timeIn: '',
   timeOut: '',
   assistantName: '',
@@ -26,7 +29,6 @@ export const emptyTimeLogForm = () => ({
   mileageEnd: '',
   mileageTotal: '',
   wellTag: { installed: false, decommissioned: false, locatesProvidedBy: '' },
-  recoveryPercent: '',
   activityLines: [],
   fuel: { dyedLt: '', dieselLt: '', gasolineLt: '' },
   consumables: []
@@ -34,6 +36,9 @@ export const emptyTimeLogForm = () => ({
 
 export const timeLogFormFromEntry = (entry) => ({
   date: entry.date ? entry.date.slice(0, 10) : todayIso(),
+  shift: entry.shift || null,
+  metersDrilled: toInputValue(entry.metersDrilled),
+  metersRecovered: toInputValue(entry.metersRecovered),
   timeIn: entry.timeIn || '',
   timeOut: entry.timeOut || '',
   assistantName: entry.assistantName || '',
@@ -52,7 +57,6 @@ export const timeLogFormFromEntry = (entry) => ({
     decommissioned: Boolean(entry.wellTag?.decommissioned),
     locatesProvidedBy: entry.wellTag?.locatesProvidedBy || ''
   },
-  recoveryPercent: toInputValue(entry.recoveryPercent),
   activityLines: (entry.activityLines || []).map((line) => ({
     boreholeRef: line.boreholeRef || '',
     description: line.description || '',
@@ -77,6 +81,9 @@ export const timeLogFormFromEntry = (entry) => ({
 
 export const timeLogPayloadFromForm = (form) => ({
   date: form.date,
+  shift: form.shift || null,
+  metersDrilled: toNumberOrNull(form.metersDrilled),
+  metersRecovered: toNumberOrNull(form.metersRecovered),
   timeIn: form.timeIn,
   timeOut: form.timeOut,
   assistantName: form.assistantName,
@@ -95,7 +102,6 @@ export const timeLogPayloadFromForm = (form) => ({
     decommissioned: Boolean(form.wellTag.decommissioned),
     locatesProvidedBy: form.wellTag.locatesProvidedBy
   },
-  recoveryPercent: toNumberOrNull(form.recoveryPercent),
   activityLines: form.activityLines.map((line) => ({
     boreholeRef: line.boreholeRef,
     description: line.description,

@@ -70,6 +70,7 @@ export const JobsPage = () => {
       <Table.Td>{job.jobNumber}</Table.Td>
       <Table.Td>{job.clientName}</Table.Td>
       <Table.Td>{job.jobLocation || '—'}</Table.Td>
+      <Table.Td>{job.rigNumber?.name || '—'}</Table.Td>
       <Table.Td>{formatDate(job.scheduledDate)}</Table.Td>
       <Table.Td>
         <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'blue'}>
@@ -128,7 +129,7 @@ export const JobsPage = () => {
               <Loader />
             </Center>
           ) : (
-            <Table.ScrollContainer minWidth={820}>
+            <Table.ScrollContainer minWidth={900}>
               <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
@@ -147,6 +148,7 @@ export const JobsPage = () => {
                       onSort={toggleSort}
                     />
                     <Table.Th>Location</Table.Th>
+                    <Table.Th>Rig</Table.Th>
                     <SortableTh
                       field="scheduledDate"
                       label="Scheduled"
@@ -164,7 +166,7 @@ export const JobsPage = () => {
                     rows
                   ) : (
                     <Table.Tr>
-                      <Table.Td colSpan={7}>
+                      <Table.Td colSpan={8}>
                         <Text c="dimmed" ta="center" py="md">
                           No jobs match the current filters
                         </Text>

@@ -10,6 +10,7 @@ import {
   Group,
   Loader,
   NumberInput,
+  Select,
   Stack,
   Switch,
   Text,
@@ -21,6 +22,7 @@ import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { ActivityLinesSection } from '../../components/timelog/ActivityLinesSection.jsx';
 import { ConsumablesSection } from '../../components/timelog/ConsumablesSection.jsx';
 import { TIME_LOG_STATUS_COLORS } from '../../constants/timeLogs.js';
+import { SHIFT_OPTIONS } from '../../constants/employees.js';
 import {
   emptyTimeLogForm,
   timeLogFormFromEntry,
@@ -48,6 +50,18 @@ export const TimeLogFormPage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const readOnly = entry?.status === 'submitted';
+
+  const drilledNum = Number(form.metersDrilled);
+  const recoveredNum = Number(form.metersRecovered);
+  const recoveryPreview =
+    form.metersDrilled !== '' &&
+    form.metersDrilled !== null &&
+    drilledNum > 0 &&
+    form.metersRecovered !== '' &&
+    form.metersRecovered !== null &&
+    !Number.isNaN(recoveredNum)
+      ? Math.round((recoveredNum / drilledNum) * 10000) / 100
+      : null;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -198,6 +212,15 @@ export const TimeLogFormPage = () => {
               disabled={readOnly}
               onChange={(event) => setField('date', event.currentTarget.value)}
             />
+            <Select
+              label="Shift"
+              placeholder="Select shift"
+              data={SHIFT_OPTIONS}
+              value={form.shift}
+              disabled={readOnly}
+              onChange={(value) => setField('shift', value)}
+              clearable
+            />
             {timeField('timeIn', 'Time in')}
             {timeField('timeOut', 'Time out')}
           </Stack>
@@ -246,11 +269,26 @@ export const TimeLogFormPage = () => {
               disabled={readOnly}
               onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
             />
+            <Divider my="xs" label="Recovery" labelPosition="left" />
             <NumberInput
-              label="Recovery % (optional)"
-              value={form.recoveryPercent}
+              label="Meters drilled"
+              min={0}
+              value={form.metersDrilled}
               disabled={readOnly}
-              onChange={(value) => setField('recoveryPercent', value)}
+              onChange={(value) => setField('metersDrilled', value)}
+            />
+            <NumberInput
+              label="Meters recovered"
+              min={0}
+              value={form.metersRecovered}
+              disabled={readOnly}
+              onChange={(value) => setField('metersRecovered', value)}
+            />
+            <TextInput
+              label="Recovery %"
+              value={recoveryPreview === null ? 'Enter meters drilled and recovered' : `${recoveryPreview}%`}
+              readOnly
+              disabled
             />
           </Stack>
         </Fieldset>

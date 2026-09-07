@@ -5,5 +5,3 @@ export const BONUS_ELIGIBILITY = {
 };
 
 export const BONUS_ELIGIBILITY_ORDER = ['eligible', 'not-eligible', 'not-available'];
-
-export const BONUS_THRESHOLD = 85;

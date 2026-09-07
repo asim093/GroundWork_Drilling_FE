@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Button, Group, Modal, Select, Stack, TextInput } from '@mantine/core';
+import { Autocomplete, Button, Group, Modal, Select, Stack, TextInput } from '@mantine/core';
 import { createJob, updateJob } from '../../services/jobService.js';
+import { locationsService, rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 import { JOB_STATUS_OPTIONS } from '../../constants/jobs.js';
@@ -9,6 +10,7 @@ const emptyForm = {
   jobNumber: '',
   clientName: '',
   jobLocation: '',
+  rigNumber: null,
   clientJobNumber: '',
   drillType: '',
   scheduledDate: '',
@@ -19,6 +21,8 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
   const isEdit = Boolean(job);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [locationOptions, setLocationOptions] = useState([]);
+  const [rigOptions, setRigOptions] = useState([]);
 
   useEffect(() => {
     if (!opened) {
@@ -31,6 +35,7 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
             jobNumber: job.jobNumber || '',
             clientName: job.clientName || '',
             jobLocation: job.jobLocation || '',
+            rigNumber: job.rigNumber?.id || null,
             clientJobNumber: job.clientJobNumber || '',
             drillType: job.drillType || '',
             scheduledDate: job.scheduledDate ? job.scheduledDate.slice(0, 10) : '',
@@ -38,6 +43,16 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
           }
         : emptyForm
     );
+
+    Promise.all([
+      locationsService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
+      rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
+    ])
+      .then(([locations, rigs]) => {
+        setLocationOptions(locations.data.map((item) => item.name));
+        setRigOptions(rigs.data.map((item) => ({ value: item.id, label: item.name })));
+      })
+      .catch((error) => notifyError(extractErrorMessage(error, 'Unable to load master data')));
   }, [opened, job]);
 
   const setField = (key) => (value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -50,6 +65,7 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
       jobNumber: form.jobNumber.trim(),
       clientName: form.clientName.trim(),
       jobLocation: form.jobLocation.trim(),
+      rigNumber: form.rigNumber || '',
       clientJobNumber: form.clientJobNumber.trim(),
       drillType: form.drillType.trim(),
       scheduledDate: form.scheduledDate || '',
@@ -90,10 +106,20 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
             value={form.clientName}
             onChange={(event) => setField('clientName')(event.currentTarget.value)}
           />
-          <TextInput
+          <Autocomplete
             label="Job location"
+            placeholder="Select or type a location"
+            data={locationOptions}
             value={form.jobLocation}
-            onChange={(event) => setField('jobLocation')(event.currentTarget.value)}
+            onChange={setField('jobLocation')}
+          />
+          <Select
+            label="Rig number"
+            placeholder="Not assigned"
+            data={rigOptions}
+            value={form.rigNumber}
+            onChange={setField('rigNumber')}
+            clearable
           />
           <TextInput
             label="Client job number"

@@ -120,7 +120,10 @@ export const ReportsPage = () => {
 
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
               <SectionCard title="Bonus eligibility">
-                <BonusEligibilityPanel counts={summary.bonusEligibility} />
+                <BonusEligibilityPanel
+                  counts={summary.bonusEligibility}
+                  threshold={summary.recoveryThreshold}
+                />
               </SectionCard>
               <SectionCard title="Consumables used">
                 <ConsumablesList consumables={summary.consumables} />
@@ -128,30 +131,60 @@ export const ReportsPage = () => {
             </SimpleGrid>
 
             {summary.groups?.length ? (
-              <SectionCard title={`Breakdown ${groupBy === 'user' ? 'by user' : 'by job'}`}>
-                <Table.ScrollContainer minWidth={720}>
+              <SectionCard
+                title={`Breakdown ${groupBy === 'user' ? 'by user' : 'by job'}`}
+              >
+                <Table.ScrollContainer minWidth={groupBy === 'user' ? 960 : 720}>
                   <Table verticalSpacing="sm">
                     <Table.Thead>
                       <Table.Tr>
                         <Table.Th>{groupBy === 'user' ? 'Operator' : 'Job'}</Table.Th>
+                        {groupBy === 'user' ? <Table.Th>Employee type</Table.Th> : null}
                         <Table.Th>Entries</Table.Th>
                         <Table.Th>Hours on site</Table.Th>
                         <Table.Th>Standby hours</Table.Th>
                         <Table.Th>Eligible</Table.Th>
                         <Table.Th>Not eligible</Table.Th>
                         <Table.Th>Not available</Table.Th>
+                        {groupBy === 'user' ? <Table.Th>Eligible meters</Table.Th> : null}
+                        {groupBy === 'user' ? <Table.Th>Bonus</Table.Th> : null}
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
                       {summary.groups.map((group) => (
                         <Table.Tr key={group.key}>
                           <Table.Td>{group.label}</Table.Td>
+                          {groupBy === 'user' ? (
+                            <Table.Td>{group.employeeType || '—'}</Table.Td>
+                          ) : null}
                           <Table.Td>{group.entryCount}</Table.Td>
                           <Table.Td>{group.totals.hoursOnSite}</Table.Td>
                           <Table.Td>{group.totals.standbyHours}</Table.Td>
                           <Table.Td>{group.bonusEligibility.eligible}</Table.Td>
                           <Table.Td>{group.bonusEligibility['not-eligible']}</Table.Td>
                           <Table.Td>{group.bonusEligibility['not-available']}</Table.Td>
+                          {groupBy === 'user' ? (
+                            <Table.Td>{group.bonus?.eligibleMeters ?? 0}</Table.Td>
+                          ) : null}
+                          {groupBy === 'user' ? (
+                            <Table.Td>
+                              {group.bonus && group.bonus.amount !== null ? (
+                                <Stack gap={0}>
+                                  <Text fw={600}>${group.bonus.amount}</Text>
+                                  <Text size="xs" c="dimmed">
+                                    {group.bonus.rateType === 'flat'
+                                      ? `flat · ${group.bonus.band.fromMeters}–${group.bonus.band.toMeters} m`
+                                      : `$${group.bonus.rate}/m · ${group.bonus.band.fromMeters}–${group.bonus.band.toMeters} m`}
+                                    {group.bonus.aboveTopBand ? ' · above top band' : ''}
+                                  </Text>
+                                </Stack>
+                              ) : (
+                                <Text size="sm" c="dimmed">
+                                  {group.bonus?.note || 'Not available'}
+                                </Text>
+                              )}
+                            </Table.Td>
+                          ) : null}
                         </Table.Tr>
                       ))}
                     </Table.Tbody>
