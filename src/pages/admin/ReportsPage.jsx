@@ -7,19 +7,22 @@ import {
   SegmentedControl,
   SimpleGrid,
   Stack,
-  Table,
   Text
 } from '@mantine/core';
-import { PeriodSummary } from '../../components/reports/PeriodSummary.jsx';
-import { BonusBadge } from '../../components/reports/BonusBadge.jsx';
-import { BonusEligibilityPanel } from '../../components/reports/BonusEligibilityPanel.jsx';
-import { ConsumablesList } from '../../components/reports/ConsumablesList.jsx';
-import { StatCard } from '../../components/dashboard/StatCard.jsx';
-import { SectionCard } from '../../components/SectionCard.jsx';
+import { KpiGrid } from '../../components/reports/KpiCard.jsx';
+import { ReportExportButtons } from '../../components/reports/ReportExportButtons.jsx';
+import { ReportGroupsTable } from '../../components/reports/ReportGroupsTable.jsx';
+import { ConsumablesReportTable } from '../../components/reports/ConsumablesReportTable.jsx';
+import { ReportEntriesTable } from '../../components/reports/ReportEntriesTable.jsx';
+import { UserReportDrawer } from '../../components/reports/UserReportDrawer.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
-import { currentMonthRange, formatDate } from '../../lib/dateRange.js';
-import { getMonthlyComparison, getReportSummary } from '../../services/reportService.js';
+import { currentMonthRange } from '../../lib/dateRange.js';
+import {
+  downloadReport,
+  getMonthlyComparison,
+  getReportSummary
+} from '../../services/reportService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError } from '../../lib/toast.js';
 
@@ -27,6 +30,34 @@ const GROUP_BY_OPTIONS = [
   { value: 'none', label: 'No grouping' },
   { value: 'user', label: 'By user' },
   { value: 'job', label: 'By job' }
+];
+
+const kpiItems = (report) => [
+  { label: 'Total Hours', value: report.totals.totalHours },
+  { label: 'Total Drilled (m)', value: report.totals.metersDrilled },
+  { label: 'Total Recovered (m)', value: report.totals.metersRecovered },
+  {
+    label: 'Overall Recovery %',
+    value: report.recoveryPercentOverall === null ? '—' : `${report.recoveryPercentOverall}%`
+  },
+  {
+    label: 'Bonus-Eligible Shifts',
+    value: report.bonusEligibility.eligible,
+    hint: `${report.bonusEligibility['not-eligible']} not eligible · ${report.bonusEligibility['not-available']} not available`
+  },
+  { label: 'Total Bonus Amount', value: `$${report.bonusTotalAmount}` }
+];
+
+const comparisonKpis = (period) => [
+  { label: 'Hours', value: period.totals.totalHours },
+  { label: 'Drilled (m)', value: period.totals.metersDrilled },
+  { label: 'Recovered (m)', value: period.totals.metersRecovered },
+  {
+    label: 'Recovery %',
+    value: period.recoveryPercentOverall === null ? '—' : `${period.recoveryPercentOverall}%`
+  },
+  { label: 'Bonus-eligible shifts', value: period.bonusEligibility.eligible },
+  { label: 'Bonus amount', value: `$${period.bonusTotalAmount}` }
 ];
 
 export const ReportsPage = () => {
@@ -37,22 +68,28 @@ export const ReportsPage = () => {
   const [comparison, setComparison] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingComparison, setLoadingComparison] = useState(true);
+  const [drawerGroup, setDrawerGroup] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const summaryParams = useCallback(() => {
+    const params = { from: range.from, to: range.to };
+    if (groupBy !== 'none') {
+      params.groupBy = groupBy;
+    }
+    return params;
+  }, [range, groupBy]);
 
   const loadSummary = useCallback(async () => {
     setLoadingSummary(true);
 
     try {
-      const params = { from: range.from, to: range.to };
-      if (groupBy !== 'none') {
-        params.groupBy = groupBy;
-      }
-      setSummary(await getReportSummary(params));
+      setSummary(await getReportSummary(summaryParams()));
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load the report summary'));
     } finally {
       setLoadingSummary(false);
     }
-  }, [range, groupBy]);
+  }, [summaryParams]);
 
   const loadComparison = useCallback(async () => {
     setLoadingComparison(true);
@@ -74,175 +111,47 @@ export const ReportsPage = () => {
     loadComparison();
   }, [loadComparison]);
 
+  const handleExport = (format) =>
+    downloadReport({ scope: 'summary', format, params: summaryParams() });
+
+  const openUserDrawer = (group) => {
+    setDrawerGroup(group);
+    setDrawerOpen(true);
+  };
+
   return (
     <Stack gap="xl">
-      <Stack gap="lg">
-        <Paper withBorder radius="lg" p="lg">
+      <Paper withBorder radius="lg" p="lg">
+        <Group gap="lg" wrap="wrap" align="center" justify="space-between">
           <Group gap="lg" wrap="wrap" align="center">
             <DateRangePicker value={range} onChange={setRange} />
             <SegmentedControl data={GROUP_BY_OPTIONS} value={groupBy} onChange={setGroupBy} />
           </Group>
-        </Paper>
+          <ReportExportButtons onExport={handleExport} disabled={loadingSummary || !summary} />
+        </Group>
+      </Paper>
 
-        {loadingSummary || !summary ? (
-          <Center py="xl">
-            <Loader />
-          </Center>
-        ) : (
-          <Stack gap="lg">
-            <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="lg">
-              <StatCard label="Submitted entries" value={summary.entryCount} icon="clipboard" color="teal" />
-              <StatCard
-                label="Hours on site"
-                value={summary.totals.hoursOnSite}
-                icon="reports"
-                color="blue"
-              />
-              <StatCard
-                label="Standby hours"
-                value={summary.totals.standbyHours}
-                icon="reports"
-                color="orange"
-              />
-              <StatCard
-                label="Bonus eligible"
-                value={summary.bonusEligibility.eligible}
-                hint={`${summary.bonusEligibility['not-eligible']} not eligible · ${summary.bonusEligibility['not-available']} not available`}
-                icon="calendar"
-                color="green"
-              />
-            </SimpleGrid>
+      {loadingSummary || !summary ? (
+        <Center py="xl">
+          <Loader />
+        </Center>
+      ) : (
+        <Stack gap="lg">
+          <KpiGrid items={kpiItems(summary)} />
 
-            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-              <SectionCard title="Bonus eligibility">
-                <BonusEligibilityPanel
-                  counts={summary.bonusEligibility}
-                  threshold={summary.recoveryThreshold}
-                />
-              </SectionCard>
-              <SectionCard title="Consumables used">
-                <ConsumablesList consumables={summary.consumables} />
-              </SectionCard>
-            </SimpleGrid>
+          {summary.groups?.length ? (
+            <ReportGroupsTable
+              groups={summary.groups}
+              groupBy={summary.groupBy}
+              onSelectUser={openUserDrawer}
+            />
+          ) : null}
 
-            {summary.groups?.length ? (
-              <SectionCard
-                title={`Breakdown ${groupBy === 'user' ? 'by user' : 'by job'}`}
-              >
-                <Table.ScrollContainer minWidth={groupBy === 'user' ? 960 : 720}>
-                  <Table verticalSpacing="sm">
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>{groupBy === 'user' ? 'Operator' : 'Job'}</Table.Th>
-                        {groupBy === 'user' ? <Table.Th>Employee type</Table.Th> : null}
-                        <Table.Th>Entries</Table.Th>
-                        <Table.Th>Hours on site</Table.Th>
-                        <Table.Th>Standby hours</Table.Th>
-                        <Table.Th>Eligible</Table.Th>
-                        <Table.Th>Not eligible</Table.Th>
-                        <Table.Th>Not available</Table.Th>
-                        {groupBy === 'user' ? <Table.Th>Eligible meters</Table.Th> : null}
-                        {groupBy === 'user' ? <Table.Th>Bonus</Table.Th> : null}
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {summary.groups.map((group) => (
-                        <Table.Tr key={group.key}>
-                          <Table.Td>{group.label}</Table.Td>
-                          {groupBy === 'user' ? (
-                            <Table.Td>{group.employeeType || '—'}</Table.Td>
-                          ) : null}
-                          <Table.Td>{group.entryCount}</Table.Td>
-                          <Table.Td>{group.totals.hoursOnSite}</Table.Td>
-                          <Table.Td>{group.totals.standbyHours}</Table.Td>
-                          <Table.Td>{group.bonusEligibility.eligible}</Table.Td>
-                          <Table.Td>{group.bonusEligibility['not-eligible']}</Table.Td>
-                          <Table.Td>{group.bonusEligibility['not-available']}</Table.Td>
-                          {groupBy === 'user' ? (
-                            <Table.Td>{group.bonus?.eligibleMeters ?? 0}</Table.Td>
-                          ) : null}
-                          {groupBy === 'user' ? (
-                            <Table.Td>
-                              {group.bonus && group.bonus.amount !== null ? (
-                                <Stack gap={0}>
-                                  <Text fw={600}>${group.bonus.amount}</Text>
-                                  <Text size="xs" c="dimmed">
-                                    {group.bonus.rateType === 'flat'
-                                      ? `flat · ${group.bonus.band.fromMeters}–${group.bonus.band.toMeters} m`
-                                      : `$${group.bonus.rate}/m · ${group.bonus.band.fromMeters}–${group.bonus.band.toMeters} m`}
-                                    {group.bonus.aboveTopBand ? ' · above top band' : ''}
-                                  </Text>
-                                </Stack>
-                              ) : (
-                                <Text size="sm" c="dimmed">
-                                  {group.bonus?.note || 'Not available'}
-                                </Text>
-                              )}
-                            </Table.Td>
-                          ) : null}
-                        </Table.Tr>
-                      ))}
-                    </Table.Tbody>
-                  </Table>
-                </Table.ScrollContainer>
-              </SectionCard>
-            ) : null}
+          <ConsumablesReportTable consumables={summary.consumables} />
 
-            <SectionCard title="Bonus eligibility by entry">
-              <Table.ScrollContainer minWidth={900}>
-                <Table verticalSpacing="sm">
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>Date</Table.Th>
-                      <Table.Th>Job #</Table.Th>
-                      <Table.Th>Operator</Table.Th>
-                      <Table.Th>Drilled (m)</Table.Th>
-                      <Table.Th>Recovered (m)</Table.Th>
-                      <Table.Th>Hours (calc)</Table.Th>
-                      <Table.Th>Recovery %</Table.Th>
-                      <Table.Th>Eligibility</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {summary.entries.length ? (
-                      summary.entries.map((entry) => (
-                        <Table.Tr key={entry.entryId}>
-                          <Table.Td>{formatDate(entry.date)}</Table.Td>
-                          <Table.Td>{entry.jobNumber || '—'}</Table.Td>
-                          <Table.Td>{entry.operator || '—'}</Table.Td>
-                          <Table.Td>{entry.metersDrilled ?? '—'}</Table.Td>
-                          <Table.Td>{entry.metersRecovered ?? '—'}</Table.Td>
-                          <Table.Td>{entry.totalHours ?? '—'}</Table.Td>
-                          <Table.Td>
-                            {entry.recoveryPercent === null ? (
-                              <Text c="dimmed" size="sm">
-                                Not entered
-                              </Text>
-                            ) : (
-                              `${entry.recoveryPercent}%`
-                            )}
-                          </Table.Td>
-                          <Table.Td>
-                            <BonusBadge eligibility={entry.eligibility} size="sm" />
-                          </Table.Td>
-                        </Table.Tr>
-                      ))
-                    ) : (
-                      <Table.Tr>
-                        <Table.Td colSpan={8}>
-                          <Text c="dimmed" ta="center" py="md">
-                            No submitted entries in this period
-                          </Text>
-                        </Table.Td>
-                      </Table.Tr>
-                    )}
-                  </Table.Tbody>
-                </Table>
-              </Table.ScrollContainer>
-            </SectionCard>
-          </Stack>
-        )}
-      </Stack>
+          <ReportEntriesTable entries={summary.entries} showOperator />
+        </Stack>
+      )}
 
       <Stack gap="md">
         <Text fw={700} fz="lg">
@@ -253,12 +162,26 @@ export const ReportsPage = () => {
             <Loader />
           </Center>
         ) : (
-          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-            <PeriodSummary title={comparison.current.label} summary={comparison.current} compact />
-            <PeriodSummary title={comparison.previous.label} summary={comparison.previous} compact />
+          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
+            {[comparison.current, comparison.previous].map((period) => (
+              <Paper key={period.label} withBorder radius="lg" p="lg">
+                <Stack gap="md">
+                  <Text fw={700}>{period.label}</Text>
+                  <KpiGrid items={comparisonKpis(period)} cols={{ base: 2, sm: 3 }} />
+                </Stack>
+              </Paper>
+            ))}
           </SimpleGrid>
         )}
       </Stack>
+
+      <UserReportDrawer
+        opened={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        group={drawerGroup}
+        entries={summary?.entries}
+        range={range}
+      />
     </Stack>
   );
 };

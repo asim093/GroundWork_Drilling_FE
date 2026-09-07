@@ -10,5 +10,6 @@ export const ADMIN_NAV = [
 export const OPERATOR_NAV = [
   { to: '/operator', label: 'Dashboard', icon: 'home', end: true },
   { to: '/operator/jobs', label: 'Assigned Jobs', icon: 'jobs' },
-  { to: '/operator/submissions', label: 'My Submissions', icon: 'clipboard' }
+  { to: '/operator/submissions', label: 'My Submissions', icon: 'clipboard' },
+  { to: '/operator/my-reports', label: 'My Reports', icon: 'reports' }
 ];
