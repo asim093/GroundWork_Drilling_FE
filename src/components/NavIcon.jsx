@@ -46,7 +46,9 @@ const ICON_PATHS = {
       <polyline points="16 17 21 12 16 7" />
       <line x1="21" y1="12" x2="9" y2="12" />
     </>
-  )
+  ),
+  chevronLeft: <polyline points="15 18 9 12 15 6" />,
+  chevronRight: <polyline points="9 18 15 12 9 6" />
 };
 
 export const NavIcon = ({ name, size = 18 }) => (

@@ -12,13 +12,14 @@ import {
   ScrollArea,
   Stack,
   Text,
-  Title,
   Tooltip
 } from '@mantine/core';
 import { useAuth } from '../context/AuthContext.jsx';
 import { usePageTitleValue } from '../context/PageTitleContext.jsx';
 import { notifySuccess } from '../lib/toast.js';
 import { NavIcon } from './NavIcon.jsx';
+
+const NAVBAR_WIDTH = 264;
 
 const initials = (name) =>
   (name || '')
@@ -30,6 +31,26 @@ const initials = (name) =>
 
 const isActive = (pathname, item) =>
   item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
+
+const BrandMark = () => (
+  <Box
+    w={28}
+    h={28}
+    style={{
+      borderRadius: 8,
+      background: 'var(--mantine-color-blue-6)',
+      color: '#fff',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontWeight: 700,
+      fontSize: 13,
+      flexShrink: 0
+    }}
+  >
+    GD
+  </Box>
+);
 
 export const AppLayout = ({ navItems = [], children }) => {
   const { user, logout } = useAuth();
@@ -49,35 +70,44 @@ export const AppLayout = ({ navItems = [], children }) => {
     <AppShell
       header={{ height: 56 }}
       navbar={{
-        width: 264,
+        width: NAVBAR_WIDTH,
         breakpoint: 'sm',
         collapsed: { mobile: !mobileOpened, desktop: !desktopOpened }
       }}
       padding="md"
     >
       <AppShell.Header>
-        <Group h="100%" px="md" gap="sm" wrap="nowrap">
-          <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
-          <Burger opened={desktopOpened} onClick={toggleDesktop} visibleFrom="sm" size="sm" />
-          <Box
-            w={28}
-            h={28}
+        <Group h="100%" gap={0} wrap="nowrap">
+          <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" mx="md" />
+
+          <Group
+            gap="sm"
+            wrap="nowrap"
+            visibleFrom="sm"
+            px="md"
             style={{
-              borderRadius: 8,
-              background: 'var(--mantine-color-blue-6)',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-              fontSize: 13,
-              flexShrink: 0
+              width: desktopOpened ? NAVBAR_WIDTH : 'auto',
+              flexShrink: 0,
+              transition: 'width 150ms ease',
+              borderRight: '1px solid var(--mantine-color-gray-3)',
+              height: '100%'
             }}
           >
-            GD
-          </Box>
-          <Text fw={700} fz="lg" truncate>
-            Groundwork Drilling
+            <BrandMark />
+            <Text fw={700} fz="lg" truncate>
+              Groundwork Drilling
+            </Text>
+          </Group>
+
+          <Group gap="sm" wrap="nowrap" hiddenFrom="sm" style={{ flexShrink: 0 }}>
+            <BrandMark />
+            <Text fw={700} truncate>
+              Groundwork Drilling
+            </Text>
+          </Group>
+
+          <Text fw={600} fz="lg" px="md" truncate>
+            {pageTitle}
           </Text>
         </Group>
       </AppShell.Header>
@@ -134,14 +164,29 @@ export const AppLayout = ({ navItems = [], children }) => {
         </AppShell.Section>
       </AppShell.Navbar>
 
-      <AppShell.Main>
-        {pageTitle ? (
-          <Title order={3} mb="lg">
-            {pageTitle}
-          </Title>
-        ) : null}
-        {children}
-      </AppShell.Main>
+      <Tooltip label={desktopOpened ? 'Collapse sidebar' : 'Expand sidebar'} position="right">
+        <ActionIcon
+          visibleFrom="sm"
+          onClick={toggleDesktop}
+          variant="default"
+          radius="xl"
+          size="md"
+          aria-label={desktopOpened ? 'Collapse sidebar' : 'Expand sidebar'}
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: desktopOpened ? NAVBAR_WIDTH - 14 : 6,
+            transform: 'translateY(-50%)',
+            zIndex: 300,
+            transition: 'left 150ms ease',
+            boxShadow: 'var(--mantine-shadow-sm)'
+          }}
+        >
+          <NavIcon name={desktopOpened ? 'chevronLeft' : 'chevronRight'} size={16} />
+        </ActionIcon>
+      </Tooltip>
+
+      <AppShell.Main>{children}</AppShell.Main>
     </AppShell>
   );
 };
