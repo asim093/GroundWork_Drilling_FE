@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Badge, Button, Group, Modal, MultiSelect, Stack, Text } from '@mantine/core';
+import { Badge, Button, Group, Modal, MultiSelect, ScrollArea, Stack, Text } from '@mantine/core';
 import { setJobAssignments } from '../../services/jobService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
@@ -45,6 +45,7 @@ export const AssignUsersModal = ({ opened, onClose, job, operators, onSaved }) =
       title={job ? `Assign operators — ${job.jobNumber}` : 'Assign operators'}
       centered
       size="lg"
+      scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="md">
         <Text size="sm" c="dimmed">
@@ -59,36 +60,38 @@ export const AssignUsersModal = ({ opened, onClose, job, operators, onSaved }) =
           clearable
           hidePickedOptions
           maxDropdownHeight={200}
-          comboboxProps={{ withinPortal: false }}
+          comboboxProps={{ withinPortal: true, position: 'bottom-start' }}
           nothingFoundMessage="No operators found"
         />
 
-        <Stack gap={6}>
+        <Stack gap={6} mih={210} style={{ justifyContent: 'flex-start' }}>
           <Text size="xs" fw={600} c="dimmed">
             Assigned ({selectedOperators.length})
           </Text>
           {selectedOperators.length ? (
-            <Group gap={6} wrap="wrap">
-              {selectedOperators.map((operator) => (
-                <Badge
-                  key={operator.id}
-                  variant="light"
-                  rightSection={
-                    <Text
-                      component="span"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() =>
-                        setSelected((prev) => prev.filter((id) => id !== operator.id))
-                      }
-                    >
-                      ×
-                    </Text>
-                  }
-                >
-                  {operator.name}
-                </Badge>
-              ))}
-            </Group>
+            <ScrollArea.Autosize mah={220} type="auto" offsetScrollbars>
+              <Group gap={6} wrap="wrap">
+                {selectedOperators.map((operator) => (
+                  <Badge
+                    key={operator.id}
+                    variant="light"
+                    rightSection={
+                      <Text
+                        component="span"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() =>
+                          setSelected((prev) => prev.filter((id) => id !== operator.id))
+                        }
+                      >
+                        ×
+                      </Text>
+                    }
+                  >
+                    {operator.name}
+                  </Badge>
+                ))}
+              </Group>
+            </ScrollArea.Autosize>
           ) : (
             <Text size="sm" c="dimmed">
               No operators assigned yet.
