@@ -1,33 +1,23 @@
-import { Card, Group, Text } from '@mantine/core';
+import { Group, Paper, Text, ThemeIcon } from '@mantine/core';
 import { NavIcon } from '../NavIcon.jsx';
 
 export const StatCard = ({ label, value, hint, icon, color = 'blue' }) => (
-  <Card withBorder radius="md" p="md">
-    <Group justify="space-between" wrap="nowrap" align="flex-start">
-      <div>
-        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-          {label}
-        </Text>
-        <Text fw={700} fz={28} lh={1.1} mt={4}>
-          {value}
-        </Text>
-        {hint ? (
-          <Text size="xs" c="dimmed" mt={4}>
-            {hint}
-          </Text>
-        ) : null}
-      </div>
-      {icon ? (
-        <div
-          style={{
-            color: `var(--mantine-color-${color}-6)`,
-            display: 'flex',
-            flexShrink: 0
-          }}
-        >
-          <NavIcon name={icon} size={22} />
-        </div>
-      ) : null}
+  <Paper withBorder radius="lg" p="lg" mih={132}>
+    <Group justify="space-between" align="flex-start" wrap="nowrap" mb="xs">
+      <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: 0.4 }}>
+        {label}
+      </Text>
+      <ThemeIcon variant="light" color={color} size={40} radius="md" style={{ flexShrink: 0 }}>
+        <NavIcon name={icon} size={20} />
+      </ThemeIcon>
     </Group>
-  </Card>
+    <Text fw={700} fz={32} lh={1.1}>
+      {value}
+    </Text>
+    {hint ? (
+      <Text size="xs" c="dimmed" mt={4}>
+        {hint}
+      </Text>
+    ) : null}
+  </Paper>
 );

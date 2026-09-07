@@ -109,9 +109,6 @@ export const UsersPage = () => {
       <Table.Td>{new Date(user.createdAt).toLocaleDateString()}</Table.Td>
       <Table.Td>
         <Group gap="xs" wrap="nowrap" justify="flex-end">
-          <Button size="xs" variant="default" onClick={() => setModal({ open: true, user })}>
-            Edit
-          </Button>
           <Button
             size="xs"
             variant="subtle"
@@ -119,6 +116,9 @@ export const UsersPage = () => {
             onClick={() => handleResendInvite(user)}
           >
             {user.pendingInvite ? 'Resend invite' : 'Send reset link'}
+          </Button>
+          <Button size="xs" variant="default" onClick={() => setModal({ open: true, user })}>
+            Edit
           </Button>
           <Button
             size="xs"

@@ -6,6 +6,7 @@ import {
   Avatar,
   Box,
   Burger,
+  Center,
   Divider,
   Group,
   NavLink,
@@ -19,7 +20,8 @@ import { usePageTitleValue } from '../context/PageTitleContext.jsx';
 import { notifySuccess } from '../lib/toast.js';
 import { NavIcon } from './NavIcon.jsx';
 
-const NAVBAR_WIDTH = 264;
+const NAVBAR_WIDTH = 260;
+const RAIL_WIDTH = 72;
 
 const initials = (name) =>
   (name || '')
@@ -32,10 +34,10 @@ const initials = (name) =>
 const isActive = (pathname, item) =>
   item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
 
-const BrandMark = () => (
+const BrandMark = ({ size = 30 }) => (
   <Box
-    w={28}
-    h={28}
+    w={size}
+    h={size}
     style={{
       borderRadius: 8,
       background: 'var(--mantine-color-blue-6)',
@@ -44,7 +46,7 @@ const BrandMark = () => (
       alignItems: 'center',
       justifyContent: 'center',
       fontWeight: 700,
-      fontSize: 13,
+      fontSize: size * 0.42,
       flexShrink: 0
     }}
   >
@@ -58,7 +60,7 @@ export const AppLayout = ({ navItems = [], children }) => {
   const { pathname } = useLocation();
   const pageTitle = usePageTitleValue();
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
-  const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
+  const [expanded, { toggle: toggleExpanded }] = useDisclosure(true);
 
   const handleLogout = () => {
     logout();
@@ -66,13 +68,15 @@ export const AppLayout = ({ navItems = [], children }) => {
     navigate('/login', { replace: true });
   };
 
+  const railMode = !expanded;
+
   return (
     <AppShell
       header={{ height: 56 }}
       navbar={{
-        width: NAVBAR_WIDTH,
+        width: { base: NAVBAR_WIDTH, sm: expanded ? NAVBAR_WIDTH : RAIL_WIDTH },
         breakpoint: 'sm',
-        collapsed: { mobile: !mobileOpened, desktop: !desktopOpened }
+        collapsed: { mobile: !mobileOpened, desktop: false }
       }}
       padding="md"
     >
@@ -86,21 +90,25 @@ export const AppLayout = ({ navItems = [], children }) => {
             visibleFrom="sm"
             px="md"
             style={{
-              width: desktopOpened ? NAVBAR_WIDTH : 'auto',
+              width: railMode ? RAIL_WIDTH : NAVBAR_WIDTH,
               flexShrink: 0,
               transition: 'width 150ms ease',
               borderRight: '1px solid var(--mantine-color-gray-3)',
               height: '100%'
             }}
           >
-            <BrandMark />
-            <Text fw={700} fz="lg" truncate>
-              Groundwork Drilling
-            </Text>
+            {railMode ? null : (
+              <>
+                <BrandMark size={28} />
+                <Text fw={700} fz="lg" truncate>
+                  Groundwork Drilling
+                </Text>
+              </>
+            )}
           </Group>
 
           <Group gap="sm" wrap="nowrap" hiddenFrom="sm" style={{ flexShrink: 0 }}>
-            <BrandMark />
+            <BrandMark size={26} />
             <Text fw={700} truncate>
               Groundwork Drilling
             </Text>
@@ -112,77 +120,122 @@ export const AppLayout = ({ navItems = [], children }) => {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="sm">
+      <AppShell.Navbar p={railMode ? 'xs' : 'sm'}>
         <AppShell.Section grow component={ScrollArea}>
-          <Text size="xs" fw={600} c="dimmed" tt="uppercase" px="sm" pb={6}>
-            Menu
-          </Text>
-          <Stack gap={4}>
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                component={Link}
-                to={item.to}
-                label={item.label}
-                leftSection={<NavIcon name={item.icon} />}
-                active={isActive(pathname, item)}
-                variant="light"
-                onClick={closeMobile}
-              />
-            ))}
+          {railMode ? (
+            <Center pb="sm">
+              <BrandMark size={30} />
+            </Center>
+          ) : (
+            <Text size="xs" fw={600} c="dimmed" tt="uppercase" px="sm" pb={6}>
+              Menu
+            </Text>
+          )}
+          <Stack gap={railMode ? 8 : 4} align={railMode ? 'center' : 'stretch'}>
+            {navItems.map((item) => {
+              const active = isActive(pathname, item);
+              return railMode ? (
+                <Tooltip key={item.to} label={item.label} position="right" withArrow>
+                  <ActionIcon
+                    component={Link}
+                    to={item.to}
+                    onClick={closeMobile}
+                    aria-label={item.label}
+                    variant={active ? 'light' : 'subtle'}
+                    color={active ? 'blue' : 'gray'}
+                    size={40}
+                    radius="md"
+                  >
+                    <NavIcon name={item.icon} size={20} />
+                  </ActionIcon>
+                </Tooltip>
+              ) : (
+                <NavLink
+                  key={item.to}
+                  component={Link}
+                  to={item.to}
+                  label={item.label}
+                  leftSection={<NavIcon name={item.icon} />}
+                  active={active}
+                  variant="light"
+                  onClick={closeMobile}
+                />
+              );
+            })}
           </Stack>
         </AppShell.Section>
 
         <AppShell.Section>
           <Divider mb="sm" />
-          <Group gap="sm" wrap="nowrap" justify="space-between">
-            <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-              <Avatar radius="xl" color="blue" variant="filled">
-                {initials(user?.name)}
-              </Avatar>
-              <Box style={{ minWidth: 0 }}>
-                <Text size="sm" fw={600} truncate>
-                  {user?.name}
-                </Text>
-                <Text size="xs" c="dimmed" tt="capitalize">
-                  {user?.role}
-                </Text>
-              </Box>
+          {railMode ? (
+            <Stack gap="sm" align="center">
+              <Tooltip label={`${user?.name} · ${user?.role}`} position="right" withArrow>
+                <Avatar radius="xl" color="blue" variant="filled">
+                  {initials(user?.name)}
+                </Avatar>
+              </Tooltip>
+              <Tooltip label="Sign out" position="right" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  size="lg"
+                  onClick={handleLogout}
+                  aria-label="Sign out"
+                >
+                  <NavIcon name="logout" size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Stack>
+          ) : (
+            <Group gap="sm" wrap="nowrap" justify="space-between">
+              <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+                <Avatar radius="xl" color="blue" variant="filled">
+                  {initials(user?.name)}
+                </Avatar>
+                <Box style={{ minWidth: 0 }}>
+                  <Text size="sm" fw={600} truncate>
+                    {user?.name}
+                  </Text>
+                  <Text size="xs" c="dimmed" tt="capitalize">
+                    {user?.role}
+                  </Text>
+                </Box>
+              </Group>
+              <Tooltip label="Sign out" position="top">
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  size="lg"
+                  onClick={handleLogout}
+                  aria-label="Sign out"
+                >
+                  <NavIcon name="logout" size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
-            <Tooltip label="Sign out" position="top">
-              <ActionIcon
-                variant="subtle"
-                color="red"
-                size="lg"
-                onClick={handleLogout}
-                aria-label="Sign out"
-              >
-                <NavIcon name="logout" size={18} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
+          )}
         </AppShell.Section>
       </AppShell.Navbar>
 
-      <Tooltip label={desktopOpened ? 'Collapse sidebar' : 'Expand sidebar'} position="right">
+      <Tooltip label={expanded ? 'Collapse sidebar' : 'Expand sidebar'} position="right">
         <ActionIcon
           visibleFrom="sm"
-          onClick={toggleDesktop}
+          onClick={toggleExpanded}
           variant="default"
           radius="xl"
           size="md"
-          aria-label={desktopOpened ? 'Collapse sidebar' : 'Expand sidebar'}
+          aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
           style={{
             position: 'fixed',
             top: '50%',
-            left: desktopOpened ? NAVBAR_WIDTH - 14 : 6,
+            left: (expanded ? NAVBAR_WIDTH : RAIL_WIDTH) - 14,
             transform: 'translateY(-50%)',
             zIndex: 300,
             transition: 'left 150ms ease',
             boxShadow: 'var(--mantine-shadow-sm)'
           }}
         >
-          <NavIcon name={desktopOpened ? 'chevronLeft' : 'chevronRight'} size={16} />
+          <NavIcon name={expanded ? 'chevronLeft' : 'chevronRight'} size={16} />
         </ActionIcon>
       </Tooltip>
 
