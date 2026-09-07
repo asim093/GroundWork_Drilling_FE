@@ -227,7 +227,7 @@ export const AppLayout = ({ navItems = [], children }) => {
             top: '50%',
             left: (expanded ? NAVBAR_WIDTH : RAIL_WIDTH) - 13,
             transform: 'translateY(-50%)',
-            zIndex: 350,
+            zIndex: 150,
             transition: 'left 150ms ease',
             boxShadow: '0 2px 8px rgba(15, 23, 42, 0.18)'
           }}
