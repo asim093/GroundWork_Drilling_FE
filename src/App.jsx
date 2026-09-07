@@ -1,9 +1,11 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { RoleLanding } from './components/RoleLanding.jsx';
 import { AdminLayout } from './components/AdminLayout.jsx';
 import { OperatorLayout } from './components/OperatorLayout.jsx';
 import { LoginPage } from './pages/LoginPage.jsx';
+import { SetPasswordPage } from './pages/SetPasswordPage.jsx';
+import { DashboardPage } from './pages/DashboardPage.jsx';
 import { UsersPage } from './pages/admin/UsersPage.jsx';
 import { JobsPage } from './pages/admin/JobsPage.jsx';
 import { SchedulingPage } from './pages/admin/SchedulingPage.jsx';
@@ -16,11 +18,12 @@ import { NotFoundPage } from './pages/NotFoundPage.jsx';
 const App = () => (
   <Routes>
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/set-password" element={<SetPasswordPage />} />
     <Route path="/" element={<RoleLanding />} />
 
     <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
       <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="/admin/users" replace />} />
+        <Route index element={<DashboardPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="scheduling" element={<SchedulingPage />} />
@@ -30,7 +33,7 @@ const App = () => (
 
     <Route element={<ProtectedRoute allowedRoles={['operator']} />}>
       <Route path="/operator" element={<OperatorLayout />}>
-        <Route index element={<Navigate to="/operator/jobs" replace />} />
+        <Route index element={<DashboardPage />} />
         <Route path="jobs" element={<OperatorJobsPage />} />
         <Route path="submissions" element={<MySubmissionsPage />} />
       </Route>

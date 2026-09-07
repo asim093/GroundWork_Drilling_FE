@@ -9,8 +9,7 @@ import {
   Select,
   Stack,
   Table,
-  Text,
-  Title
+  Text
 } from '@mantine/core';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
@@ -18,6 +17,7 @@ import { JobFormModal } from '../../components/admin/JobFormModal.jsx';
 import { AssignUsersModal } from '../../components/admin/AssignUsersModal.jsx';
 import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
+import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { listJobs } from '../../services/jobService.js';
 import { listUsers } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
@@ -26,6 +26,7 @@ import { notifyError } from '../../lib/toast.js';
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
 
 export const JobsPage = () => {
+  usePageTitle('Jobs');
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
     useListParams({ sort: 'scheduledDate', order: 'asc' });
   const [result, setResult] = useState({ data: [], pagination: null });
@@ -95,15 +96,11 @@ export const JobsPage = () => {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" wrap="wrap" gap="sm">
-        <Title order={3}>Jobs</Title>
-        <Button onClick={() => setFormModal({ open: true, job: null })}>New job</Button>
-      </Group>
-
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="wrap">
+          <Group gap="sm" wrap="wrap" align="flex-end">
             <Select
+              label="Status"
               placeholder="All statuses"
               data={JOB_STATUS_OPTIONS}
               value={filters.status || null}
@@ -112,6 +109,7 @@ export const JobsPage = () => {
               w={170}
             />
             <Select
+              label="Operator"
               placeholder="All operators"
               data={operators.map((operator) => ({ value: operator.id, label: operator.name }))}
               value={filters.assignedUser || null}
@@ -120,6 +118,9 @@ export const JobsPage = () => {
               clearable
               w={200}
             />
+            <Button ml="auto" onClick={() => setFormModal({ open: true, job: null })}>
+              New job
+            </Button>
           </Group>
 
           {loading ? (

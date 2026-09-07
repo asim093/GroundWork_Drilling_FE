@@ -10,20 +10,20 @@ import {
   Stack,
   Table,
   Text,
-  TextInput,
-  Title
+  TextInput
 } from '@mantine/core';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { UserFormModal } from '../../components/admin/UserFormModal.jsx';
 import { useListParams } from '../../hooks/useListParams.js';
-import { listUsers, updateUser } from '../../services/userService.js';
+import { usePageTitle } from '../../context/PageTitleContext.jsx';
+import { listUsers, updateUser, resendInvite } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
-const ROLE_FILTER_OPTIONS = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'operator', label: 'Operator' }
+const STATUS_FILTER_OPTIONS = [
+  { value: 'active', label: 'Password set' },
+  { value: 'pending', label: 'Pending invite' }
 ];
 
 const ACTIVE_FILTER_OPTIONS = [
@@ -32,6 +32,7 @@ const ACTIVE_FILTER_OPTIONS = [
 ];
 
 export const UsersPage = () => {
+  usePageTitle('Operators');
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
     useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
@@ -46,7 +47,7 @@ export const UsersPage = () => {
       const response = await listUsers(queryParams);
       setResult(response);
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to load users'));
+      notifyError(extractErrorMessage(error, 'Unable to load operators'));
     } finally {
       setLoading(false);
     }
@@ -61,10 +62,28 @@ export const UsersPage = () => {
 
     try {
       await updateUser(user.id, { active: !user.active });
-      notifySuccess(user.active ? 'User deactivated' : 'User activated');
+      notifySuccess(user.active ? 'Operator deactivated' : 'Operator activated');
       load();
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to update user'));
+      notifyError(extractErrorMessage(error, 'Unable to update operator'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleResendInvite = async (user) => {
+    setBusyId(user.id);
+
+    try {
+      const { invite } = await resendInvite(user.id);
+      notifySuccess(
+        invite.delivered
+          ? `Invitation re-sent to ${user.email}`
+          : 'A fresh invite link was generated (email not configured)'
+      );
+      load();
+    } catch (error) {
+      notifyError(extractErrorMessage(error, 'Unable to resend the invite'));
     } finally {
       setBusyId(null);
     }
@@ -74,21 +93,32 @@ export const UsersPage = () => {
     <Table.Tr key={user.id}>
       <Table.Td>{user.name}</Table.Td>
       <Table.Td>{user.email}</Table.Td>
+      <Table.Td>{user.phone || '—'}</Table.Td>
       <Table.Td>
-        <Badge variant="light" tt="capitalize">
-          {user.role}
-        </Badge>
-      </Table.Td>
-      <Table.Td>
-        <Badge variant="light" color={user.active ? 'green' : 'gray'}>
-          {user.active ? 'Active' : 'Inactive'}
-        </Badge>
+        <Group gap={6} wrap="nowrap">
+          <Badge variant="light" color={user.active ? 'green' : 'gray'}>
+            {user.active ? 'Active' : 'Inactive'}
+          </Badge>
+          {user.pendingInvite ? (
+            <Badge variant="outline" color="orange">
+              Pending invite
+            </Badge>
+          ) : null}
+        </Group>
       </Table.Td>
       <Table.Td>{new Date(user.createdAt).toLocaleDateString()}</Table.Td>
       <Table.Td>
         <Group gap="xs" wrap="nowrap" justify="flex-end">
           <Button size="xs" variant="default" onClick={() => setModal({ open: true, user })}>
             Edit
+          </Button>
+          <Button
+            size="xs"
+            variant="subtle"
+            loading={busyId === user.id}
+            onClick={() => handleResendInvite(user)}
+          >
+            {user.pendingInvite ? 'Resend invite' : 'Send reset link'}
           </Button>
           <Button
             size="xs"
@@ -106,36 +136,37 @@ export const UsersPage = () => {
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" wrap="wrap" gap="sm">
-        <Title order={3}>Users</Title>
-        <Button onClick={() => setModal({ open: true, user: null })}>New user</Button>
-      </Group>
-
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="wrap">
+          <Group gap="sm" wrap="wrap" align="flex-end">
             <TextInput
-              placeholder="Search name or email"
+              label="Search"
+              placeholder="Name or email"
               value={filters.search || ''}
               onChange={(event) => setFilter('search', event.currentTarget.value)}
               w={220}
             />
             <Select
-              placeholder="All roles"
-              data={ROLE_FILTER_OPTIONS}
-              value={filters.role || null}
-              onChange={(value) => setFilter('role', value)}
+              label="Account"
+              placeholder="Any"
+              data={STATUS_FILTER_OPTIONS}
+              value={filters.status || null}
+              onChange={(value) => setFilter('status', value)}
               clearable
-              w={150}
+              w={160}
             />
             <Select
-              placeholder="All statuses"
+              label="State"
+              placeholder="Any"
               data={ACTIVE_FILTER_OPTIONS}
               value={filters.active || null}
               onChange={(value) => setFilter('active', value)}
               clearable
-              w={150}
+              w={140}
             />
+            <Button ml="auto" onClick={() => setModal({ open: true, user: null })}>
+              New operator
+            </Button>
           </Group>
 
           {loading ? (
@@ -143,17 +174,17 @@ export const UsersPage = () => {
               <Loader />
             </Center>
           ) : (
-            <Table.ScrollContainer minWidth={720}>
+            <Table.ScrollContainer minWidth={820}>
               <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
                     <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
                     <SortableTh field="email" label="Email" sort={sort} order={order} onSort={toggleSort} />
-                    <Table.Th>Role</Table.Th>
+                    <Table.Th>Phone</Table.Th>
                     <Table.Th>Status</Table.Th>
                     <SortableTh
                       field="createdAt"
-                      label="Created"
+                      label="Added"
                       sort={sort}
                       order={order}
                       onSort={toggleSort}
@@ -168,7 +199,7 @@ export const UsersPage = () => {
                     <Table.Tr>
                       <Table.Td colSpan={6}>
                         <Text c="dimmed" ta="center" py="md">
-                          No users match the current filters
+                          No operators match the current filters
                         </Text>
                       </Table.Td>
                     </Table.Tr>

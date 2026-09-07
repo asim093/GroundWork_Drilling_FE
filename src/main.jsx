@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
 import { theme } from './theme.js';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { PageTitleProvider } from './context/PageTitleContext.jsx';
 import App from './App.jsx';
 
 createRoot(document.getElementById('root')).render(
@@ -15,7 +16,9 @@ createRoot(document.getElementById('root')).render(
     <MantineProvider theme={theme}>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <PageTitleProvider>
+            <App />
+          </PageTitleProvider>
         </AuthProvider>
       </BrowserRouter>
       <ToastContainer position="bottom-right" newestOnTop />

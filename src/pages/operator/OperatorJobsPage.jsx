@@ -10,13 +10,13 @@ import {
   Select,
   Stack,
   Table,
-  Text,
-  Title
+  Text
 } from '@mantine/core';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
+import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { listAssignedJobs } from '../../services/timeLogService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError } from '../../lib/toast.js';
@@ -24,6 +24,7 @@ import { notifyError } from '../../lib/toast.js';
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
 
 export const OperatorJobsPage = () => {
+  usePageTitle('Assigned jobs');
   const navigate = useNavigate();
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
     useListParams({ sort: 'scheduledDate', order: 'asc' });
@@ -70,12 +71,11 @@ export const OperatorJobsPage = () => {
 
   return (
     <Stack gap="md">
-      <Title order={3}>Assigned jobs</Title>
-
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="wrap">
+          <Group gap="sm" wrap="wrap" align="flex-end">
             <Select
+              label="Status"
               placeholder="All statuses"
               data={JOB_STATUS_OPTIONS}
               value={filters.status || null}

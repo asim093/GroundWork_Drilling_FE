@@ -1,37 +1,38 @@
 import { useEffect, useState } from 'react';
 import {
+  Alert,
   Button,
+  CopyButton,
   Group,
   Modal,
-  PasswordInput,
-  Select,
   Stack,
   Switch,
+  Text,
   TextInput
 } from '@mantine/core';
 import { createUser, updateUser } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
-const emptyForm = { name: '', email: '', password: '', role: 'operator', phone: '', active: true };
+const emptyForm = { name: '', email: '', phone: '', active: true };
 
 export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
   const isEdit = Boolean(user);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [inviteResult, setInviteResult] = useState(null);
 
   useEffect(() => {
     if (!opened) {
       return;
     }
 
+    setInviteResult(null);
     setForm(
       user
         ? {
             name: user.name || '',
             email: user.email || '',
-            password: '',
-            role: user.role || 'operator',
             phone: user.phone || '',
             active: user.active
           }
@@ -47,96 +48,106 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
 
     try {
       if (isEdit) {
-        const payload = {
+        await updateUser(user.id, {
           name: form.name.trim(),
           email: form.email.trim(),
-          role: form.role,
           phone: form.phone.trim(),
           active: form.active
-        };
-
-        if (form.password) {
-          payload.password = form.password;
-        }
-
-        await updateUser(user.id, payload);
-        notifySuccess('User updated');
+        });
+        notifySuccess('Operator updated');
+        onSaved();
+        onClose();
       } else {
-        await createUser({
+        const { data, invite } = await createUser({
           name: form.name.trim(),
           email: form.email.trim(),
-          password: form.password,
-          role: form.role,
           phone: form.phone.trim() || undefined
         });
-        notifySuccess('User created');
+        notifySuccess(
+          invite.delivered
+            ? `Invitation email sent to ${data.email}`
+            : 'Operator created — send them the invite link below'
+        );
+        onSaved();
+        setInviteResult(invite);
       }
-
-      onSaved();
-      onClose();
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to save user'));
+      notifyError(extractErrorMessage(error, 'Unable to save operator'));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title={isEdit ? 'Edit user' : 'Create user'} centered>
-      <form onSubmit={handleSubmit}>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={isEdit ? 'Edit operator' : inviteResult ? 'Invitation' : 'New operator'}
+      centered
+    >
+      {inviteResult ? (
         <Stack gap="md">
-          <TextInput
-            label="Name"
-            required
-            value={form.name}
-            onChange={(event) => setField('name')(event.currentTarget.value)}
-          />
-          <TextInput
-            label="Email"
-            type="email"
-            required
-            value={form.email}
-            onChange={(event) => setField('email')(event.currentTarget.value)}
-          />
-          <PasswordInput
-            label={isEdit ? 'New password' : 'Password'}
-            description={isEdit ? 'Leave blank to keep the current password' : undefined}
-            required={!isEdit}
-            value={form.password}
-            onChange={(event) => setField('password')(event.currentTarget.value)}
-          />
-          <Select
-            label="Role"
-            data={[
-              { value: 'operator', label: 'Operator' },
-              { value: 'admin', label: 'Admin' }
-            ]}
-            value={form.role}
-            onChange={(value) => setField('role')(value || 'operator')}
-            allowDeselect={false}
-          />
-          <TextInput
-            label="Phone"
-            value={form.phone}
-            onChange={(event) => setField('phone')(event.currentTarget.value)}
-          />
-          {isEdit ? (
-            <Switch
-              label="Active"
-              checked={form.active}
-              onChange={(event) => setField('active')(event.currentTarget.checked)}
-            />
-          ) : null}
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={onClose} type="button">
-              Cancel
-            </Button>
-            <Button type="submit" loading={submitting}>
-              {isEdit ? 'Save changes' : 'Create user'}
-            </Button>
+          <Alert color={inviteResult.delivered ? 'green' : 'blue'} variant="light">
+            {inviteResult.delivered
+              ? 'The operator has been emailed a link to set their password.'
+              : 'Email delivery is not configured. Share this one-time link with the operator so they can set their password.'}
+          </Alert>
+          <TextInput label="Invite link" value={inviteResult.link} readOnly />
+          <Group justify="space-between">
+            <CopyButton value={inviteResult.link}>
+              {({ copied, copy }) => (
+                <Button variant="light" onClick={copy}>
+                  {copied ? 'Copied' : 'Copy link'}
+                </Button>
+              )}
+            </CopyButton>
+            <Button onClick={onClose}>Done</Button>
           </Group>
         </Stack>
-      </form>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <Stack gap="md">
+            {!isEdit ? (
+              <Text size="sm" c="dimmed">
+                The operator sets their own password from an emailed invitation link.
+              </Text>
+            ) : null}
+            <TextInput
+              label="Name"
+              required
+              value={form.name}
+              onChange={(event) => setField('name')(event.currentTarget.value)}
+            />
+            <TextInput
+              label="Email"
+              type="email"
+              required
+              value={form.email}
+              onChange={(event) => setField('email')(event.currentTarget.value)}
+            />
+            <TextInput
+              label="Phone"
+              value={form.phone}
+              onChange={(event) => setField('phone')(event.currentTarget.value)}
+            />
+            {isEdit ? (
+              <Switch
+                label="Active"
+                checked={form.active}
+                onChange={(event) => setField('active')(event.currentTarget.checked)}
+              />
+            ) : null}
+            <Group justify="flex-end" gap="sm">
+              <Button variant="default" onClick={onClose} type="button">
+                Cancel
+              </Button>
+              <Button type="submit" loading={submitting}>
+                {isEdit ? 'Save changes' : 'Create and invite'}
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      )}
     </Modal>
   );
 };

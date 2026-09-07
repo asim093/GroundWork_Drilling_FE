@@ -17,12 +17,19 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    const { token, user: authenticatedUser } = await loginRequest(email, password);
+  const applySession = useCallback((token, authenticatedUser) => {
     setStoredToken(token);
     setUser(authenticatedUser);
     return authenticatedUser;
   }, []);
+
+  const login = useCallback(
+    async (email, password) => {
+      const { token, user: authenticatedUser } = await loginRequest(email, password);
+      return applySession(token, authenticatedUser);
+    },
+    [applySession]
+  );
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
@@ -58,9 +65,10 @@ export const AuthProvider = ({ children }) => {
       initializing,
       isAuthenticated: Boolean(user),
       login,
-      logout
+      logout,
+      applySession
     }),
-    [user, initializing, login, logout]
+    [user, initializing, login, logout, applySession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

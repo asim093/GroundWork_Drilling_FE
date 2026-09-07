@@ -13,11 +13,11 @@ import {
   Stack,
   Switch,
   Text,
-  TextInput,
-  Title
+  TextInput
 } from '@mantine/core';
 import { AppLayout } from '../../components/AppLayout.jsx';
 import { OPERATOR_NAV } from '../../constants/nav.js';
+import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { ActivityLinesSection } from '../../components/timelog/ActivityLinesSection.jsx';
 import { ConsumablesSection } from '../../components/timelog/ConsumablesSection.jsx';
 import { TIME_LOG_STATUS_COLORS } from '../../constants/timeLogs.js';
@@ -37,6 +37,7 @@ import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
 export const TimeLogFormPage = () => {
+  usePageTitle('Time & material log');
   const { jobId, id } = useParams();
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
@@ -178,14 +179,11 @@ export const TimeLogFormPage = () => {
           )}
         </Group>
 
-        <Stack gap={4}>
-          <Title order={3}>Time &amp; material log</Title>
-          {readOnly ? (
-            <Text c="dimmed" size="sm">
-              This log has been submitted and is read-only.
-            </Text>
-          ) : null}
-        </Stack>
+        {readOnly ? (
+          <Text c="dimmed" size="sm">
+            This log has been submitted and is read-only.
+          </Text>
+        ) : null}
 
         <Fieldset legend="Job details">
           <Stack gap="sm">

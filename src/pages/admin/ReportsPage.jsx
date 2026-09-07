@@ -14,6 +14,7 @@ import {
 } from '@mantine/core';
 import { PeriodSummary } from '../../components/reports/PeriodSummary.jsx';
 import { BonusBadge } from '../../components/reports/BonusBadge.jsx';
+import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange, formatDate } from '../../lib/dateRange.js';
 import { getMonthlyComparison, getReportSummary } from '../../services/reportService.js';
 import { extractErrorMessage } from '../../services/api.js';
@@ -26,6 +27,7 @@ const GROUP_BY_OPTIONS = [
 ];
 
 export const ReportsPage = () => {
+  usePageTitle('Reports');
   const [range, setRange] = useState(currentMonthRange);
   const [groupBy, setGroupBy] = useState('none');
   const [summary, setSummary] = useState(null);
@@ -72,8 +74,6 @@ export const ReportsPage = () => {
   return (
     <Stack gap="xl">
       <Stack gap="md">
-        <Title order={3}>Reports</Title>
-
         <Card withBorder radius="md" p="md">
           <Group gap="sm" wrap="wrap" align="flex-end">
             <TextInput

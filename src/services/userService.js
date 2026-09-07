@@ -12,10 +12,15 @@ export const getUser = async (id) => {
 
 export const createUser = async (payload) => {
   const { data } = await api.post('/users', payload);
-  return data.data;
+  return data;
 };
 
 export const updateUser = async (id, payload) => {
   const { data } = await api.patch(`/users/${id}`, payload);
   return data.data;
+};
+
+export const resendInvite = async (id) => {
+  const { data } = await api.post(`/users/${id}/resend-invite`);
+  return data;
 };

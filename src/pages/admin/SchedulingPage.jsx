@@ -9,13 +9,13 @@ import {
   Stack,
   Table,
   Text,
-  TextInput,
-  Title
+  TextInput
 } from '@mantine/core';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { SCHEDULING_STATUS_OPTIONS, SCHEDULING_STATUS_COLORS } from '../../constants/scheduling.js';
 import { useListParams } from '../../hooks/useListParams.js';
+import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange, formatDate } from '../../lib/dateRange.js';
 import { listScheduling } from '../../services/schedulingService.js';
 import { listJobs } from '../../services/jobService.js';
@@ -23,6 +23,7 @@ import { extractErrorMessage } from '../../services/api.js';
 import { notifyError } from '../../lib/toast.js';
 
 export const SchedulingPage = () => {
+  usePageTitle('Scheduling');
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
     useListParams({ sort: 'scheduledDate', order: 'asc', filters: currentMonthRange() });
   const [result, setResult] = useState({ data: [], pagination: null });
@@ -95,8 +96,6 @@ export const SchedulingPage = () => {
 
   return (
     <Stack gap="md">
-      <Title order={3}>Scheduling</Title>
-
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
           <Group gap="sm" wrap="wrap" align="flex-end">

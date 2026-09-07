@@ -9,13 +9,13 @@ import {
   Select,
   Stack,
   Table,
-  Text,
-  Title
+  Text
 } from '@mantine/core';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { TIME_LOG_STATUS_OPTIONS, TIME_LOG_STATUS_COLORS } from '../../constants/timeLogs.js';
 import { useListParams } from '../../hooks/useListParams.js';
+import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { listAssignedJobs, listMyTimeLogs } from '../../services/timeLogService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError } from '../../lib/toast.js';
@@ -23,6 +23,7 @@ import { notifyError } from '../../lib/toast.js';
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
 
 export const MySubmissionsPage = () => {
+  usePageTitle('My submissions');
   const navigate = useNavigate();
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
     useListParams({ sort: 'date', order: 'desc' });
@@ -80,12 +81,11 @@ export const MySubmissionsPage = () => {
 
   return (
     <Stack gap="md">
-      <Title order={3}>My submissions</Title>
-
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="wrap">
+          <Group gap="sm" wrap="wrap" align="flex-end">
             <Select
+              label="Status"
               placeholder="All statuses"
               data={TIME_LOG_STATUS_OPTIONS}
               value={filters.status || null}
@@ -94,6 +94,7 @@ export const MySubmissionsPage = () => {
               w={170}
             />
             <Select
+              label="Job"
               placeholder="All jobs"
               data={jobs.map((job) => ({ value: job.id, label: `${job.jobNumber} — ${job.clientName}` }))}
               value={filters.job || null}
