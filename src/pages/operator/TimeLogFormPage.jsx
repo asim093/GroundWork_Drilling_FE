@@ -163,7 +163,7 @@ export const TimeLogFormPage = () => {
 
   return (
     <AppLayout navItems={OPERATOR_NAV}>
-      <Stack gap="lg" maw={640} mx="auto">
+      <Stack gap="lg" maw={720}>
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Button variant="subtle" onClick={() => navigate(-1)}>
             Back

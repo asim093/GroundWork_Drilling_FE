@@ -10,8 +10,7 @@ import {
   SimpleGrid,
   Stack,
   Table,
-  Text,
-  Title
+  Text
 } from '@mantine/core';
 import { StatCard } from '../components/dashboard/StatCard.jsx';
 import { BonusEligibilityPanel } from '../components/reports/BonusEligibilityPanel.jsx';
@@ -206,7 +205,7 @@ export const DashboardPage = () => {
 
   return (
     <Stack gap="md">
-      <Title order={3}>Welcome, {user?.name}</Title>
+      <Text c="dimmed">Welcome, {user?.name}</Text>
       {data.role === 'admin' ? <AdminDashboard data={data} /> : <OperatorDashboard data={data} />}
     </Stack>
   );

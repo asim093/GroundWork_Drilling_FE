@@ -12,6 +12,7 @@ import {
   ScrollArea,
   Stack,
   Text,
+  Title,
   Tooltip
 } from '@mantine/core';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -35,7 +36,8 @@ export const AppLayout = ({ navItems = [], children }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const pageTitle = usePageTitleValue();
-  const [opened, { toggle, close }] = useDisclosure(false);
+  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
+  const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
 
   const handleLogout = () => {
     logout();
@@ -46,46 +48,45 @@ export const AppLayout = ({ navItems = [], children }) => {
   return (
     <AppShell
       header={{ height: 56 }}
-      navbar={{ width: 264, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      navbar={{
+        width: 264,
+        breakpoint: 'sm',
+        collapsed: { mobile: !mobileOpened, desktop: !desktopOpened }
+      }}
       padding="md"
     >
       <AppShell.Header>
         <Group h="100%" px="md" gap="sm" wrap="nowrap">
-          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+          <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
+          <Burger opened={desktopOpened} onClick={toggleDesktop} visibleFrom="sm" size="sm" />
+          <Box
+            w={28}
+            h={28}
+            style={{
+              borderRadius: 8,
+              background: 'var(--mantine-color-blue-6)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontSize: 13,
+              flexShrink: 0
+            }}
+          >
+            GD
+          </Box>
           <Text fw={700} fz="lg" truncate>
-            {pageTitle || 'Groundwork Drilling'}
+            Groundwork Drilling
           </Text>
         </Group>
       </AppShell.Header>
 
       <AppShell.Navbar p="sm">
-        <AppShell.Section>
-          <Group gap="xs" px="xs" pb="sm" wrap="nowrap">
-            <Box
-              w={28}
-              h={28}
-              style={{
-                borderRadius: 8,
-                background: 'var(--mantine-color-blue-6)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: 13,
-                flexShrink: 0
-              }}
-            >
-              GD
-            </Box>
-            <Text fw={700} truncate>
-              Groundwork Drilling
-            </Text>
-          </Group>
-          <Divider mb="xs" />
-        </AppShell.Section>
-
         <AppShell.Section grow component={ScrollArea}>
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" px="sm" pb={6}>
+            Menu
+          </Text>
           <Stack gap={4}>
             {navItems.map((item) => (
               <NavLink
@@ -96,7 +97,7 @@ export const AppLayout = ({ navItems = [], children }) => {
                 leftSection={<NavIcon name={item.icon} />}
                 active={isActive(pathname, item)}
                 variant="light"
-                onClick={close}
+                onClick={closeMobile}
               />
             ))}
           </Stack>
@@ -133,7 +134,14 @@ export const AppLayout = ({ navItems = [], children }) => {
         </AppShell.Section>
       </AppShell.Navbar>
 
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main>
+        {pageTitle ? (
+          <Title order={3} mb="lg">
+            {pageTitle}
+          </Title>
+        ) : null}
+        {children}
+      </AppShell.Main>
     </AppShell>
   );
 };
