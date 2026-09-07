@@ -4,7 +4,9 @@ import { AppLayout } from './AppLayout.jsx';
 
 const NAV_ITEMS = [
   { to: '/admin/users', label: 'Users' },
-  { to: '/admin/jobs', label: 'Jobs' }
+  { to: '/admin/jobs', label: 'Jobs' },
+  { to: '/admin/scheduling', label: 'Scheduling' },
+  { to: '/admin/reports', label: 'Reports' }
 ];
 
 const NavButton = ({ to, label }) => {

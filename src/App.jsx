@@ -6,6 +6,8 @@ import { OperatorLayout } from './components/OperatorLayout.jsx';
 import { LoginPage } from './pages/LoginPage.jsx';
 import { UsersPage } from './pages/admin/UsersPage.jsx';
 import { JobsPage } from './pages/admin/JobsPage.jsx';
+import { SchedulingPage } from './pages/admin/SchedulingPage.jsx';
+import { ReportsPage } from './pages/admin/ReportsPage.jsx';
 import { OperatorJobsPage } from './pages/operator/OperatorJobsPage.jsx';
 import { MySubmissionsPage } from './pages/operator/MySubmissionsPage.jsx';
 import { TimeLogFormPage } from './pages/operator/TimeLogFormPage.jsx';
@@ -21,6 +23,8 @@ const App = () => (
         <Route index element={<Navigate to="/admin/users" replace />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="jobs" element={<JobsPage />} />
+        <Route path="scheduling" element={<SchedulingPage />} />
+        <Route path="reports" element={<ReportsPage />} />
       </Route>
     </Route>
 
