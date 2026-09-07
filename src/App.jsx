@@ -2,10 +2,13 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { RoleLanding } from './components/RoleLanding.jsx';
 import { AdminLayout } from './components/AdminLayout.jsx';
+import { OperatorLayout } from './components/OperatorLayout.jsx';
 import { LoginPage } from './pages/LoginPage.jsx';
 import { UsersPage } from './pages/admin/UsersPage.jsx';
 import { JobsPage } from './pages/admin/JobsPage.jsx';
-import { OperatorDashboardPage } from './pages/OperatorDashboardPage.jsx';
+import { OperatorJobsPage } from './pages/operator/OperatorJobsPage.jsx';
+import { MySubmissionsPage } from './pages/operator/MySubmissionsPage.jsx';
+import { TimeLogFormPage } from './pages/operator/TimeLogFormPage.jsx';
 import { NotFoundPage } from './pages/NotFoundPage.jsx';
 
 const App = () => (
@@ -22,7 +25,13 @@ const App = () => (
     </Route>
 
     <Route element={<ProtectedRoute allowedRoles={['operator']} />}>
-      <Route path="/operator" element={<OperatorDashboardPage />} />
+      <Route path="/operator" element={<OperatorLayout />}>
+        <Route index element={<Navigate to="/operator/jobs" replace />} />
+        <Route path="jobs" element={<OperatorJobsPage />} />
+        <Route path="submissions" element={<MySubmissionsPage />} />
+      </Route>
+      <Route path="/operator/jobs/:jobId/log" element={<TimeLogFormPage />} />
+      <Route path="/operator/log/:id" element={<TimeLogFormPage />} />
     </Route>
 
     <Route path="*" element={<NotFoundPage />} />
