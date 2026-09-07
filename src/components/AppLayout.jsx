@@ -87,7 +87,8 @@ export const AppLayout = ({ navItems = [], children }) => {
             gap="sm"
             wrap="nowrap"
             visibleFrom="sm"
-            px="md"
+            justify={railMode ? 'center' : 'flex-start'}
+            px={railMode ? 0 : 'md'}
             style={{
               width: railMode ? RAIL_WIDTH : NAVBAR_WIDTH,
               flexShrink: 0,
@@ -96,13 +97,11 @@ export const AppLayout = ({ navItems = [], children }) => {
               height: '100%'
             }}
           >
+            <BrandMark size={28} />
             {railMode ? null : (
-              <>
-                <BrandMark size={28} />
-                <Text fw={700} fz="lg" truncate>
-                  Groundwork Drilling
-                </Text>
-              </>
+              <Text fw={700} fz="lg" truncate>
+                Groundwork Drilling
+              </Text>
             )}
           </Group>
 
@@ -120,20 +119,15 @@ export const AppLayout = ({ navItems = [], children }) => {
       </AppShell.Header>
 
       <AppShell.Navbar p={railMode ? 'xs' : 'sm'}>
-        <AppShell.Section>
-          {railMode ? (
-            <Stack gap={6} align="center" pb="sm">
-              <BrandMark size={30} />
-              <Divider w="100%" />
-            </Stack>
-          ) : (
+        {railMode ? null : (
+          <AppShell.Section>
             <Text size="xs" fw={600} c="dimmed" tt="uppercase" px="sm" pb={6}>
               Menu
             </Text>
-          )}
-        </AppShell.Section>
+          </AppShell.Section>
+        )}
 
-        <AppShell.Section grow component={ScrollArea}>
+        <AppShell.Section grow component={ScrollArea} pt={railMode ? 'xs' : 0}>
           <Stack gap={railMode ? 8 : 4} align={railMode ? 'center' : 'stretch'}>
             {navItems.map((item) => {
               const active = isActive(pathname, item);
@@ -227,18 +221,18 @@ export const AppLayout = ({ navItems = [], children }) => {
           aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
           variant="default"
           radius="xl"
-          size="lg"
+          size={26}
           style={{
             position: 'fixed',
             top: '50%',
-            left: (expanded ? NAVBAR_WIDTH : RAIL_WIDTH) - 16,
+            left: (expanded ? NAVBAR_WIDTH : RAIL_WIDTH) - 13,
             transform: 'translateY(-50%)',
             zIndex: 350,
             transition: 'left 150ms ease',
             boxShadow: '0 2px 8px rgba(15, 23, 42, 0.18)'
           }}
         >
-          <NavIcon name={expanded ? 'chevronLeft' : 'chevronRight'} size={16} />
+          <NavIcon name={expanded ? 'chevronLeft' : 'chevronRight'} size={13} />
         </ActionIcon>
       </Tooltip>
 
