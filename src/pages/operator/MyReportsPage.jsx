@@ -15,7 +15,7 @@ const bonusValue = (bonus) =>
   bonus && typeof bonus.amount === 'number' ? `$${bonus.amount}` : '—';
 
 const bonusHint = (bonus) => {
-  if (!bonus || typeof bonus.amount !== 'number') {
+  if (!bonus || typeof bonus.amount !== 'number' || !bonus.band) {
     return bonus?.note || 'No bonus for this period';
   }
   const band = `band ${bonus.band.fromMeters}–${bonus.band.toMeters} m`;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Card,
   Center,
@@ -17,6 +17,7 @@ import { ReportExportButtons } from '../../components/reports/ReportExportButton
 import { ReportGroupsTable } from '../../components/reports/ReportGroupsTable.jsx';
 import { ConsumablesReportTable } from '../../components/reports/ConsumablesReportTable.jsx';
 import { ReportEntriesTable } from '../../components/reports/ReportEntriesTable.jsx';
+import { ReportCharts } from '../../components/reports/ReportCharts.jsx';
 import { UserReportDrawer } from '../../components/reports/UserReportDrawer.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
@@ -27,7 +28,7 @@ import {
   getReportSummary
 } from '../../services/reportService.js';
 import { extractErrorMessage } from '../../services/api.js';
-import { notifyError } from '../../lib/toast.js';
+import { notifyError, notifyInfo } from '../../lib/toast.js';
 
 const GROUP_BY_OPTIONS = [
   { value: 'none', label: 'No grouping' },
@@ -285,6 +286,7 @@ export const ReportsPage = () => {
   const [comparisonFailed, setComparisonFailed] = useState(false);
   const [drawerGroup, setDrawerGroup] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const chartsRef = useRef(null);
 
   const summaryParams = useCallback(() => {
     const params = { from: range.from, to: range.to };
@@ -328,8 +330,17 @@ export const ReportsPage = () => {
     loadComparison();
   }, [loadComparison]);
 
-  const handleExport = (format) =>
-    downloadReport({ scope: 'summary', format, params: summaryParams() });
+  const handleExport = async (format) => {
+    let charts;
+    if (format === 'pdf' && chartsRef.current) {
+      try {
+        charts = await chartsRef.current.capture();
+      } catch {
+        notifyInfo('Charts could not be added to the PDF; exporting without them');
+      }
+    }
+    return downloadReport({ scope: 'summary', format, params: summaryParams(), charts });
+  };
 
   const openUserDrawer = (group) => {
     setDrawerGroup(group);
@@ -367,6 +378,15 @@ export const ReportsPage = () => {
       ) : (
         <Stack gap="lg">
           <SummaryStats report={summary} />
+
+          <ReportCharts
+            ref={chartsRef}
+            visible={false}
+            mode={summary.groupBy || 'none'}
+            entries={summary.entries}
+            eligibility={summary.bonusEligibility}
+            recoveryPercent={summary.recoveryPercentOverall}
+          />
 
           {summary.groups?.length ? (
             <ReportGroupsTable

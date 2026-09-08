@@ -34,16 +34,23 @@ const formatDate = (value) =>
     ? new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Any';
 
+const EMPTY_RANGE = { from: '', to: '' };
+
 export const DateRangePicker = ({ value, onChange, size, radius = 'sm' }) => {
   const [opened, setOpened] = useState(false);
-  const [draft, setDraft] = useState(value);
+  const [draft, setDraft] = useState(value || EMPTY_RANGE);
   const presets = buildPresets();
+  const current = value || EMPTY_RANGE;
 
   const handleOpenChange = (next) => {
     setOpened(next);
     if (next) {
-      setDraft(value);
+      setDraft(value || EMPTY_RANGE);
     }
+  };
+
+  const updateDraft = (field, next) => {
+    setDraft((prev) => ({ ...(prev || EMPTY_RANGE), [field]: next }));
   };
 
   const applyPreset = (preset) => {
@@ -52,7 +59,7 @@ export const DateRangePicker = ({ value, onChange, size, radius = 'sm' }) => {
   };
 
   const applyCustom = () => {
-    if (draft.from && draft.to) {
+    if (draft?.from && draft?.to) {
       onChange({ from: draft.from, to: draft.to });
       setOpened(false);
     }
@@ -76,7 +83,7 @@ export const DateRangePicker = ({ value, onChange, size, radius = 'sm' }) => {
           onClick={() => handleOpenChange(!opened)}
           miw={250}
         >
-          {formatDate(value.from)} – {formatDate(value.to)}
+          {formatDate(current.from)} – {formatDate(current.to)}
         </Button>
       </Popover.Target>
       <Popover.Dropdown>
@@ -95,16 +102,16 @@ export const DateRangePicker = ({ value, onChange, size, radius = 'sm' }) => {
           <TextInput
             label="From"
             type="date"
-            value={draft.from || ''}
-            onChange={(event) => setDraft((prev) => ({ ...prev, from: event.currentTarget.value }))}
+            value={draft?.from || ''}
+            onChange={(event) => updateDraft('from', event.currentTarget.value)}
           />
           <TextInput
             label="To"
             type="date"
-            value={draft.to || ''}
-            onChange={(event) => setDraft((prev) => ({ ...prev, to: event.currentTarget.value }))}
+            value={draft?.to || ''}
+            onChange={(event) => updateDraft('to', event.currentTarget.value)}
           />
-          <Button onClick={applyCustom} disabled={!draft.from || !draft.to}>
+          <Button onClick={applyCustom} disabled={!draft?.from || !draft?.to}>
             Apply range
           </Button>
         </Stack>

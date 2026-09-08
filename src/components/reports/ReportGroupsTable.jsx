@@ -7,7 +7,7 @@ import { useClientTable } from '../../hooks/useClientTable.js';
 const SEARCH_FIELDS = ['label', 'employeeType'];
 
 const bonusLabel = (bonus) => {
-  if (!bonus || typeof bonus.amount !== 'number') {
+  if (!bonus || typeof bonus.amount !== 'number' || !bonus.band) {
     return bonus?.note || 'Not available';
   }
   const detail =

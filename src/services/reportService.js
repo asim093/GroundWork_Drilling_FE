@@ -25,22 +25,27 @@ const triggerDownload = (blob, filename) => {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.rel = 'noopener';
   document.body.appendChild(link);
   link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, 10000);
 };
 
-export const downloadReport = async ({ scope, format, params }) => {
+export const downloadReport = async ({ scope, format, params, charts }) => {
   const path =
     scope === 'mine'
       ? '/time-logs/reports/mine/export'
       : '/time-logs/reports/summary/export';
 
-  const response = await api.get(path, {
-    params: { ...params, format },
-    responseType: 'blob'
-  });
+  const query = { params: { ...params, format }, responseType: 'blob' };
+  const chartImages = Array.isArray(charts) ? charts.filter((chart) => chart && chart.dataUrl) : [];
+
+  const response = chartImages.length
+    ? await api.post(path, { charts: chartImages }, query)
+    : await api.get(path, query);
 
   const fallback = `groundwork-report.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
   const filename = parseFilename(response.headers['content-disposition'], fallback);

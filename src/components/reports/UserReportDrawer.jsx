@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Divider, Drawer, Group, Stack, Text } from '@mantine/core';
 import { KpiGrid } from './KpiCard.jsx';
 import { ReportEntriesTable } from './ReportEntriesTable.jsx';
 import { ReportExportButtons } from './ReportExportButtons.jsx';
+import { ReportCharts } from './ReportCharts.jsx';
 import { downloadReport } from '../../services/reportService.js';
+import { notifyInfo } from '../../lib/toast.js';
 
 const recoveryPercent = (drilled, recovered) => {
   if (!drilled || drilled <= 0) {
@@ -20,7 +22,7 @@ const bonusValue = (bonus) => {
 };
 
 const bonusHint = (bonus) => {
-  if (!bonus || typeof bonus.amount !== 'number') {
+  if (!bonus || typeof bonus.amount !== 'number' || !bonus.band) {
     return bonus?.note || 'No bonus for this period';
   }
   if (bonus.rateType === 'flat') {
@@ -30,6 +32,7 @@ const bonusHint = (bonus) => {
 };
 
 export const UserReportDrawer = ({ opened, onClose, group, entries, range }) => {
+  const chartsRef = useRef(null);
   const userEntries = useMemo(
     () => (group ? (entries || []).filter((entry) => entry.userId === group.key) : []),
     [group, entries]
@@ -53,12 +56,22 @@ export const UserReportDrawer = ({ opened, onClose, group, entries, range }) => 
     { label: 'Bonus amount', value: bonusValue(group.bonus), hint: bonusHint(group.bonus) }
   ];
 
-  const handleExport = (format) =>
-    downloadReport({
+  const handleExport = async (format) => {
+    let charts;
+    if (format === 'pdf' && chartsRef.current) {
+      try {
+        charts = await chartsRef.current.capture();
+      } catch {
+        notifyInfo('Charts could not be added to the PDF; exporting without them');
+      }
+    }
+    return downloadReport({
       scope: 'summary',
       format,
-      params: { from: range.from, to: range.to, user: group.key, groupBy: 'user' }
+      params: { from: range.from, to: range.to, user: group.key, groupBy: 'user' },
+      charts
     });
+  };
 
   return (
     <Drawer
@@ -84,6 +97,14 @@ export const UserReportDrawer = ({ opened, onClose, group, entries, range }) => 
         </Group>
 
         <KpiGrid items={kpis} cols={{ base: 2, sm: 3 }} />
+
+        <ReportCharts
+          ref={chartsRef}
+          mode="none"
+          entries={userEntries}
+          eligibility={group.bonusEligibility}
+          recoveryPercent={rec}
+        />
 
         <Divider />
 
