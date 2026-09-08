@@ -31,24 +31,24 @@ const fmt = (value) =>
     : value;
 
 const WelcomeBanner = ({ name, role }) => (
-  <Paper withBorder radius="lg" p="lg" bg="var(--mantine-color-blue-0)">
+  <Paper withBorder radius="lg" p="lg" bg="var(--mantine-color-brand-0)">
     <Group justify="space-between" align="center" wrap="wrap" gap="md">
       <Group gap="md" wrap="nowrap" align="center">
-        <ThemeIcon size={44} radius="xl" variant="white" color="blue">
+        <ThemeIcon size={44} radius="xl" variant="white" color="brand">
           <NavIcon name="home" size={22} />
         </ThemeIcon>
         <Stack gap={2}>
           <Text fw={700} fz="lg">
             Welcome back, {name}
           </Text>
-          <Text size="sm" c="blue.8">
+          <Text size="sm" c="brand.8">
             {role === 'admin'
               ? "Here's what's happening across your drilling operations today."
               : "Here's a snapshot of your recent activity."}
           </Text>
         </Stack>
       </Group>
-      <Group gap={6} c="blue.8" wrap="nowrap">
+      <Group gap={6} c="brand.8" wrap="nowrap">
         <NavIcon name="calendar" size={15} />
         <Text size="sm">
           {new Date().toLocaleDateString('en-US', {
@@ -84,7 +84,7 @@ const ActivityChart = ({ data }) => {
           const barHeight = day.count ? Math.max(8, Math.round((day.count / max) * 96)) : 3;
           return (
             <Stack key={day.date} gap={4} align="center" justify="flex-end" style={{ flex: 1 }}>
-              <Text size="xs" fw={700} c={day.count ? 'blue.7' : 'dimmed'}>
+              <Text size="xs" fw={700} c={day.count ? 'brand.7' : 'dimmed'}>
                 {day.count}
               </Text>
               <Box
@@ -92,7 +92,7 @@ const ActivityChart = ({ data }) => {
                 style={{
                   height: barHeight,
                   backgroundColor: day.count
-                    ? 'var(--mantine-color-blue-5)'
+                    ? 'var(--mantine-color-brand-5)'
                     : 'var(--mantine-color-gray-3)',
                   borderRadius: '4px 4px 0 0'
                 }}

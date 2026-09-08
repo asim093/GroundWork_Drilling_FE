@@ -34,18 +34,20 @@ export const lineDrilledMeters = (line) => {
   return round2(to - from);
 };
 
-export const lineHours = (line) => {
-  const from = parseClockHours(line?.timeFrom);
-  const to = parseClockHours(line?.timeTo);
-  if (from === null || to === null) {
+export const clockDuration = (from, to) => {
+  const start = parseClockHours(from);
+  const end = parseClockHours(to);
+  if (start === null || end === null) {
     return null;
   }
-  let diff = to - from;
+  let diff = end - start;
   if (diff < 0) {
     diff += 24;
   }
   return round2(diff);
 };
+
+export const lineHours = (line) => clockDuration(line?.timeFrom, line?.timeTo);
 
 export const totalDrilledMeters = (lines) =>
   round2((lines || []).reduce((sum, line) => sum + (lineDrilledMeters(line) ?? 0), 0));

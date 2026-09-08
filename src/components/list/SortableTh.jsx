@@ -11,7 +11,7 @@ export const SortableTh = ({ field, label, sort, order, onSort }) => {
           <Text size="sm" fw={600}>
             {label}
           </Text>
-          <Text size="xs" c={active ? 'blue' : 'dimmed'}>
+          <Text size="xs" c={active ? 'brand' : 'dimmed'}>
             {indicator}
           </Text>
         </Group>

@@ -85,7 +85,7 @@ const SummaryStats = ({ report }) => {
   return (
     <Grid gutter="lg">
       <Grid.Col span={{ base: 12, md: 4 }}>
-        <Paper radius="lg" p="xl" h="100%" bg="var(--mantine-color-blue-6)" c="white">
+        <Paper radius="lg" p="xl" h="100%" bg="var(--mantine-color-brand-6)" c="white">
           <Stack gap={4} h="100%" justify="center">
             <Text fz="sm" fw={600} style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
               Total bonus amount

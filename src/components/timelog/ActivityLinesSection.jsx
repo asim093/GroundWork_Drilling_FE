@@ -1,4 +1,5 @@
 import { ActionIcon, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
+import { TimePicker } from '@mantine/dates';
 import { NavIcon } from '../NavIcon.jsx';
 import { lineDrilledMeters, lineHours } from '../../lib/timeLogMath.js';
 
@@ -70,15 +71,16 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
   );
 
   const timeCell = (index, key, extra = {}) => (
-    <TextInput
+    <TimePicker
       variant="unstyled"
       size="sm"
-      type="time"
+      format="12h"
+      withDropdown
       value={lines[index][key]}
       disabled={disabled}
       aria-label={extra.label}
-      onChange={(event) =>
-        updateLine(index, { [key]: event.currentTarget.value, ...(extra.clearAuto || {}) })
+      onChange={(value) =>
+        updateLine(index, { [key]: value, ...(extra.clearAuto || {}) })
       }
     />
   );
@@ -233,7 +235,7 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
 
       <Text size="xs" c="dimmed">
         Pick an <strong>Activity</strong> for every row; use <strong>Comments</strong> for any free
-        text. Blue-tinted <strong>Drilled</strong> and <strong>Hours</strong> cells are calculated
+        text. Highlighted <strong>Drilled</strong> and <strong>Hours</strong> cells are calculated
         automatically. An <strong>AUTO</strong> tag means the value was carried over from the row
         above — you can still edit it.
       </Text>

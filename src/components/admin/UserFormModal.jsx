@@ -105,7 +105,7 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
     >
       {inviteResult ? (
         <Stack gap="md">
-          <Alert color={inviteResult.delivered ? 'green' : 'blue'} variant="light">
+          <Alert color={inviteResult.delivered ? 'green' : 'brand'} variant="light">
             {inviteResult.delivered
               ? 'The operator has been emailed a link to set their password.'
               : 'Email delivery is not configured. Share this one-time link with the operator so they can set their password.'}

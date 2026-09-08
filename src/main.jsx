@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider } from '@mantine/core';
 import { ToastContainer } from 'react-toastify';
 import '@mantine/core/styles.css';
+import '@mantine/dates/styles.css';
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
 import { theme } from './theme.js';

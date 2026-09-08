@@ -6,7 +6,7 @@ export const JOB_STATUS_OPTIONS = [
 ];
 
 export const JOB_STATUS_COLORS = {
-  scheduled: 'blue',
+  scheduled: 'brand',
   'in-progress': 'yellow',
   submitted: 'green',
   archived: 'gray'

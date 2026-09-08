@@ -26,7 +26,7 @@ const Section = ({ title, children }) => (
 );
 
 const StatTile = ({ label, value }) => (
-  <Paper radius="md" p="sm" bg="var(--mantine-color-blue-0)">
+  <Paper radius="md" p="sm" bg="var(--mantine-color-brand-0)">
     <Text fw={700} fz="lg" lh={1.2}>
       {value}
     </Text>
@@ -150,12 +150,12 @@ export const TimeLogEntryView = ({ entry }) => {
                     <Table.Td>{show(line.timeTo)}</Table.Td>
                     <Table.Td style={{ textAlign: 'right' }}>{show(line.recoveryMeters)}</Table.Td>
                     <Table.Td
-                      style={{ textAlign: 'right', backgroundColor: 'var(--mantine-color-blue-0)' }}
+                      style={{ textAlign: 'right', backgroundColor: 'var(--mantine-color-brand-0)' }}
                     >
                       {show(line.drilledMeters, ' m')}
                     </Table.Td>
                     <Table.Td
-                      style={{ textAlign: 'right', backgroundColor: 'var(--mantine-color-blue-0)' }}
+                      style={{ textAlign: 'right', backgroundColor: 'var(--mantine-color-brand-0)' }}
                     >
                       {show(line.hours, ' h')}
                     </Table.Td>

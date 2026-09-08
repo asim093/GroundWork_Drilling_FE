@@ -95,7 +95,7 @@ export const OperatorJobsPage = () => {
         <Table.Td>{job.rigNumber?.name || '—'}</Table.Td>
         <Table.Td>{formatDate(job.scheduledDate)}</Table.Td>
         <Table.Td>
-          <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'blue'}>
+          <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'brand'}>
             {job.status}
           </Badge>
         </Table.Td>

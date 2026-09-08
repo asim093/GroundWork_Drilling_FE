@@ -25,7 +25,7 @@ export const StatCard = ({ label, value, hint, icon, to }) => {
           {hint || ' '}
         </Text>
         {to ? (
-          <Box c="blue.6" style={{ display: 'flex', flexShrink: 0 }}>
+          <Box c="brand.6" style={{ display: 'flex', flexShrink: 0 }}>
             <NavIcon name="chevronRight" size={16} />
           </Box>
         ) : null}

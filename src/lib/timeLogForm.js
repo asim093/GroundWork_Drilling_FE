@@ -6,6 +6,8 @@ const toNumberOrNull = (value) => {
   return Number.isNaN(parsed) ? null : parsed;
 };
 
+import { clockDuration } from './timeLogMath.js';
+
 const toInputValue = (value) => (value === null || value === undefined ? '' : value);
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -20,7 +22,6 @@ export const emptyTimeLogForm = () => ({
   assistantTimeOut: '',
   timeStarted: '',
   timeFinished: '',
-  hoursOnSite: '',
   standbyHours: '',
   otherHours: '',
   assistantEnabled: false,
@@ -43,7 +44,6 @@ export const timeLogFormFromEntry = (entry) => ({
   assistantTimeOut: entry.assistantTimeOut || '',
   timeStarted: entry.timeStarted || '',
   timeFinished: entry.timeFinished || '',
-  hoursOnSite: toInputValue(entry.hoursOnSite),
   standbyHours: toInputValue(entry.standbyHours),
   otherHours: toInputValue(entry.otherHours),
   assistantEnabled: Boolean(
@@ -95,7 +95,7 @@ export const timeLogPayloadFromForm = (form) => ({
   assistantTimeOut: form.assistantTimeOut,
   timeStarted: form.timeStarted,
   timeFinished: form.timeFinished,
-  hoursOnSite: toNumberOrNull(form.hoursOnSite),
+  hoursOnSite: clockDuration(form.timeIn, form.timeOut),
   standbyHours: toNumberOrNull(form.standbyHours),
   otherHours: toNumberOrNull(form.otherHours),
   mileageStart: toNumberOrNull(form.mileageStart),

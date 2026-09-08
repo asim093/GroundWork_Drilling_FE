@@ -48,7 +48,7 @@ const BrandMark = ({ size = 30 }) => (
     h={size}
     style={{
       borderRadius: 8,
-      background: 'var(--mantine-color-blue-6)',
+      background: 'var(--mantine-color-brand-6)',
       color: '#fff',
       display: 'flex',
       alignItems: 'center',
@@ -153,7 +153,7 @@ export const AppLayout = ({ navItems = [], children }) => {
                     onClick={closeMobile}
                     aria-label={item.label}
                     variant={active ? 'light' : 'subtle'}
-                    color={active ? 'blue' : 'gray'}
+                    color={active ? 'brand' : 'gray'}
                     size={40}
                     radius="md"
                   >
@@ -181,7 +181,7 @@ export const AppLayout = ({ navItems = [], children }) => {
           {railMode ? (
             <Stack gap="sm" align="center">
               <Tooltip label={`${user?.name} · ${user?.role}`} position="right" withArrow>
-                <Avatar radius="xl" color="blue" variant="filled">
+                <Avatar radius="xl" color="brand" variant="filled">
                   {initials(user?.name)}
                 </Avatar>
               </Tooltip>
@@ -200,7 +200,7 @@ export const AppLayout = ({ navItems = [], children }) => {
           ) : (
             <Group gap="sm" wrap="nowrap" justify="space-between">
               <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-                <Avatar radius="xl" color="blue" variant="filled">
+                <Avatar radius="xl" color="brand" variant="filled">
                   {initials(user?.name)}
                 </Avatar>
                 <Box style={{ minWidth: 0 }}>

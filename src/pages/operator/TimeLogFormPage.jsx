@@ -18,6 +18,7 @@ import {
   TextInput,
   Tooltip
 } from '@mantine/core';
+import { DatePickerInput, TimePicker } from '@mantine/dates';
 import { AppLayout } from '../../components/AppLayout.jsx';
 import { OPERATOR_NAV } from '../../constants/nav.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
@@ -31,6 +32,7 @@ import {
   timeLogPayloadFromForm
 } from '../../lib/timeLogForm.js';
 import {
+  clockDuration,
   mileageTotal,
   shiftRecoveryPercent,
   totalDrilledMeters,
@@ -55,8 +57,8 @@ const GRID = { base: 1, sm: 2 };
 
 const COMPUTED_INPUT_STYLES = {
   input: {
-    backgroundColor: 'var(--mantine-color-blue-0)',
-    color: 'var(--mantine-color-blue-9)',
+    backgroundColor: 'var(--mantine-color-brand-0)',
+    color: 'var(--mantine-color-brand-9)',
     fontWeight: 600
   }
 };
@@ -72,7 +74,7 @@ const CompletionDot = ({ done }) => (
       h={9}
       style={{
         borderRadius: '50%',
-        backgroundColor: done ? 'var(--mantine-color-blue-6)' : 'transparent',
+        backgroundColor: done ? 'var(--mantine-color-brand-6)' : 'transparent',
         border: done ? 0 : '1.5px solid var(--mantine-color-gray-4)'
       }}
     />
@@ -96,7 +98,7 @@ const SubGroup = ({ title, caption, children }) => (
 );
 
 const StatTile = ({ label, value }) => (
-  <Paper radius="md" p="sm" bg="var(--mantine-color-blue-0)">
+  <Paper radius="md" p="sm" bg="var(--mantine-color-brand-0)">
     <Text fw={700} fz="lg" lh={1.2}>
       {value}
     </Text>
@@ -129,6 +131,7 @@ export const TimeLogFormPage = () => {
   const totalHours = totalLineHours(form.activityLines);
   const recoveryPreview = shiftRecoveryPercent(form.activityLines);
   const mileagePreview = mileageTotal(form.mileageStart, form.mileageEnd);
+  const hoursOnSitePreview = clockDuration(form.timeIn, form.timeOut);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -310,12 +313,14 @@ export const TimeLogFormPage = () => {
   );
 
   const timeField = (key, label) => (
-    <TextInput
+    <TimePicker
       label={label}
-      type="time"
       value={form[key]}
+      format="12h"
+      withDropdown
+      clearable
       disabled={readOnly}
-      onChange={(event) => setField(key, event.currentTarget.value)}
+      onChange={(value) => setField(key, value)}
     />
   );
 
@@ -326,7 +331,7 @@ export const TimeLogFormPage = () => {
       Boolean(form.timeOut) ||
       Boolean(form.timeStarted) ||
       Boolean(form.timeFinished) ||
-      filledValue(form.hoursOnSite) ||
+      hoursOnSitePreview !== null ||
       filledValue(form.standbyHours) ||
       filledValue(form.otherHours),
     wellTag:
@@ -385,7 +390,7 @@ export const TimeLogFormPage = () => {
           <Box
             w={9}
             h={9}
-            style={{ borderRadius: '50%', backgroundColor: 'var(--mantine-color-blue-6)', flexShrink: 0 }}
+            style={{ borderRadius: '50%', backgroundColor: 'var(--mantine-color-brand-6)', flexShrink: 0 }}
           />
           <Text size="xs" c="dimmed">
             A filled dot marks a section that already has entries.
@@ -401,12 +406,12 @@ export const TimeLogFormPage = () => {
               <Stack gap="lg">
                 <SubGroup title="Date &amp; Shift">
                   <SimpleGrid cols={GRID} spacing="md">
-                    <TextInput
+                    <DatePickerInput
                       label="Date"
-                      type="date"
                       value={form.date}
+                      valueFormat="DD MMM YYYY"
                       disabled={readOnly}
-                      onChange={(event) => setField('date', event.currentTarget.value)}
+                      onChange={(value) => setField('date', value)}
                     />
                     <Select
                       label="Shift"
@@ -439,7 +444,14 @@ export const TimeLogFormPage = () => {
 
                 <SubGroup title="Hours Summary">
                   <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                    {numberField('hoursOnSite', 'Hours on site')}
+                    <TextInput
+                      label="Hours on site"
+                      description="Time out − Time in"
+                      value={hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview}`}
+                      readOnly
+                      disabled
+                      styles={COMPUTED_INPUT_STYLES}
+                    />
                     {numberField('standbyHours', 'Standby hours')}
                     {numberField('otherHours', 'Other hours')}
                   </SimpleGrid>
