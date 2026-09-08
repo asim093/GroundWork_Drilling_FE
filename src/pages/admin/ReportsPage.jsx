@@ -37,7 +37,7 @@ const GROUP_BY_OPTIONS = [
 ];
 
 const COMPARISON_METRICS = [
-  { key: 'totalHours', label: 'Hours' },
+  { key: 'totalLoggedHours', label: 'Hours' },
   { key: 'metersDrilled', label: 'Drilled (m)' },
   { key: 'metersRecovered', label: 'Recovered (m)' }
 ];
@@ -128,7 +128,7 @@ const SummaryStats = ({ report }) => {
                 Total hours logged
               </Text>
               <Text fz={30} fw={700} lh={1.1}>
-                {fmt(report.totals.totalHours)}
+                {fmt(report.totals.totalLoggedHours)}
               </Text>
               <Text fz="xs" c="dimmed">
                 On-site, standby &amp; other

@@ -24,7 +24,7 @@ export const ReportEntriesTable = ({
         date: entry.date,
         jobNumber: entry.jobNumber || '—',
         operator: entry.operator || '—',
-        hours: entry.totalHours,
+        hours: entry.totalLoggedHours,
         drilled: entry.metersDrilled,
         recovered: entry.metersRecovered,
         recoveryPercent: entry.recoveryPercent,

@@ -236,7 +236,7 @@ const AdminDashboard = ({ data, user }) => (
       />
       <StatCard
         label="Hours logged"
-        value={fmt(data.thisMonth.totals.hoursOnSite)}
+        value={fmt(data.thisMonth.totals.totalLoggedHours)}
         hint={`${fmt(data.thisMonth.totals.standbyHours)} standby hours this month`}
         icon="calendar"
         to="/admin/reports"
@@ -297,7 +297,7 @@ const OperatorDashboard = ({ data, user }) => (
       />
       <StatCard
         label="Hours logged"
-        value={fmt(data.thisMonth.totals.hoursOnSite)}
+        value={fmt(data.thisMonth.totals.totalLoggedHours)}
         hint={`${fmt(data.thisMonth.totals.standbyHours)} standby hours this month`}
         icon="calendar"
         to="/operator/my-reports"

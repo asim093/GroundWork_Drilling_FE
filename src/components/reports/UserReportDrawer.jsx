@@ -44,7 +44,7 @@ export const UserReportDrawer = ({ opened, onClose, group, entries, range }) => 
 
   const rec = recoveryPercent(group.totals.metersDrilled, group.totals.metersRecovered);
   const kpis = [
-    { label: 'Hours', value: group.totals.totalHours },
+    { label: 'Hours', value: group.totals.totalLoggedHours },
     { label: 'Drilled (m)', value: group.totals.metersDrilled },
     { label: 'Recovered (m)', value: group.totals.metersRecovered },
     { label: 'Recovery %', value: rec === null ? '—' : `${rec}%` },

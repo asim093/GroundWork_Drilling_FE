@@ -100,7 +100,7 @@ export const TimeLogEntryView = ({ entry }) => {
         <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
           <StatTile label="Total Drilled" value={show(entry.metersDrilled, ' m')} />
           <StatTile label="Total Recovered" value={show(entry.metersRecovered, ' m')} />
-          <StatTile label="Total Hours" value={show(entry.totalHours, ' h')} />
+          <StatTile label="Activity hours" value={show(entry.totalHours, ' h')} />
           <StatTile
             label="Recovery %"
             value={entry.recoveryPercent === null ? '—' : `${entry.recoveryPercent}%`}

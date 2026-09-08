@@ -27,7 +27,7 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
         label: group.label,
         employeeType: group.employeeType || '—',
         entries: group.entryCount,
-        hours: group.totals.totalHours,
+        hours: group.totals.totalLoggedHours,
         drilled: group.totals.metersDrilled,
         recovered: group.totals.metersRecovered,
         eligible: group.bonusEligibility.eligible,

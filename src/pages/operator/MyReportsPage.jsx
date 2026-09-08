@@ -24,7 +24,7 @@ const bonusHint = (bonus) => {
 };
 
 const kpiItems = (report) => [
-  { label: 'My Total Hours', value: report.totals.totalHours },
+  { label: 'My Total Hours', value: report.totals.totalLoggedHours },
   { label: 'My Drilled (m)', value: report.totals.metersDrilled },
   { label: 'My Recovered (m)', value: report.totals.metersRecovered },
   {
