@@ -7,6 +7,7 @@ const toNumberOrNull = (value) => {
 };
 
 import { clockDuration } from './timeLogMath.js';
+import { BLANK_ACTIVITY_LINE } from '../constants/timeLogs.js';
 
 const toInputValue = (value) => (value === null || value === undefined ? '' : value);
 
@@ -29,7 +30,7 @@ export const emptyTimeLogForm = () => ({
   mileageStart: '',
   mileageEnd: '',
   wellTag: { installed: false, decommissioned: false, locatesProvidedBy: '' },
-  activityLines: [],
+  activityLines: [{ ...BLANK_ACTIVITY_LINE }],
   fuel: { dyedLt: '', dieselLt: '', gasolineLt: '' },
   consumables: []
 });

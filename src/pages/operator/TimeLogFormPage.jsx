@@ -338,7 +338,17 @@ export const TimeLogFormPage = () => {
       form.wellTag.installed ||
       form.wellTag.decommissioned ||
       Boolean(form.wellTag.locatesProvidedBy),
-    activityLines: form.activityLines.length > 0,
+    activityLines: form.activityLines.some(
+      (line) =>
+        Boolean(line.activityId) ||
+        Boolean(line.description) ||
+        filledValue(line.depthFrom) ||
+        filledValue(line.depthTo) ||
+        filledValue(line.recoveryMeters) ||
+        Boolean(line.timeFrom) ||
+        Boolean(line.timeTo) ||
+        Boolean(line.comments)
+    ),
     fuel:
       filledValue(form.fuel.dyedLt) ||
       filledValue(form.fuel.dieselLt) ||
@@ -460,6 +470,24 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
+          <Accordion.Item value="activity-lines">
+            <Accordion.Control icon={<CompletionDot done={filled.activityLines} />}>
+              Activity Lines
+            </Accordion.Control>
+            <Accordion.Panel>
+              <ActivityLinesSection
+                lines={form.activityLines}
+                disabled={readOnly}
+                errors={lineErrors}
+                activityGroups={activityGroups}
+                onChange={(lines) => {
+                  setLineErrors({});
+                  setField('activityLines', lines);
+                }}
+              />
+            </Accordion.Panel>
+          </Accordion.Item>
+
           <Accordion.Item value="well-tag">
             <Accordion.Control icon={<CompletionDot done={filled.wellTag} />}>
               Well Tag
@@ -508,24 +536,6 @@ export const TimeLogFormPage = () => {
                   </Text>
                 </Box>
               </Stack>
-            </Accordion.Panel>
-          </Accordion.Item>
-
-          <Accordion.Item value="activity-lines">
-            <Accordion.Control icon={<CompletionDot done={filled.activityLines} />}>
-              Activity Lines
-            </Accordion.Control>
-            <Accordion.Panel>
-              <ActivityLinesSection
-                lines={form.activityLines}
-                disabled={readOnly}
-                errors={lineErrors}
-                activityGroups={activityGroups}
-                onChange={(lines) => {
-                  setLineErrors({});
-                  setField('activityLines', lines);
-                }}
-              />
             </Accordion.Panel>
           </Accordion.Item>
 

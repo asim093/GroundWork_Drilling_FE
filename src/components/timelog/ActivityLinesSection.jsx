@@ -2,20 +2,7 @@ import { ActionIcon, NumberInput, Select, Stack, Text, TextInput } from '@mantin
 import { TimePicker } from '@mantine/dates';
 import { NavIcon } from '../NavIcon.jsx';
 import { lineDrilledMeters, lineHours } from '../../lib/timeLogMath.js';
-
-const blankActivityLine = {
-  boreholeRef: '',
-  description: '',
-  activityId: '',
-  comments: '',
-  depthFrom: '',
-  depthTo: '',
-  recoveryMeters: '',
-  timeFrom: '',
-  timeTo: '',
-  chargeTime: '',
-  ncTime: ''
-};
+import { BLANK_ACTIVITY_LINE } from '../../constants/timeLogs.js';
 
 const formatCalc = (value, suffix) =>
   value === null || value === undefined ? '—' : `${value}${suffix}`;
@@ -38,7 +25,7 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
     onChange([
       ...lines,
       {
-        ...blankActivityLine,
+        ...BLANK_ACTIVITY_LINE,
         depthFrom: previous?.depthTo ?? '',
         timeFrom: previous?.timeTo ?? '',
         autoDepthFrom: notEmpty(previous?.depthTo),

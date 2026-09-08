@@ -123,6 +123,10 @@ body {
   vertical-align: middle;
 }
 
+.tlgrid tbody td:not(.tlidx):not(.tlcomputed):not(.tldelcell) {
+  padding: 3px 4px;
+}
+
 .tlgrid tbody td:not(:last-child),
 .tlgrid thead th:not(:last-child) {
   border-right: 1px solid var(--mantine-color-gray-2);
@@ -150,7 +154,6 @@ body {
   border-radius: 6px;
   padding: 6px 9px;
   min-height: 32px;
-  margin: 4px;
   transition:
     background 90ms ease,
     border-color 90ms ease,
@@ -194,7 +197,6 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-left: 6px;
 }
 
 .tlcell-auto .tlauto-tag {
