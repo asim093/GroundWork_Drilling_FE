@@ -145,11 +145,12 @@ body {
 }
 
 .tlgrid .mantine-Input-input {
-  border: 1px solid transparent;
-  background: var(--mantine-color-gray-1);
+  border: 1px solid var(--mantine-color-gray-5);
+  background: transparent;
   border-radius: 6px;
-  padding: 7px 9px;
-  min-height: 34px;
+  padding: 6px 9px;
+  min-height: 32px;
+  margin: 4px;
   transition:
     background 90ms ease,
     border-color 90ms ease,
@@ -161,18 +162,17 @@ body {
 }
 
 .tlgrid td:hover .mantine-Input-input {
-  background: var(--mantine-color-gray-2);
+  border-color: var(--mantine-color-gray-7);
 }
 
 .tlgrid .mantine-Input-input:focus,
 .tlgrid .mantine-Input-input:focus-within {
-  background: #fff;
-  border-color: var(--mantine-color-brand-4);
+  border-color: var(--mantine-color-brand-6);
   box-shadow: 0 0 0 2px var(--mantine-color-brand-1);
 }
 
 .tlgrid td.tlcell-error .mantine-Input-input {
-  border-color: var(--mantine-color-red-4);
+  border-color: var(--mantine-color-red-5);
   background: var(--mantine-color-red-0);
 }
 
