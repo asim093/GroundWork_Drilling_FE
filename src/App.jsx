@@ -11,6 +11,7 @@ import { JobsPage } from './pages/admin/JobsPage.jsx';
 import { SchedulingPage } from './pages/admin/SchedulingPage.jsx';
 import { ReportsPage } from './pages/admin/ReportsPage.jsx';
 import { SettingsPage } from './pages/admin/SettingsPage.jsx';
+import { AdminTimeLogPage } from './pages/admin/AdminTimeLogPage.jsx';
 import { OperatorJobsPage } from './pages/operator/OperatorJobsPage.jsx';
 import { MySubmissionsPage } from './pages/operator/MySubmissionsPage.jsx';
 import { MyReportsPage } from './pages/operator/MyReportsPage.jsx';
@@ -30,6 +31,7 @@ const App = () => (
         <Route path="jobs" element={<JobsPage />} />
         <Route path="scheduling" element={<SchedulingPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="time-logs/:id" element={<AdminTimeLogPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Route>

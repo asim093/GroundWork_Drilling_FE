@@ -5,7 +5,7 @@ export const SortableTh = ({ field, label, sort, order, onSort }) => {
   const indicator = active ? (order === 'asc' ? '↑' : '↓') : '↕';
 
   return (
-    <Table.Th>
+    <Table.Th style={{ whiteSpace: 'nowrap' }}>
       <UnstyledButton onClick={() => onSort(field)} aria-label={`Sort by ${label}`}>
         <Group gap={6} wrap="nowrap">
           <Text size="sm" fw={600}>

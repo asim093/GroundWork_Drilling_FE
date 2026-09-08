@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  Card,
   Center,
+  Divider,
+  Grid,
   Group,
   Loader,
   Paper,
   SegmentedControl,
   SimpleGrid,
   Stack,
+  Table,
   Text
 } from '@mantine/core';
-import { KpiGrid } from '../../components/reports/KpiCard.jsx';
 import { ReportExportButtons } from '../../components/reports/ReportExportButtons.jsx';
 import { ReportGroupsTable } from '../../components/reports/ReportGroupsTable.jsx';
 import { ConsumablesReportTable } from '../../components/reports/ConsumablesReportTable.jsx';
@@ -32,33 +35,244 @@ const GROUP_BY_OPTIONS = [
   { value: 'job', label: 'By job' }
 ];
 
-const kpiItems = (report) => [
-  { label: 'Total Hours', value: report.totals.totalHours },
-  { label: 'Total Drilled (m)', value: report.totals.metersDrilled },
-  { label: 'Total Recovered (m)', value: report.totals.metersRecovered },
-  {
-    label: 'Overall Recovery %',
-    value: report.recoveryPercentOverall === null ? '—' : `${report.recoveryPercentOverall}%`
-  },
-  {
-    label: 'Bonus-Eligible Shifts',
-    value: report.bonusEligibility.eligible,
-    hint: `${report.bonusEligibility['not-eligible']} not eligible · ${report.bonusEligibility['not-available']} not available`
-  },
-  { label: 'Total Bonus Amount', value: `$${report.bonusTotalAmount}` }
+const COMPARISON_METRICS = [
+  { key: 'totalHours', label: 'Hours' },
+  { key: 'metersDrilled', label: 'Drilled (m)' },
+  { key: 'metersRecovered', label: 'Recovered (m)' }
 ];
 
-const comparisonKpis = (period) => [
-  { label: 'Hours', value: period.totals.totalHours },
-  { label: 'Drilled (m)', value: period.totals.metersDrilled },
-  { label: 'Recovered (m)', value: period.totals.metersRecovered },
-  {
-    label: 'Recovery %',
-    value: period.recoveryPercentOverall === null ? '—' : `${period.recoveryPercentOverall}%`
-  },
-  { label: 'Bonus-eligible shifts', value: period.bonusEligibility.eligible },
-  { label: 'Bonus amount', value: `$${period.bonusTotalAmount}` }
-];
+const fmt = (value) => {
+  if (value === null || value === undefined) {
+    return '—';
+  }
+  if (typeof value !== 'number') {
+    return value;
+  }
+  return Number.isInteger(value)
+    ? value.toLocaleString('en-US')
+    : value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+};
+
+const recoveryColor = (value, threshold) => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  return value >= threshold ? 'green.7' : 'red.7';
+};
+
+const CompactStat = ({ label, value, hint }) => (
+  <Group justify="space-between" wrap="nowrap" gap="md" py="sm">
+    <Text fz="sm" c="dimmed">
+      {label}
+    </Text>
+    <Group gap="sm" wrap="nowrap" align="baseline">
+      {hint ? (
+        <Text fz="xs" c="dimmed" visibleFrom="sm">
+          {hint}
+        </Text>
+      ) : null}
+      <Text fz="sm" fw={700}>
+        {value}
+      </Text>
+    </Group>
+  </Group>
+);
+
+const SummaryStats = ({ report }) => {
+  const recovery = report.recoveryPercentOverall;
+
+  return (
+    <Grid gutter="lg">
+      <Grid.Col span={{ base: 12, md: 4 }}>
+        <Paper radius="lg" p="xl" h="100%" bg="var(--mantine-color-blue-6)" c="white">
+          <Stack gap={4} h="100%" justify="center">
+            <Text fz="sm" fw={600} style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+              Total bonus amount
+            </Text>
+            <Text fz={40} fw={800} lh={1.1}>
+              ${fmt(report.bonusTotalAmount)}
+            </Text>
+            <Text fz="xs" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+              Across {fmt(report.entryCount)} submitted{' '}
+              {report.entryCount === 1 ? 'entry' : 'entries'}
+            </Text>
+          </Stack>
+        </Paper>
+      </Grid.Col>
+
+      <Grid.Col span={{ base: 12, md: 8 }}>
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" h="100%">
+          <Paper withBorder radius="lg" p="lg" h="100%">
+            <Stack gap={6}>
+              <Text fz="sm" c="dimmed" fw={600}>
+                Overall recovery
+              </Text>
+              <Text
+                fz={30}
+                fw={700}
+                lh={1.1}
+                c={recoveryColor(recovery, report.recoveryThreshold)}
+              >
+                {recovery === null || recovery === undefined ? '—' : `${fmt(recovery)}%`}
+              </Text>
+              <Text fz="xs" c="dimmed">
+                Bonus threshold {fmt(report.recoveryThreshold)}%
+              </Text>
+            </Stack>
+          </Paper>
+
+          <Paper withBorder radius="lg" p="lg" h="100%">
+            <Stack gap={6}>
+              <Text fz="sm" c="dimmed" fw={600}>
+                Total hours logged
+              </Text>
+              <Text fz={30} fw={700} lh={1.1}>
+                {fmt(report.totals.totalHours)}
+              </Text>
+              <Text fz="xs" c="dimmed">
+                On-site, standby &amp; other
+              </Text>
+            </Stack>
+          </Paper>
+        </SimpleGrid>
+      </Grid.Col>
+
+      <Grid.Col span={12}>
+        <Paper withBorder radius="lg" px="lg" py={4}>
+          <CompactStat label="Total drilled" value={`${fmt(report.totals.metersDrilled)} m`} />
+          <Divider />
+          <CompactStat
+            label="Total recovered"
+            value={`${fmt(report.totals.metersRecovered)} m`}
+          />
+          <Divider />
+          <CompactStat
+            label="Bonus-eligible shifts"
+            value={fmt(report.bonusEligibility.eligible)}
+            hint={`${fmt(report.bonusEligibility['not-eligible'])} not eligible · ${fmt(
+              report.bonusEligibility['not-available']
+            )} not available`}
+          />
+        </Paper>
+      </Grid.Col>
+    </Grid>
+  );
+};
+
+const TrendArrow = ({ direction }) => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    style={{ display: 'block', transform: direction === 'down' ? 'rotate(180deg)' : 'none' }}
+  >
+    <polyline points="6 14 12 8 18 14" />
+  </svg>
+);
+
+const ComparisonChange = ({ current, previous }) => {
+  const comparable = typeof previous === 'number' && previous !== 0 && typeof current === 'number';
+
+  if (!comparable) {
+    return (
+      <Text fz="sm" c="dimmed">
+        —
+      </Text>
+    );
+  }
+
+  const pct = ((current - previous) / previous) * 100;
+
+  if (Math.abs(pct) < 0.05) {
+    return (
+      <Text fz="sm" c="dimmed">
+        No change
+      </Text>
+    );
+  }
+
+  const up = pct > 0;
+
+  return (
+    <Group gap={4} wrap="nowrap" justify="flex-end" c={up ? 'green.7' : 'red.7'}>
+      <TrendArrow direction={up ? 'up' : 'down'} />
+      <Text fz="sm" fw={600} c="inherit">
+        {Math.abs(pct).toFixed(1)}%
+      </Text>
+    </Group>
+  );
+};
+
+const MonthlyComparison = ({ comparison, loading, failed }) => {
+  const current = comparison?.current;
+  const previous = comparison?.previous;
+  const ready = Boolean(current?.totals && previous?.totals);
+
+  return (
+    <Card withBorder radius="lg" p="lg">
+      <Stack gap="md">
+        <Stack gap={2}>
+          <Text fw={700}>Monthly comparison</Text>
+          <Text fz="xs" c="dimmed">
+            {ready ? `${previous.label} vs ${current.label}` : 'Current month vs previous month'}
+          </Text>
+        </Stack>
+
+        {loading ? (
+          <Center py="lg">
+            <Loader size="sm" />
+          </Center>
+        ) : !ready ? (
+          <Text c="dimmed" size="sm" py="xs">
+            {failed
+              ? 'Comparison data could not be loaded right now.'
+              : 'Not enough history yet to compare months.'}
+          </Text>
+        ) : (
+          <Table.ScrollContainer minWidth={460}>
+            <Table verticalSpacing="sm" horizontalSpacing="md">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Metric</Table.Th>
+                  <Table.Th style={{ textAlign: 'right' }}>{current.label}</Table.Th>
+                  <Table.Th style={{ textAlign: 'right' }}>{previous.label}</Table.Th>
+                  <Table.Th style={{ textAlign: 'right' }}>Change</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {COMPARISON_METRICS.map((metric) => {
+                  const cur = current.totals[metric.key];
+                  const prev = previous.totals[metric.key];
+
+                  return (
+                    <Table.Tr key={metric.key}>
+                      <Table.Td>{metric.label}</Table.Td>
+                      <Table.Td style={{ textAlign: 'right' }} fw={600}>
+                        {fmt(cur)}
+                      </Table.Td>
+                      <Table.Td style={{ textAlign: 'right' }} c="dimmed">
+                        {fmt(prev)}
+                      </Table.Td>
+                      <Table.Td style={{ textAlign: 'right' }}>
+                        <ComparisonChange current={cur} previous={prev} />
+                      </Table.Td>
+                    </Table.Tr>
+                  );
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        )}
+      </Stack>
+    </Card>
+  );
+};
 
 export const ReportsPage = () => {
   usePageTitle('Reports');
@@ -68,6 +282,7 @@ export const ReportsPage = () => {
   const [comparison, setComparison] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingComparison, setLoadingComparison] = useState(true);
+  const [comparisonFailed, setComparisonFailed] = useState(false);
   const [drawerGroup, setDrawerGroup] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -93,10 +308,12 @@ export const ReportsPage = () => {
 
   const loadComparison = useCallback(async () => {
     setLoadingComparison(true);
+    setComparisonFailed(false);
 
     try {
       setComparison(await getMonthlyComparison({}));
     } catch (error) {
+      setComparisonFailed(true);
       notifyError(extractErrorMessage(error, 'Unable to load the monthly comparison'));
     } finally {
       setLoadingComparison(false);
@@ -122,12 +339,24 @@ export const ReportsPage = () => {
   return (
     <Stack gap="xl">
       <Paper withBorder radius="lg" p="lg">
-        <Group gap="lg" wrap="wrap" align="center" justify="space-between">
-          <Group gap="lg" wrap="wrap" align="center">
-            <DateRangePicker value={range} onChange={setRange} />
-            <SegmentedControl data={GROUP_BY_OPTIONS} value={groupBy} onChange={setGroupBy} />
+        <Group gap="sm" wrap="wrap" align="center" justify="space-between">
+          <Group gap="sm" wrap="wrap" align="center">
+            <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
+            <SegmentedControl
+              data={GROUP_BY_OPTIONS}
+              value={groupBy}
+              onChange={setGroupBy}
+              size="sm"
+              radius="sm"
+              style={{ border: '1px solid var(--mantine-color-gray-3)' }}
+            />
           </Group>
-          <ReportExportButtons onExport={handleExport} disabled={loadingSummary || !summary} />
+          <ReportExportButtons
+            onExport={handleExport}
+            disabled={loadingSummary || !summary}
+            size="sm"
+            radius="sm"
+          />
         </Group>
       </Paper>
 
@@ -137,7 +366,7 @@ export const ReportsPage = () => {
         </Center>
       ) : (
         <Stack gap="lg">
-          <KpiGrid items={kpiItems(summary)} />
+          <SummaryStats report={summary} />
 
           {summary.groups?.length ? (
             <ReportGroupsTable
@@ -149,31 +378,19 @@ export const ReportsPage = () => {
 
           <ConsumablesReportTable consumables={summary.consumables} />
 
-          <ReportEntriesTable entries={summary.entries} showOperator />
+          <ReportEntriesTable
+            entries={summary.entries}
+            showOperator
+            entryHref={(entryId) => `/admin/time-logs/${entryId}`}
+          />
+
+          <MonthlyComparison
+            comparison={comparison}
+            loading={loadingComparison}
+            failed={comparisonFailed}
+          />
         </Stack>
       )}
-
-      <Stack gap="md">
-        <Text fw={700} fz="lg">
-          Monthly comparison
-        </Text>
-        {loadingComparison || !comparison ? (
-          <Center py="xl">
-            <Loader />
-          </Center>
-        ) : (
-          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-            {[comparison.current, comparison.previous].map((period) => (
-              <Paper key={period.label} withBorder radius="lg" p="lg">
-                <Stack gap="md">
-                  <Text fw={700}>{period.label}</Text>
-                  <KpiGrid items={comparisonKpis(period)} cols={{ base: 2, sm: 3 }} />
-                </Stack>
-              </Paper>
-            ))}
-          </SimpleGrid>
-        )}
-      </Stack>
 
       <UserReportDrawer
         opened={drawerOpen}

@@ -60,7 +60,7 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
   const colSpan = isUser ? 10 : 8;
 
   return (
-    <Card withBorder radius="md" p="md">
+    <Card withBorder radius="lg" p="lg">
       <Stack gap="md">
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Text fw={700}>{isUser ? 'Breakdown by user' : 'Breakdown by job'}</Text>
@@ -77,7 +77,7 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
           </Text>
         ) : null}
 
-        <Table.ScrollContainer minWidth={isUser ? 1000 : 720}>
+        <Table.ScrollContainer minWidth={isUser ? 1120 : 760}>
           <Table verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
@@ -88,9 +88,9 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
                 {th('drilled', 'Drilled (m)')}
                 {th('recovered', 'Recovered (m)')}
                 {th('eligible', 'Eligible')}
-                <Table.Th>Not eligible</Table.Th>
-                <Table.Th>Not available</Table.Th>
-                {isUser ? th('eligibleMeters', 'Eligible m') : null}
+                <Table.Th style={{ whiteSpace: 'nowrap' }}>Not eligible</Table.Th>
+                <Table.Th style={{ whiteSpace: 'nowrap' }}>Not available</Table.Th>
+                {isUser ? th('eligibleMeters', 'Eligible (m)') : null}
                 {isUser ? th('bonusAmount', 'Bonus') : null}
               </Table.Tr>
             </Table.Thead>

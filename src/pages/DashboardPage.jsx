@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 import {
   Anchor,
   Box,
-  Card,
   Center,
   Group,
   Loader,
-  Progress,
+  Paper,
   SimpleGrid,
   Stack,
   Table,
@@ -17,7 +16,6 @@ import {
 import { StatCard } from '../components/dashboard/StatCard.jsx';
 import { SectionCard } from '../components/SectionCard.jsx';
 import { NavIcon } from '../components/NavIcon.jsx';
-import { SCHEDULING_STATUS_COLORS } from '../constants/scheduling.js';
 import { TIME_LOG_STATUS_COLORS } from '../constants/timeLogs.js';
 import { BONUS_ELIGIBILITY, BONUS_ELIGIBILITY_ORDER } from '../constants/bonus.js';
 import { usePageTitle } from '../context/PageTitleContext.jsx';
@@ -26,6 +24,131 @@ import { formatDate } from '../lib/dateRange.js';
 import { getDashboard } from '../services/dashboardService.js';
 import { extractErrorMessage } from '../services/api.js';
 import { notifyError } from '../lib/toast.js';
+
+const fmt = (value) =>
+  typeof value === 'number'
+    ? value.toLocaleString('en-US', { maximumFractionDigits: 2 })
+    : value;
+
+const WelcomeBanner = ({ name, role }) => (
+  <Paper withBorder radius="lg" p="lg" bg="var(--mantine-color-blue-0)">
+    <Group justify="space-between" align="center" wrap="wrap" gap="md">
+      <Group gap="md" wrap="nowrap" align="center">
+        <ThemeIcon size={44} radius="xl" variant="white" color="blue">
+          <NavIcon name="home" size={22} />
+        </ThemeIcon>
+        <Stack gap={2}>
+          <Text fw={700} fz="lg">
+            Welcome back, {name}
+          </Text>
+          <Text size="sm" c="blue.8">
+            {role === 'admin'
+              ? "Here's what's happening across your drilling operations today."
+              : "Here's a snapshot of your recent activity."}
+          </Text>
+        </Stack>
+      </Group>
+      <Group gap={6} c="blue.8" wrap="nowrap">
+        <NavIcon name="calendar" size={15} />
+        <Text size="sm">
+          {new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+          })}
+        </Text>
+      </Group>
+    </Group>
+  </Paper>
+);
+
+const ActivityChart = ({ data }) => {
+  const rows = data || [];
+  const total = rows.reduce((sum, day) => sum + day.count, 0);
+
+  if (!total) {
+    return (
+      <Text c="dimmed" size="sm">
+        No submissions in the last 7 days.
+      </Text>
+    );
+  }
+
+  const max = Math.max(1, ...rows.map((day) => day.count));
+
+  return (
+    <Box>
+      <Group align="flex-end" gap="xs" wrap="nowrap" h={132}>
+        {rows.map((day) => {
+          const barHeight = day.count ? Math.max(8, Math.round((day.count / max) * 96)) : 3;
+          return (
+            <Stack key={day.date} gap={4} align="center" justify="flex-end" style={{ flex: 1 }}>
+              <Text size="xs" fw={700} c={day.count ? 'blue.7' : 'dimmed'}>
+                {day.count}
+              </Text>
+              <Box
+                w="100%"
+                style={{
+                  height: barHeight,
+                  backgroundColor: day.count
+                    ? 'var(--mantine-color-blue-5)'
+                    : 'var(--mantine-color-gray-3)',
+                  borderRadius: '4px 4px 0 0'
+                }}
+              />
+            </Stack>
+          );
+        })}
+      </Group>
+      <Group
+        gap="xs"
+        wrap="nowrap"
+        pt="xs"
+        mt={6}
+        style={{ borderTop: '1px solid var(--mantine-color-gray-2)' }}
+      >
+        {rows.map((day) => (
+          <Text key={day.date} size="xs" c="dimmed" ta="center" style={{ flex: 1 }}>
+            {day.label}
+          </Text>
+        ))}
+      </Group>
+    </Box>
+  );
+};
+
+const BonusEligibility = ({ counts }) => (
+  <Stack gap="md">
+    <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="md">
+      {BONUS_ELIGIBILITY_ORDER.map((key) => (
+        <Box key={key}>
+          <Group gap={7} wrap="nowrap">
+            <Box
+              w={8}
+              h={8}
+              style={{
+                borderRadius: '50%',
+                backgroundColor: `var(--mantine-color-${BONUS_ELIGIBILITY[key].color}-6)`,
+                flexShrink: 0
+              }}
+            />
+            <Text size="sm" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+              {BONUS_ELIGIBILITY[key].label}
+            </Text>
+          </Group>
+          <Text fw={700} fz={26} mt={4}>
+            {counts[key] || 0}
+          </Text>
+        </Box>
+      ))}
+    </SimpleGrid>
+    <Text size="xs" c="dimmed">
+      Computed from meters recovered ÷ meters drilled per shift. &quot;Not available&quot; means a
+      shift had no meters drilled recorded, not that it is ineligible.
+    </Text>
+  </Stack>
+);
 
 const RecentTable = ({ rows, linkBase, showOperator, emptyText }) => {
   if (!rows.length) {
@@ -85,141 +208,48 @@ const RecentTable = ({ rows, linkBase, showOperator, emptyText }) => {
   );
 };
 
-const StatusLegend = ({ items }) => (
-  <Group gap="lg" wrap="wrap">
-    {items.map(({ key, label, color, count }) => (
-      <Group key={key} gap={7} wrap="nowrap">
-        <Box
-          w={8}
-          h={8}
-          style={{
-            borderRadius: '50%',
-            backgroundColor: `var(--mantine-color-${color}-6)`,
-            flexShrink: 0
-          }}
-        />
-        <Text size="sm" c="dimmed">
-          {label}
-        </Text>
-        <Text size="sm" fw={700}>
-          {count}
-        </Text>
-      </Group>
-    ))}
-  </Group>
-);
-
-const SchedulingBreakdown = ({ counts }) => {
-  const total = counts.submitted + counts.draft + counts.missing;
-
-  return (
-    <Stack gap="sm">
-      {total > 0 ? (
-        <Progress.Root size="sm" radius="lg">
-          {['submitted', 'draft', 'missing'].map((key) =>
-            counts[key] ? (
-              <Progress.Section
-                key={key}
-                value={(counts[key] / total) * 100}
-                color={SCHEDULING_STATUS_COLORS[key]}
-              />
-            ) : null
-          )}
-        </Progress.Root>
-      ) : (
-        <Text c="dimmed" size="sm">
-          No jobs scheduled this month.
-        </Text>
-      )}
-      <StatusLegend
-        items={['submitted', 'draft', 'missing'].map((key) => ({
-          key,
-          label: key[0].toUpperCase() + key.slice(1),
-          color: SCHEDULING_STATUS_COLORS[key],
-          count: counts[key]
-        }))}
-      />
-    </Stack>
-  );
-};
-
-const BonusBreakdown = ({ counts }) => {
-  const total = BONUS_ELIGIBILITY_ORDER.reduce((sum, key) => sum + (counts[key] || 0), 0);
-
-  return (
-    <Stack gap="sm">
-      {total > 0 ? (
-        <Progress.Root size="sm" radius="lg">
-          {BONUS_ELIGIBILITY_ORDER.map((key) =>
-            counts[key] ? (
-              <Progress.Section
-                key={key}
-                value={(counts[key] / total) * 100}
-                color={BONUS_ELIGIBILITY[key].color}
-              />
-            ) : null
-          )}
-        </Progress.Root>
-      ) : null}
-      <StatusLegend
-        items={BONUS_ELIGIBILITY_ORDER.map((key) => ({
-          key,
-          label: BONUS_ELIGIBILITY[key].label,
-          color: BONUS_ELIGIBILITY[key].color,
-          count: counts[key] || 0
-        }))}
-      />
-      <Text size="xs" c="dimmed">
-        Computed from meters recovered ÷ meters drilled per shift. &quot;Not available&quot; means a
-        shift had no meters drilled recorded, not that it is ineligible.
-      </Text>
-    </Stack>
-  );
-};
-
-const AdminDashboard = ({ data }) => (
+const AdminDashboard = ({ data, user }) => (
   <Stack gap="lg">
+    <WelcomeBanner name={user?.name} role="admin" />
+
     <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="lg">
       <StatCard
         label="Operators"
-        value={data.operators.total}
+        value={fmt(data.operators.total)}
         hint={`${data.operators.active} active · ${data.operators.pendingInvite} pending`}
         icon="users"
+        to="/admin/users"
       />
       <StatCard
         label="Jobs"
-        value={data.jobs.total}
+        value={fmt(data.jobs.total)}
         hint={`${data.jobs.byStatus.scheduled} scheduled · ${data.jobs.byStatus['in-progress']} in progress`}
         icon="jobs"
+        to="/admin/jobs"
       />
       <StatCard
-        label="Meters drilled this month"
-        value={data.thisMonth.totals.metersDrilled}
-        hint={`${data.thisMonth.totals.metersRecovered} m recovered`}
+        label="Meters drilled"
+        value={fmt(data.thisMonth.totals.metersDrilled)}
+        hint={`${fmt(data.thisMonth.totals.metersRecovered)} m recovered this month`}
         icon="reports"
+        to="/admin/reports"
       />
       <StatCard
-        label="Hours this month"
-        value={data.thisMonth.totals.hoursOnSite}
-        hint={`${data.thisMonth.totals.standbyHours} standby hours`}
-        icon="reports"
+        label="Hours logged"
+        value={fmt(data.thisMonth.totals.hoursOnSite)}
+        hint={`${fmt(data.thisMonth.totals.standbyHours)} standby hours this month`}
+        icon="calendar"
+        to="/admin/reports"
       />
     </SimpleGrid>
 
-    <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-      <SectionCard
-        title={`Scheduling · ${data.thisMonth.label}`}
-        action={
-          <Anchor component={Link} to="/admin/scheduling" size="sm">
-            Open
-          </Anchor>
-        }
-      >
-        <SchedulingBreakdown counts={data.thisMonth.scheduling} />
+    <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
+      <SectionCard title="Submission activity" subtitle="Submissions in the last 7 days">
+        <ActivityChart data={data.submissionActivity} />
       </SectionCard>
 
-      <SectionCard title={`Bonus eligibility · ${data.thisMonth.label}`}>
-        <BonusBreakdown counts={data.thisMonth.bonusEligibility} />
+      <SectionCard title="Bonus eligibility" subtitle={data.thisMonth.label}>
+        <BonusEligibility counts={data.thisMonth.bonusEligibility} />
       </SectionCard>
     </SimpleGrid>
 
@@ -227,41 +257,56 @@ const AdminDashboard = ({ data }) => (
       title="Recent submissions"
       action={
         <Anchor component={Link} to="/admin/reports" size="sm">
-          Reports
+          View all
         </Anchor>
       }
     >
       <RecentTable
         rows={data.recentSubmissions}
         showOperator
+        linkBase="/admin/time-logs"
         emptyText="No time logs have been submitted yet."
       />
     </SectionCard>
   </Stack>
 );
 
-const OperatorDashboard = ({ data }) => (
+const OperatorDashboard = ({ data, user }) => (
   <Stack gap="lg">
+    <WelcomeBanner name={user?.name} role="operator" />
+
     <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="lg">
-      <StatCard label="Assigned jobs" value={data.assignedJobs.total} icon="jobs" />
+      <StatCard
+        label="Assigned jobs"
+        value={fmt(data.assignedJobs.total)}
+        icon="jobs"
+        to="/operator/jobs"
+      />
       <StatCard
         label="Drafts in progress"
-        value={data.myTimeLogs.draft}
+        value={fmt(data.myTimeLogs.draft)}
         icon="clipboard"
+        to="/operator/submissions"
       />
       <StatCard
-        label="Submitted this month"
-        value={data.myTimeLogs.thisMonthSubmitted}
-        hint={`${data.myTimeLogs.submitted} all time`}
+        label="Submitted"
+        value={fmt(data.myTimeLogs.thisMonthSubmitted)}
+        hint={`this month · ${data.myTimeLogs.submitted} all time`}
         icon="clipboard"
+        to="/operator/submissions"
       />
       <StatCard
-        label="Hours this month"
-        value={data.thisMonth.totals.hoursOnSite}
-        hint={`${data.thisMonth.totals.standbyHours} standby hours`}
-        icon="reports"
+        label="Hours logged"
+        value={fmt(data.thisMonth.totals.hoursOnSite)}
+        hint={`${fmt(data.thisMonth.totals.standbyHours)} standby hours this month`}
+        icon="calendar"
+        to="/operator/my-reports"
       />
     </SimpleGrid>
+
+    <SectionCard title="Submission activity" subtitle="Your submissions in the last 7 days">
+      <ActivityChart data={data.submissionActivity} />
+    </SectionCard>
 
     <SectionCard
       title="Recent entries"
@@ -310,30 +355,9 @@ export const DashboardPage = () => {
     );
   }
 
-  return (
-    <Stack gap="lg">
-      <Card withBorder radius="lg" p="lg" bg="var(--mantine-color-blue-0)">
-        <Group gap="md" wrap="nowrap">
-          <ThemeIcon size={44} radius="xl" variant="white" color="blue">
-            <NavIcon name="home" size={22} />
-          </ThemeIcon>
-          <Stack gap={0}>
-            <Text fw={700} fz="lg">
-              Welcome back, {user?.name}
-            </Text>
-            <Text size="sm" c="blue.8">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric'
-              })}
-            </Text>
-          </Stack>
-        </Group>
-      </Card>
-
-      {data.role === 'admin' ? <AdminDashboard data={data} /> : <OperatorDashboard data={data} />}
-    </Stack>
+  return data.role === 'admin' ? (
+    <AdminDashboard data={data} user={user} />
+  ) : (
+    <OperatorDashboard data={data} user={user} />
   );
 };

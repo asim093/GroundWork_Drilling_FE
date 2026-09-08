@@ -23,9 +23,10 @@ export const emptyTimeLogForm = () => ({
   hoursOnSite: '',
   standbyHours: '',
   otherHours: '',
+  assistantEnabled: false,
+  mileageEnabled: false,
   mileageStart: '',
   mileageEnd: '',
-  mileageTotal: '',
   wellTag: { installed: false, decommissioned: false, locatesProvidedBy: '' },
   activityLines: [],
   fuel: { dyedLt: '', dieselLt: '', gasolineLt: '' },
@@ -45,9 +46,14 @@ export const timeLogFormFromEntry = (entry) => ({
   hoursOnSite: toInputValue(entry.hoursOnSite),
   standbyHours: toInputValue(entry.standbyHours),
   otherHours: toInputValue(entry.otherHours),
+  assistantEnabled: Boolean(
+    entry.assistantName || entry.assistantTimeIn || entry.assistantTimeOut
+  ),
+  mileageEnabled: [entry.mileageStart, entry.mileageEnd].some(
+    (value) => value !== null && value !== undefined
+  ),
   mileageStart: toInputValue(entry.mileageStart),
   mileageEnd: toInputValue(entry.mileageEnd),
-  mileageTotal: toInputValue(entry.mileageTotal),
   wellTag: {
     installed: Boolean(entry.wellTag?.installed),
     decommissioned: Boolean(entry.wellTag?.decommissioned),
@@ -56,6 +62,8 @@ export const timeLogFormFromEntry = (entry) => ({
   activityLines: (entry.activityLines || []).map((line) => ({
     boreholeRef: line.boreholeRef || '',
     description: line.description || '',
+    activityId: line.activityId?.id || line.activityId?._id || line.activityId || '',
+    comments: line.comments || '',
     depthFrom: toInputValue(line.depthFrom),
     depthTo: toInputValue(line.depthTo),
     recoveryMeters: toInputValue(line.recoveryMeters),
@@ -92,7 +100,6 @@ export const timeLogPayloadFromForm = (form) => ({
   otherHours: toNumberOrNull(form.otherHours),
   mileageStart: toNumberOrNull(form.mileageStart),
   mileageEnd: toNumberOrNull(form.mileageEnd),
-  mileageTotal: toNumberOrNull(form.mileageTotal),
   wellTag: {
     installed: Boolean(form.wellTag.installed),
     decommissioned: Boolean(form.wellTag.decommissioned),
@@ -101,6 +108,8 @@ export const timeLogPayloadFromForm = (form) => ({
   activityLines: form.activityLines.map((line) => ({
     boreholeRef: line.boreholeRef,
     description: line.description,
+    activityId: line.activityId || null,
+    comments: line.comments || '',
     depthFrom: toNumberOrNull(line.depthFrom),
     depthTo: toNumberOrNull(line.depthTo),
     recoveryMeters: toNumberOrNull(line.recoveryMeters),

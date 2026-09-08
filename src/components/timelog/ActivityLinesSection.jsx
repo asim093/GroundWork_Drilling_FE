@@ -1,20 +1,12 @@
-import {
-  Button,
-  Card,
-  Fieldset,
-  Group,
-  NumberInput,
-  SimpleGrid,
-  Stack,
-  Text,
-  TextInput,
-  Textarea
-} from '@mantine/core';
+import { ActionIcon, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
+import { NavIcon } from '../NavIcon.jsx';
 import { lineDrilledMeters, lineHours } from '../../lib/timeLogMath.js';
 
 const blankActivityLine = {
   boreholeRef: '',
   description: '',
+  activityId: '',
+  comments: '',
   depthFrom: '',
   depthTo: '',
   recoveryMeters: '',
@@ -24,14 +16,20 @@ const blankActivityLine = {
   ncTime: ''
 };
 
-const GRID = { base: 1, sm: 2 };
-
 const formatCalc = (value, suffix) =>
   value === null || value === undefined ? '—' : `${value}${suffix}`;
 
-export const ActivityLinesSection = ({ lines, onChange, disabled, errors }) => {
-  const updateLine = (index, key, value) => {
-    onChange(lines.map((line, i) => (i === index ? { ...line, [key]: value } : line)));
+const notEmpty = (value) => value !== null && value !== undefined && value !== '';
+
+const ERROR_LABELS = {
+  activityId: 'Select an activity',
+  depthTo: 'Depth to cannot be less than depth from',
+  recoveryMeters: 'Recovery cannot exceed the drilled meters for this run'
+};
+
+export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activityGroups = [] }) => {
+  const updateLine = (index, patch) => {
+    onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
   };
 
   const addLine = () => {
@@ -41,138 +39,214 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors }) => {
       {
         ...blankActivityLine,
         depthFrom: previous?.depthTo ?? '',
-        timeFrom: previous?.timeTo ?? ''
+        timeFrom: previous?.timeTo ?? '',
+        autoDepthFrom: notEmpty(previous?.depthTo),
+        autoTimeFrom: notEmpty(previous?.timeTo)
       }
     ]);
   };
 
   const removeLine = (index) => onChange(lines.filter((_, i) => i !== index));
 
+  const errorList = Object.entries(errors || {}).flatMap(([index, fields]) =>
+    Object.keys(fields || {}).map(
+      (field) => `Line ${Number(index) + 1}: ${ERROR_LABELS[field] || 'Invalid value'}`
+    )
+  );
+
+  const cellInput = (index, key, extra = {}) => (
+    <NumberInput
+      variant="unstyled"
+      size="sm"
+      hideControls
+      min={0}
+      placeholder="0"
+      value={lines[index][key]}
+      disabled={disabled}
+      aria-label={extra.label}
+      error={extra.hasError || undefined}
+      onChange={(value) => updateLine(index, { [key]: value, ...(extra.clearAuto || {}) })}
+    />
+  );
+
+  const timeCell = (index, key, extra = {}) => (
+    <TextInput
+      variant="unstyled"
+      size="sm"
+      type="time"
+      value={lines[index][key]}
+      disabled={disabled}
+      aria-label={extra.label}
+      onChange={(event) =>
+        updateLine(index, { [key]: event.currentTarget.value, ...(extra.clearAuto || {}) })
+      }
+    />
+  );
+
   return (
-    <Fieldset legend="Activity lines (BH#)">
-      <Stack gap="md">
-        {lines.length === 0 ? (
-          <Text c="dimmed" size="sm">
-            No activity lines added yet.
-          </Text>
-        ) : null}
+    <Stack gap="sm">
+      <div className="tlgrid-wrap">
+        <table className="tlgrid tlgrid-wide">
+          <colgroup>
+            <col style={{ width: 44 }} />
+            <col style={{ minWidth: 230 }} />
+            <col style={{ width: 92 }} />
+            <col style={{ width: 92 }} />
+            <col style={{ width: 116 }} />
+            <col style={{ width: 116 }} />
+            <col style={{ width: 92 }} />
+            <col style={{ width: 82 }} />
+            <col style={{ width: 74 }} />
+            <col style={{ minWidth: 160 }} />
+            <col style={{ width: 44 }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Activity</th>
+              <th className="tlnum">Depth from</th>
+              <th className="tlnum">Depth to</th>
+              <th>Time from</th>
+              <th>Time to</th>
+              <th className="tlnum">Recovery</th>
+              <th className="tlnum">Drilled</th>
+              <th className="tlnum">Hours</th>
+              <th>Comments</th>
+              <th aria-label="Remove" />
+            </tr>
+          </thead>
+          <tbody>
+            {lines.length === 0 ? (
+              <tr>
+                <td colSpan={11} className="tlgrid-empty">
+                  No activity lines yet.
+                </td>
+              </tr>
+            ) : null}
 
-        {lines.map((line, index) => {
-          const drilled = lineDrilledMeters(line);
-          const hours = lineHours(line);
-          const lineError = errors?.[index] || {};
+            {lines.map((line, index) => {
+              const drilled = lineDrilledMeters(line);
+              const hours = lineHours(line);
+              const lineError = errors?.[index] || {};
 
-          return (
-            <Card key={index} withBorder radius="sm" p="md">
-              <Stack gap="sm">
-                <Group justify="space-between">
-                  <Text fw={600} size="sm">
-                    Line {index + 1}
-                  </Text>
-                  {disabled ? null : (
-                    <Button
-                      variant="subtle"
-                      color="red"
-                      size="compact-sm"
-                      onClick={() => removeLine(index)}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </Group>
+              return (
+                <tr key={index}>
+                  <td className="tlidx">{index + 1}</td>
+                  <td className={lineError.activityId ? 'tlcell-error' : undefined}>
+                    <Select
+                      variant="unstyled"
+                      size="sm"
+                      placeholder={line.description && !line.activityId ? line.description : 'Select activity'}
+                      data={activityGroups}
+                      value={line.activityId || null}
+                      disabled={disabled}
+                      searchable
+                      error={Boolean(lineError.activityId) || undefined}
+                      aria-label={`Line ${index + 1} activity`}
+                      comboboxProps={{ width: 320, position: 'bottom-start' }}
+                      onChange={(value) => updateLine(index, { activityId: value || '' })}
+                    />
+                  </td>
+                  <td className={`tlnum${lineError.depthFrom ? ' tlcell-error' : ''}`}>
+                    {line.autoDepthFrom ? (
+                      <div className="tlcell-auto">
+                        <span className="tlauto-tag">AUTO</span>
+                        {cellInput(index, 'depthFrom', {
+                          label: `Line ${index + 1} depth from`,
+                          clearAuto: { autoDepthFrom: false }
+                        })}
+                      </div>
+                    ) : (
+                      cellInput(index, 'depthFrom', { label: `Line ${index + 1} depth from` })
+                    )}
+                  </td>
+                  <td className={`tlnum${lineError.depthTo ? ' tlcell-error' : ''}`}>
+                    {cellInput(index, 'depthTo', {
+                      label: `Line ${index + 1} depth to`,
+                      hasError: Boolean(lineError.depthTo)
+                    })}
+                  </td>
+                  <td>
+                    {line.autoTimeFrom ? (
+                      <div className="tlcell-auto">
+                        <span className="tlauto-tag">AUTO</span>
+                        {timeCell(index, 'timeFrom', {
+                          label: `Line ${index + 1} time from`,
+                          clearAuto: { autoTimeFrom: false }
+                        })}
+                      </div>
+                    ) : (
+                      timeCell(index, 'timeFrom', { label: `Line ${index + 1} time from` })
+                    )}
+                  </td>
+                  <td>{timeCell(index, 'timeTo', { label: `Line ${index + 1} time to` })}</td>
+                  <td className={`tlnum${lineError.recoveryMeters ? ' tlcell-error' : ''}`}>
+                    {cellInput(index, 'recoveryMeters', {
+                      label: `Line ${index + 1} recovery`,
+                      hasError: Boolean(lineError.recoveryMeters)
+                    })}
+                  </td>
+                  <td className="tlnum tlcomputed">{formatCalc(drilled, ' m')}</td>
+                  <td className="tlnum tlcomputed">{formatCalc(hours, ' h')}</td>
+                  <td>
+                    <TextInput
+                      variant="unstyled"
+                      size="sm"
+                      placeholder="Optional note"
+                      value={line.comments}
+                      disabled={disabled}
+                      aria-label={`Line ${index + 1} comments`}
+                      onChange={(event) =>
+                        updateLine(index, { comments: event.currentTarget.value })
+                      }
+                    />
+                  </td>
+                  <td className="tldelcell">
+                    {disabled ? null : (
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        aria-label={`Remove line ${index + 1}`}
+                        onClick={() => removeLine(index)}
+                      >
+                        <NavIcon name="trash" size={15} />
+                      </ActionIcon>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
 
-                <TextInput
-                  label="Borehole ref"
-                  value={line.boreholeRef}
-                  disabled={disabled}
-                  onChange={(event) => updateLine(index, 'boreholeRef', event.currentTarget.value)}
-                />
-                <Textarea
-                  label="Description"
-                  autosize
-                  minRows={2}
-                  value={line.description}
-                  disabled={disabled}
-                  onChange={(event) => updateLine(index, 'description', event.currentTarget.value)}
-                />
+            {disabled ? null : (
+              <tr className="tlgrid-add">
+                <td colSpan={11}>
+                  <button type="button" onClick={addLine}>
+                    + Add activity line
+                  </button>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-                <SimpleGrid cols={GRID} spacing="sm">
-                  <NumberInput
-                    label="Depth from (m)"
-                    min={0}
-                    value={line.depthFrom}
-                    disabled={disabled}
-                    onChange={(value) => updateLine(index, 'depthFrom', value)}
-                  />
-                  <NumberInput
-                    label="Depth to (m)"
-                    min={0}
-                    value={line.depthTo}
-                    disabled={disabled}
-                    error={lineError.depthTo}
-                    onChange={(value) => updateLine(index, 'depthTo', value)}
-                  />
-                </SimpleGrid>
+      <Text size="xs" c="dimmed">
+        Pick an <strong>Activity</strong> for every row; use <strong>Comments</strong> for any free
+        text. Blue-tinted <strong>Drilled</strong> and <strong>Hours</strong> cells are calculated
+        automatically. An <strong>AUTO</strong> tag means the value was carried over from the row
+        above — you can still edit it.
+      </Text>
 
-                <SimpleGrid cols={GRID} spacing="sm">
-                  <TextInput
-                    label="Time from"
-                    type="time"
-                    value={line.timeFrom}
-                    disabled={disabled}
-                    onChange={(event) => updateLine(index, 'timeFrom', event.currentTarget.value)}
-                  />
-                  <TextInput
-                    label="Time to"
-                    type="time"
-                    value={line.timeTo}
-                    disabled={disabled}
-                    onChange={(event) => updateLine(index, 'timeTo', event.currentTarget.value)}
-                  />
-                </SimpleGrid>
-
-                <SimpleGrid cols={GRID} spacing="sm">
-                  <TextInput label="Drilled (m)" value={formatCalc(drilled, ' m')} readOnly disabled />
-                  <TextInput label="Hours" value={formatCalc(hours, ' h')} readOnly disabled />
-                </SimpleGrid>
-
-                <SimpleGrid cols={GRID} spacing="sm">
-                  <NumberInput
-                    label="Recovery m"
-                    min={0}
-                    value={line.recoveryMeters}
-                    disabled={disabled}
-                    error={lineError.recoveryMeters}
-                    onChange={(value) => updateLine(index, 'recoveryMeters', value)}
-                  />
-                  <div />
-                </SimpleGrid>
-
-                <SimpleGrid cols={GRID} spacing="sm">
-                  <NumberInput
-                    label="Charge time (h)"
-                    value={line.chargeTime}
-                    disabled={disabled}
-                    onChange={(value) => updateLine(index, 'chargeTime', value)}
-                  />
-                  <NumberInput
-                    label="NC time (h)"
-                    value={line.ncTime}
-                    disabled={disabled}
-                    onChange={(value) => updateLine(index, 'ncTime', value)}
-                  />
-                </SimpleGrid>
-              </Stack>
-            </Card>
-          );
-        })}
-
-        {disabled ? null : (
-          <Button variant="light" onClick={addLine}>
-            Add activity line
-          </Button>
-        )}
-      </Stack>
-    </Fieldset>
+      {errorList.length ? (
+        <Stack gap={2}>
+          {errorList.map((message) => (
+            <Text key={message} size="xs" c="red">
+              {message}
+            </Text>
+          ))}
+        </Stack>
+      ) : null}
+    </Stack>
   );
 };

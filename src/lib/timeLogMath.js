@@ -62,6 +62,15 @@ export const totalRecoveryMeters = (lines) => {
 export const totalLineHours = (lines) =>
   round2((lines || []).reduce((sum, line) => sum + (lineHours(line) ?? 0), 0));
 
+export const mileageTotal = (start, end) => {
+  const from = toNumber(start);
+  const to = toNumber(end);
+  if (from === null || to === null) {
+    return null;
+  }
+  return round2(to - from);
+};
+
 export const shiftRecoveryPercent = (lines) => {
   const drilled = totalDrilledMeters(lines);
   const recovered = totalRecoveryMeters(lines);

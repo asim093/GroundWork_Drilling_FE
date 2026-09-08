@@ -19,7 +19,7 @@ export const ConsumablesReportTable = ({ consumables }) => {
   });
 
   return (
-    <Card withBorder radius="md" p="md">
+    <Card withBorder radius="lg" p="lg">
       <Stack gap="md">
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Text fw={700}>Consumables used</Text>

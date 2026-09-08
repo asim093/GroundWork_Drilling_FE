@@ -81,7 +81,12 @@ export const MyReportsPage = () => {
         <Stack gap="lg">
           <KpiGrid items={kpiItems(report)} />
           <ConsumablesReportTable consumables={report.consumables} />
-          <ReportEntriesTable entries={report.entries} showOperator={false} title="My submitted entries" />
+          <ReportEntriesTable
+            entries={report.entries}
+            showOperator={false}
+            title="My submitted entries"
+            entryHref={(entryId) => `/operator/log/${entryId}`}
+          />
         </Stack>
       )}
     </Stack>

@@ -2,8 +2,10 @@ import { Group, Pagination, Select, Text } from '@mantine/core';
 
 const PAGE_SIZE_OPTIONS = ['10', '20', '50'];
 
+const MIN_ROWS_TO_PAGINATE = Number(PAGE_SIZE_OPTIONS[0]);
+
 export const ListPagination = ({ pagination, limit, onPageChange, onLimitChange }) => {
-  if (!pagination) {
+  if (!pagination || pagination.total <= MIN_ROWS_TO_PAGINATE) {
     return null;
   }
 

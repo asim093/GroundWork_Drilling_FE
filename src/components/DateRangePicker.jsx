@@ -34,7 +34,7 @@ const formatDate = (value) =>
     ? new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Any';
 
-export const DateRangePicker = ({ value, onChange }) => {
+export const DateRangePicker = ({ value, onChange, size, radius = 'sm' }) => {
   const [opened, setOpened] = useState(false);
   const [draft, setDraft] = useState(value);
   const presets = buildPresets();
@@ -69,7 +69,8 @@ export const DateRangePicker = ({ value, onChange }) => {
       <Popover.Target>
         <Button
           variant="default"
-          radius="sm"
+          radius={radius}
+          size={size}
           justify="space-between"
           rightSection={<NavIcon name="calendar" size={16} />}
           onClick={() => handleOpenChange(!opened)}

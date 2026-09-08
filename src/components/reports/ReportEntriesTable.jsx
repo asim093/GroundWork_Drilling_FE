@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Group, Stack, Table, Text, TextInput } from '@mantine/core';
 import { SortableTh } from '../list/SortableTh.jsx';
 import { ListPagination } from '../list/ListPagination.jsx';
@@ -8,7 +9,13 @@ import { formatDate } from '../../lib/dateRange.js';
 
 const SEARCH_FIELDS = ['jobNumber', 'operator'];
 
-export const ReportEntriesTable = ({ entries, showOperator = true, title = 'Submitted entries' }) => {
+export const ReportEntriesTable = ({
+  entries,
+  showOperator = true,
+  title = 'Submitted entries',
+  entryHref
+}) => {
+  const navigate = useNavigate();
   const rows = useMemo(
     () =>
       (entries || []).map((entry) => ({
@@ -35,7 +42,7 @@ export const ReportEntriesTable = ({ entries, showOperator = true, title = 'Subm
   const colSpan = showOperator ? 8 : 7;
 
   return (
-    <Card withBorder radius="md" p="md">
+    <Card withBorder radius="lg" p="lg">
       <Stack gap="md">
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Text fw={700}>{title}</Text>
@@ -66,7 +73,13 @@ export const ReportEntriesTable = ({ entries, showOperator = true, title = 'Subm
             <Table.Tbody>
               {table.data.length ? (
                 table.data.map((row) => (
-                  <Table.Tr key={row.entryId}>
+                  <Table.Tr
+                    key={row.entryId}
+                    style={entryHref && row.entryId ? { cursor: 'pointer' } : undefined}
+                    onClick={
+                      entryHref && row.entryId ? () => navigate(entryHref(row.entryId)) : undefined
+                    }
+                  >
                     <Table.Td>{formatDate(row.date)}</Table.Td>
                     <Table.Td>{row.jobNumber}</Table.Td>
                     {showOperator ? <Table.Td>{row.operator}</Table.Td> : null}

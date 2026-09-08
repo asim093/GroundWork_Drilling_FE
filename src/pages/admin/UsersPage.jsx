@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Badge,
   Button,
@@ -43,6 +44,17 @@ export const UsersPage = () => {
   const [busyId, setBusyId] = useState(null);
 
   const openNewOperator = useCallback(() => setModal({ open: true, user: null }), []);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      openNewOperator();
+      const next = new URLSearchParams(searchParams);
+      next.delete('new');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams, openNewOperator]);
 
   const load = useCallback(async () => {
     setLoading(true);

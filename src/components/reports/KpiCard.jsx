@@ -2,7 +2,7 @@ import { Paper, SimpleGrid, Text } from '@mantine/core';
 
 export const KpiCard = ({ label, value, hint }) => (
   <Paper withBorder radius="lg" p="lg">
-    <Text size="xs" c="dimmed" fw={700} tt="uppercase" style={{ letterSpacing: 0.4 }}>
+    <Text size="sm" c="dimmed" fw={600}>
       {label}
     </Text>
     <Text fw={700} fz={26} lh={1.15} mt={6}>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Badge,
   Button,
@@ -6,6 +7,7 @@ import {
   Center,
   Group,
   Loader,
+  Modal,
   Select,
   Stack,
   Table,
@@ -19,10 +21,10 @@ import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
-import { listJobs } from '../../services/jobService.js';
+import { listJobs, archiveJob, unarchiveJob } from '../../services/jobService.js';
 import { listUsers } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
-import { notifyError } from '../../lib/toast.js';
+import { notifyError, notifySuccess } from '../../lib/toast.js';
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
 
@@ -35,8 +37,21 @@ export const JobsPage = () => {
   const [loading, setLoading] = useState(true);
   const [formModal, setFormModal] = useState({ open: false, job: null });
   const [assignModal, setAssignModal] = useState({ open: false, job: null });
+  const [archiveModal, setArchiveModal] = useState({ open: false, job: null });
+  const [busyId, setBusyId] = useState(null);
 
   const openNewJob = useCallback(() => setFormModal({ open: true, job: null }), []);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      openNewJob();
+      const next = new URLSearchParams(searchParams);
+      next.delete('new');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams, openNewJob]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,6 +83,36 @@ export const JobsPage = () => {
     loadOperators();
   }, [loadOperators]);
 
+  const handleUnarchive = async (job) => {
+    setBusyId(job.id);
+
+    try {
+      await unarchiveJob(job.id);
+      notifySuccess(`Job ${job.jobNumber} unarchived`);
+      load();
+    } catch (error) {
+      notifyError(extractErrorMessage(error, 'Unable to unarchive job'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const confirmArchive = async () => {
+    const job = archiveModal.job;
+    setBusyId(job.id);
+
+    try {
+      await archiveJob(job.id);
+      notifySuccess(`Job ${job.jobNumber} archived`);
+      setArchiveModal({ open: false, job: null });
+      load();
+    } catch (error) {
+      notifyError(extractErrorMessage(error, 'Unable to archive job'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const rows = result.data.map((job) => (
     <Table.Tr key={job.id}>
       <Table.Td>{job.jobNumber}</Table.Td>
@@ -87,12 +132,36 @@ export const JobsPage = () => {
       </Table.Td>
       <Table.Td>
         <Group gap="xs" wrap="nowrap" justify="flex-end">
-          <Button size="xs" variant="default" onClick={() => setFormModal({ open: true, job })}>
-            Edit
-          </Button>
-          <Button size="xs" variant="light" onClick={() => setAssignModal({ open: true, job })}>
-            Assign
-          </Button>
+          {job.status === 'archived' ? (
+            <>
+              <Button
+                size="xs"
+                variant="light"
+                color="green"
+                loading={busyId === job.id}
+                onClick={() => handleUnarchive(job)}
+              >
+                Unarchive
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button size="xs" variant="default" onClick={() => setFormModal({ open: true, job })}>
+                Edit
+              </Button>
+              <Button size="xs" variant="light" onClick={() => setAssignModal({ open: true, job })}>
+                Assign
+              </Button>
+              <Button
+                size="xs"
+                variant="light"
+                color="red"
+                onClick={() => setArchiveModal({ open: true, job })}
+              >
+                Archive
+              </Button>
+            </>
+          )}
         </Group>
       </Table.Td>
     </Table.Tr>
@@ -203,6 +272,29 @@ export const JobsPage = () => {
         onClose={() => setAssignModal({ open: false, job: null })}
         onSaved={load}
       />
+
+      <Modal
+        opened={archiveModal.open}
+        onClose={() => setArchiveModal({ open: false, job: null })}
+        title="Archive job"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Archive job {archiveModal.job?.jobNumber} — {archiveModal.job?.clientName}? It will be
+            hidden from operators&apos; assigned jobs and from the default admin list. You can
+            unarchive it later.
+          </Text>
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" onClick={() => setArchiveModal({ open: false, job: null })}>
+              Cancel
+            </Button>
+            <Button color="red" loading={busyId === archiveModal.job?.id} onClick={confirmArchive}>
+              Archive job
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 };

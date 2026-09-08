@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Autocomplete,
   Badge,
   Button,
   Card,
@@ -25,13 +26,14 @@ const ACTIVE_FILTER_OPTIONS = [
   { value: 'false', label: 'Inactive' }
 ];
 
-export const MasterDataPanel = ({ service, singular, plural }) => {
+export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
     useListParams({ sort: 'name', order: 'asc' });
-  const [result, setResult] = useState({ data: [], pagination: null });
+  const [result, setResult] = useState({ data: [], pagination: null, distinct: {} });
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState({ open: false, record: null });
   const [name, setName] = useState('');
+  const [extraValue, setExtraValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState(null);
 
@@ -51,14 +53,28 @@ export const MasterDataPanel = ({ service, singular, plural }) => {
     load();
   }, [load]);
 
+  const distinctOptions = useMemo(() => {
+    if (!extraColumn?.distinctKey) {
+      return [];
+    }
+    return (result.distinct?.[extraColumn.distinctKey] || []).map((value) => ({
+      value,
+      label: value
+    }));
+  }, [result.distinct, extraColumn]);
+
+  const filterOptions = extraColumn?.filterOptions || distinctOptions;
+  const fieldOptions = extraColumn?.fieldOptions || distinctOptions;
+
   const openCreate = useCallback(() => {
     setName('');
+    setExtraValue('');
     setModal({ open: true, record: null });
   }, []);
 
-
   const openEdit = (record) => {
     setName(record.name);
+    setExtraValue(extraColumn ? extraColumn.initialValue(record) : '');
     setModal({ open: true, record });
   };
 
@@ -68,12 +84,17 @@ export const MasterDataPanel = ({ service, singular, plural }) => {
     event.preventDefault();
     setSubmitting(true);
 
+    const payload = { name: name.trim() };
+    if (extraColumn) {
+      payload[extraColumn.payloadKey] = extraValue || (extraColumn.kind === 'text' ? '' : null);
+    }
+
     try {
       if (modal.record) {
-        await service.update(modal.record.id, { name: name.trim() });
+        await service.update(modal.record.id, payload);
         notifySuccess(`${singular} updated`);
       } else {
-        await service.create({ name: name.trim() });
+        await service.create(payload);
         notifySuccess(`${singular} added`);
       }
 
@@ -106,9 +127,12 @@ export const MasterDataPanel = ({ service, singular, plural }) => {
     }
   };
 
+  const colSpan = extraColumn ? 5 : 4;
+
   const rows = result.data.map((record) => (
     <Table.Tr key={record.id}>
       <Table.Td>{record.name}</Table.Td>
+      {extraColumn ? <Table.Td>{extraColumn.render(record)}</Table.Td> : null}
       <Table.Td>
         <Badge variant="light" color={record.active ? 'green' : 'gray'}>
           {record.active ? 'Active' : 'Inactive'}
@@ -142,8 +166,19 @@ export const MasterDataPanel = ({ service, singular, plural }) => {
             placeholder={`Search ${plural.toLowerCase()}`}
             value={filters.search || ''}
             onChange={(event) => setFilter('search', event.currentTarget.value)}
-            w={340}
+            w={300}
           />
+          {extraColumn ? (
+            <Select
+              placeholder={extraColumn.filterPlaceholder}
+              data={filterOptions}
+              value={filters[extraColumn.filterParam] || null}
+              onChange={(value) => setFilter(extraColumn.filterParam, value)}
+              searchable
+              clearable
+              w={200}
+            />
+          ) : null}
           <Select
             placeholder="Any state"
             data={ACTIVE_FILTER_OPTIONS}
@@ -162,11 +197,12 @@ export const MasterDataPanel = ({ service, singular, plural }) => {
             <Loader />
           </Center>
         ) : (
-          <Table.ScrollContainer minWidth={560}>
+          <Table.ScrollContainer minWidth={extraColumn ? 680 : 560}>
             <Table verticalSpacing="sm" highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
                   <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
+                  {extraColumn ? <Table.Th>{extraColumn.label}</Table.Th> : null}
                   <Table.Th>Status</Table.Th>
                   <SortableTh
                     field="createdAt"
@@ -183,7 +219,7 @@ export const MasterDataPanel = ({ service, singular, plural }) => {
                   rows
                 ) : (
                   <Table.Tr>
-                    <Table.Td colSpan={4}>
+                    <Table.Td colSpan={colSpan}>
                       <Text c="dimmed" ta="center" py="md">
                         No {plural.toLowerCase()} match the current filters
                       </Text>
@@ -218,11 +254,35 @@ export const MasterDataPanel = ({ service, singular, plural }) => {
               onChange={(event) => setName(event.currentTarget.value)}
               data-autofocus
             />
+            {extraColumn && extraColumn.kind === 'select' ? (
+              <Select
+                label={extraColumn.label}
+                data={fieldOptions}
+                value={extraValue || null}
+                onChange={(value) => setExtraValue(value || '')}
+                required={extraColumn.required}
+                searchable
+              />
+            ) : null}
+            {extraColumn && extraColumn.kind === 'text' ? (
+              <Autocomplete
+                label={extraColumn.label}
+                data={fieldOptions.map((option) => option.value)}
+                value={extraValue}
+                onChange={setExtraValue}
+              />
+            ) : null}
             <Group justify="flex-end" gap="sm">
               <Button variant="default" type="button" onClick={closeModal}>
                 Cancel
               </Button>
-              <Button type="submit" loading={submitting} disabled={!name.trim()}>
+              <Button
+                type="submit"
+                loading={submitting}
+                disabled={
+                  !name.trim() || (extraColumn?.required && extraColumn.kind === 'select' && !extraValue)
+                }
+              >
                 {modal.record ? 'Save changes' : `Add ${singular.toLowerCase()}`}
               </Button>
             </Group>

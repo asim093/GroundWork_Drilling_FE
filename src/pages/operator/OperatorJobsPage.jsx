@@ -26,6 +26,11 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '�
 
 const POLL_INTERVAL = 15000;
 
+const TODAY_STATUS = {
+  submitted: { label: 'Logged today', color: 'green' },
+  draft: { label: 'Draft today', color: 'yellow' }
+};
+
 export const OperatorJobsPage = () => {
   usePageTitle('Assigned jobs');
   const navigate = useNavigate();
@@ -76,27 +81,53 @@ export const OperatorJobsPage = () => {
     };
   }, [load]);
 
-  const rows = result.data.map((job) => (
-    <Table.Tr key={job.id}>
-      <Table.Td>{job.jobNumber}</Table.Td>
-      <Table.Td>{job.clientName}</Table.Td>
-      <Table.Td>{job.jobLocation || '—'}</Table.Td>
-      <Table.Td>{job.rigNumber?.name || '—'}</Table.Td>
-      <Table.Td>{formatDate(job.scheduledDate)}</Table.Td>
-      <Table.Td>
-        <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'blue'}>
-          {job.status}
-        </Badge>
-      </Table.Td>
-      <Table.Td>
-        <Group justify="flex-end">
-          <Button size="xs" onClick={() => navigate(`/operator/jobs/${job.id}/log`)}>
-            Open log
-          </Button>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  ));
+  const rows = result.data.map((job) => {
+    const todayStatus = job.todayLog ? TODAY_STATUS[job.todayLog.status] : null;
+    const target = job.todayLog
+      ? `/operator/log/${job.todayLog.id}`
+      : `/operator/jobs/${job.id}/log`;
+
+    return (
+      <Table.Tr key={job.id}>
+        <Table.Td>{job.jobNumber}</Table.Td>
+        <Table.Td>{job.clientName}</Table.Td>
+        <Table.Td>{job.jobLocation || '—'}</Table.Td>
+        <Table.Td>{job.rigNumber?.name || '—'}</Table.Td>
+        <Table.Td>{formatDate(job.scheduledDate)}</Table.Td>
+        <Table.Td>
+          <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'blue'}>
+            {job.status}
+          </Badge>
+        </Table.Td>
+        <Table.Td>
+          {todayStatus ? (
+            <Badge variant="light" color={todayStatus.color}>
+              {todayStatus.label}
+            </Badge>
+          ) : (
+            <Text size="sm" c="dimmed">
+              Not logged today
+            </Text>
+          )}
+        </Table.Td>
+        <Table.Td>
+          <Group justify="flex-end">
+            <Button
+              size="xs"
+              variant={job.todayLog?.status === 'submitted' ? 'default' : 'filled'}
+              onClick={() => navigate(target)}
+            >
+              {job.todayLog?.status === 'submitted'
+                ? "View today's log"
+                : job.todayLog
+                  ? "Continue today's log"
+                  : "Start today's log"}
+            </Button>
+          </Group>
+        </Table.Td>
+      </Table.Tr>
+    );
+  });
 
   return (
     <Stack gap="md">
@@ -124,7 +155,7 @@ export const OperatorJobsPage = () => {
               <Loader />
             </Center>
           ) : (
-            <Table.ScrollContainer minWidth={820}>
+            <Table.ScrollContainer minWidth={960}>
               <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
@@ -139,7 +170,8 @@ export const OperatorJobsPage = () => {
                       order={order}
                       onSort={toggleSort}
                     />
-                    <Table.Th>Status</Table.Th>
+                    <Table.Th>Job status</Table.Th>
+                    <Table.Th>Today</Table.Th>
                     <Table.Th />
                   </Table.Tr>
                 </Table.Thead>
@@ -148,7 +180,7 @@ export const OperatorJobsPage = () => {
                     rows
                   ) : (
                     <Table.Tr>
-                      <Table.Td colSpan={7}>
+                      <Table.Td colSpan={8}>
                         <Text c="dimmed" ta="center" py="md">
                           No assigned jobs match the current filters
                         </Text>

@@ -18,9 +18,18 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { usePageTitleValue } from '../context/PageTitleContext.jsx';
 import { notifySuccess } from '../lib/toast.js';
 import { NavIcon } from './NavIcon.jsx';
+import { HeaderCreateMenu } from './HeaderCreateMenu.jsx';
+import { NotificationBell } from './NotificationBell.jsx';
 
 const NAVBAR_WIDTH = 260;
 const RAIL_WIDTH = 72;
+
+const QUICK_ACTIONS = {
+  admin: [
+    { label: 'Add job', to: '/admin/jobs?new=1' },
+    { label: 'Add operator', to: '/admin/users?new=1' }
+  ]
+};
 
 const initials = (name) =>
   (name || '')
@@ -68,6 +77,7 @@ export const AppLayout = ({ navItems = [], children }) => {
   };
 
   const railMode = !expanded;
+  const quickActions = QUICK_ACTIONS[user?.role] || [];
 
   return (
     <AppShell
@@ -106,14 +116,19 @@ export const AppLayout = ({ navItems = [], children }) => {
 
           <Group gap="sm" wrap="nowrap" hiddenFrom="sm" style={{ flexShrink: 0 }}>
             <BrandMark size={26} />
-            <Text fw={700} truncate>
+            <Text fw={700} truncate visibleFrom="xs">
               Groundwork Drilling
             </Text>
           </Group>
 
-          <Text fw={600} fz="lg" px="md" truncate>
+          <Text fw={600} fz="lg" px="md" truncate style={{ flex: 1, minWidth: 0 }}>
             {pageTitle}
           </Text>
+
+          <Group gap="xs" wrap="nowrap" pr="md" style={{ flexShrink: 0 }}>
+            <NotificationBell />
+            <HeaderCreateMenu actions={quickActions} />
+          </Group>
         </Group>
       </AppShell.Header>
 

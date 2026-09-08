@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Card, Fieldset, Group, NumberInput, Stack, Text } from '@mantine/core';
+import { Autocomplete, Button, Card, Group, NumberInput, Stack, Text } from '@mantine/core';
 import { CONSUMABLE_ITEMS } from '../../constants/consumables.js';
 
 const blankConsumable = {
@@ -8,7 +8,10 @@ const blankConsumable = {
   qtyUsed: ''
 };
 
-export const ConsumablesSection = ({ items, onChange, disabled }) => {
+const FALLBACK_OPTIONS = [{ group: 'Common', items: CONSUMABLE_ITEMS }];
+
+export const ConsumablesSection = ({ items, onChange, disabled, groupedOptions }) => {
+  const options = groupedOptions?.length ? groupedOptions : FALLBACK_OPTIONS;
   const updateItem = (index, key, value) => {
     onChange(items.map((item, i) => (i === index ? { ...item, [key]: value } : item)));
   };
@@ -18,13 +21,12 @@ export const ConsumablesSection = ({ items, onChange, disabled }) => {
   const removeItem = (index) => onChange(items.filter((_, i) => i !== index));
 
   return (
-    <Fieldset legend="Consumables used">
-      <Stack gap="md">
-        {items.length === 0 ? (
-          <Text c="dimmed" size="sm">
-            No consumables added yet.
-          </Text>
-        ) : null}
+    <Stack gap="md">
+      {items.length === 0 ? (
+        <Text c="dimmed" size="sm">
+          No consumables added yet.
+        </Text>
+      ) : null}
 
         {items.map((item, index) => (
           <Card key={index} withBorder radius="sm" p="md">
@@ -41,10 +43,11 @@ export const ConsumablesSection = ({ items, onChange, disabled }) => {
               </Group>
               <Autocomplete
                 label="Item"
-                placeholder="Select or type an item"
-                data={CONSUMABLE_ITEMS}
+                placeholder="Search or type an item"
+                data={options}
                 value={item.itemName}
                 disabled={disabled}
+                limit={30}
                 onChange={(value) => updateItem(index, 'itemName', value)}
               />
               <NumberInput
@@ -69,12 +72,11 @@ export const ConsumablesSection = ({ items, onChange, disabled }) => {
           </Card>
         ))}
 
-        {disabled ? null : (
-          <Button variant="light" onClick={addItem}>
-            Add consumable
-          </Button>
-        )}
-      </Stack>
-    </Fieldset>
+      {disabled ? null : (
+        <Button variant="light" onClick={addItem}>
+          Add consumable
+        </Button>
+      )}
+    </Stack>
   );
 };

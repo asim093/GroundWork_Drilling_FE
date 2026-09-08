@@ -91,6 +91,7 @@ export const UserReportDrawer = ({ opened, onClose, group, entries, range }) => 
           entries={userEntries}
           showOperator={false}
           title="This operator's submitted entries"
+          entryHref={(entryId) => `/admin/time-logs/${entryId}`}
         />
       </Stack>
     </Drawer>

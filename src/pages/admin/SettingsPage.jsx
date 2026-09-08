@@ -1,12 +1,26 @@
 import { Stack, Tabs } from '@mantine/core';
 import { MasterDataPanel } from '../../components/settings/MasterDataPanel.jsx';
+import { ActivitiesPanel } from '../../components/settings/ActivitiesPanel.jsx';
 import { BonusConfigPanel } from '../../components/settings/BonusConfigPanel.jsx';
 import {
+  activityCategoriesService,
   consumablesService,
   locationsService,
   rigNumbersService
 } from '../../services/masterDataService.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
+
+const CONSUMABLE_GROUP_COLUMN = {
+  label: 'Group',
+  kind: 'text',
+  required: false,
+  payloadKey: 'group',
+  filterParam: 'group',
+  filterPlaceholder: 'All groups',
+  distinctKey: 'group',
+  render: (record) => record.group || '—',
+  initialValue: (record) => record.group || ''
+};
 
 export const SettingsPage = () => {
   usePageTitle('Settings');
@@ -18,6 +32,8 @@ export const SettingsPage = () => {
           <Tabs.Tab value="locations">Locations</Tabs.Tab>
           <Tabs.Tab value="rig-numbers">Rig numbers</Tabs.Tab>
           <Tabs.Tab value="consumables">Consumables</Tabs.Tab>
+          <Tabs.Tab value="activity-categories">Activity categories</Tabs.Tab>
+          <Tabs.Tab value="activities">Activities</Tabs.Tab>
           <Tabs.Tab value="bonus">Bonus config</Tabs.Tab>
         </Tabs.List>
 
@@ -28,7 +44,22 @@ export const SettingsPage = () => {
           <MasterDataPanel service={rigNumbersService} singular="Rig number" plural="Rig numbers" />
         </Tabs.Panel>
         <Tabs.Panel value="consumables" pt="md">
-          <MasterDataPanel service={consumablesService} singular="Consumable" plural="Consumables" />
+          <MasterDataPanel
+            service={consumablesService}
+            singular="Consumable"
+            plural="Consumables"
+            extraColumn={CONSUMABLE_GROUP_COLUMN}
+          />
+        </Tabs.Panel>
+        <Tabs.Panel value="activity-categories" pt="md">
+          <MasterDataPanel
+            service={activityCategoriesService}
+            singular="Activity category"
+            plural="Activity categories"
+          />
+        </Tabs.Panel>
+        <Tabs.Panel value="activities" pt="md">
+          <ActivitiesPanel />
         </Tabs.Panel>
         <Tabs.Panel value="bonus" pt="md">
           <BonusConfigPanel />

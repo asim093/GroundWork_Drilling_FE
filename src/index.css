@@ -17,3 +17,202 @@ body,
 body {
   background-color: #f5f6f8;
 }
+
+.dash-card-link {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.dash-card-link .mantine-Paper-root {
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.dash-card-link:hover .mantine-Paper-root {
+  border-color: var(--mantine-color-blue-4);
+  box-shadow: 0 1px 3px rgba(34, 139, 230, 0.12);
+}
+
+.dash-card-link:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-5);
+  outline-offset: 2px;
+  border-radius: var(--mantine-radius-lg);
+}
+
+.tlgrid-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-md);
+}
+
+.tlgrid {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tlgrid.tlgrid-wide {
+  min-width: 1180px;
+}
+
+.tlgrid td .mantine-Select-input {
+  padding-right: 26px;
+}
+
+.tlgrid thead th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mantine-color-gray-6);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+  background: var(--mantine-color-gray-0);
+  white-space: nowrap;
+}
+
+.tlgrid thead th.tlnum {
+  text-align: right;
+}
+
+.tlgrid tbody td {
+  padding: 0;
+  border-bottom: 1px solid var(--mantine-color-gray-2);
+  vertical-align: middle;
+}
+
+.tlgrid tbody td:not(:last-child),
+.tlgrid thead th:not(:last-child) {
+  border-right: 1px solid var(--mantine-color-gray-2);
+}
+
+.tlgrid tbody tr:hover td {
+  background: var(--mantine-color-gray-0);
+}
+
+.tlgrid .tlidx {
+  padding: 8px 10px;
+  color: var(--mantine-color-gray-6);
+  font-variant-numeric: tabular-nums;
+  background: var(--mantine-color-gray-0);
+}
+
+.tlgrid td.tlnum .mantine-Input-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tlgrid .mantine-Input-input {
+  border: 1px solid transparent;
+  background: var(--mantine-color-gray-1);
+  border-radius: 3px;
+  padding: 7px 9px;
+  min-height: 34px;
+  transition:
+    background 80ms ease,
+    border-color 80ms ease,
+    box-shadow 80ms ease;
+}
+
+.tlgrid .mantine-Input-input::placeholder {
+  color: var(--mantine-color-gray-5);
+}
+
+.tlgrid td:hover .mantine-Input-input {
+  background: var(--mantine-color-gray-2);
+}
+
+.tlgrid .mantine-Input-input:focus,
+.tlgrid .mantine-Input-input:focus-within {
+  background: #fff;
+  border-color: var(--mantine-color-blue-4);
+  box-shadow: 0 0 0 2px var(--mantine-color-blue-1);
+}
+
+.tlgrid td.tlcell-error .mantine-Input-input {
+  border-color: var(--mantine-color-red-4);
+  background: var(--mantine-color-red-0);
+}
+
+.tlgrid td.tlcomputed {
+  background: var(--mantine-color-blue-0);
+  color: var(--mantine-color-blue-9);
+  font-weight: 600;
+  padding: 8px 10px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tlgrid tbody tr:hover td.tlcomputed {
+  background: var(--mantine-color-blue-1);
+}
+
+.tlcell-auto {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 6px;
+}
+
+.tlcell-auto .tlauto-tag {
+  flex-shrink: 0;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--mantine-color-blue-7);
+  background: var(--mantine-color-blue-1);
+  border-radius: 3px;
+  padding: 1px 4px;
+  line-height: 1.5;
+}
+
+.tlcell-auto .mantine-InputWrapper-root {
+  flex: 1;
+  min-width: 0;
+}
+
+.tlgrid .tldelcell {
+  text-align: center;
+  padding: 4px;
+}
+
+.tlgrid-empty {
+  padding: 16px 12px;
+  color: var(--mantine-color-gray-6);
+  font-size: 13px;
+}
+
+.tlgrid-add td {
+  padding: 0;
+}
+
+.tlgrid-add button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--mantine-color-blue-7);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.tlgrid-add button:hover {
+  background: var(--mantine-color-blue-0);
+}
+
+.tl-footer-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 0 calc(-1 * var(--mantine-spacing-md)) calc(-1 * var(--mantine-spacing-md));
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  background: var(--mantine-color-body);
+  border-top: 1px solid var(--mantine-color-gray-3);
+  box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.05);
+}
