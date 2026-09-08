@@ -35,7 +35,7 @@ export const OperatorJobsPage = () => {
   usePageTitle('Assigned jobs');
   const navigate = useNavigate();
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
-    useListParams({ sort: 'scheduledDate', order: 'asc' });
+    useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
   const [loading, setLoading] = useState(true);
   const paramsRef = useRef(queryParams);

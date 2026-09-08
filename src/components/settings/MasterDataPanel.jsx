@@ -28,7 +28,7 @@ const ACTIVE_FILTER_OPTIONS = [
 
 export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
-    useListParams({ sort: 'name', order: 'asc' });
+    useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null, distinct: {} });
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState({ open: false, record: null });

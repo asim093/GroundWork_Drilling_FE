@@ -31,7 +31,7 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : 'â
 export const JobsPage = () => {
   usePageTitle('Jobs');
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
-    useListParams({ sort: 'scheduledDate', order: 'asc' });
+    useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
   const [operators, setOperators] = useState([]);
   const [loading, setLoading] = useState(true);
