@@ -443,7 +443,7 @@ export const TimeLogFormPage = () => {
                 </SubGroup>
 
                 <SubGroup title="Hours Summary">
-                  <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                  <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
                     <TextInput
                       label="Hours on site"
                       description="Time out − Time in"
