@@ -21,3 +21,10 @@ export const BLANK_ACTIVITY_LINE = {
   chargeTime: '',
   ncTime: ''
 };
+
+export const BLANK_CONSUMABLE = {
+  itemName: '',
+  qtyTaken: '',
+  qtyReturned: '',
+  qtyUsed: ''
+};

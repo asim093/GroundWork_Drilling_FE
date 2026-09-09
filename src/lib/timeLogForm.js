@@ -7,7 +7,7 @@ const toNumberOrNull = (value) => {
 };
 
 import { clockDuration } from './timeLogMath.js';
-import { BLANK_ACTIVITY_LINE } from '../constants/timeLogs.js';
+import { BLANK_ACTIVITY_LINE, BLANK_CONSUMABLE } from '../constants/timeLogs.js';
 
 const toInputValue = (value) => (value === null || value === undefined ? '' : value);
 
@@ -25,14 +25,12 @@ export const emptyTimeLogForm = () => ({
   timeFinished: '',
   standbyHours: '',
   otherHours: '',
-  assistantEnabled: false,
-  mileageEnabled: false,
   mileageStart: '',
   mileageEnd: '',
   wellTag: { installed: false, decommissioned: false, locatesProvidedBy: '' },
   activityLines: [{ ...BLANK_ACTIVITY_LINE }],
   fuel: { dyedLt: '', dieselLt: '', gasolineLt: '' },
-  consumables: []
+  consumables: [{ ...BLANK_CONSUMABLE }]
 });
 
 export const timeLogFormFromEntry = (entry) => ({
@@ -47,12 +45,6 @@ export const timeLogFormFromEntry = (entry) => ({
   timeFinished: entry.timeFinished || '',
   standbyHours: toInputValue(entry.standbyHours),
   otherHours: toInputValue(entry.otherHours),
-  assistantEnabled: Boolean(
-    entry.assistantName || entry.assistantTimeIn || entry.assistantTimeOut
-  ),
-  mileageEnabled: [entry.mileageStart, entry.mileageEnd].some(
-    (value) => value !== null && value !== undefined
-  ),
   mileageStart: toInputValue(entry.mileageStart),
   mileageEnd: toInputValue(entry.mileageEnd),
   wellTag: {

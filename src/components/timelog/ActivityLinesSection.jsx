@@ -12,7 +12,9 @@ const notEmpty = (value) => value !== null && value !== undefined && value !== '
 const ERROR_LABELS = {
   activityId: 'Select an activity',
   depthTo: 'Depth to cannot be less than depth from',
-  recoveryMeters: 'Recovery cannot exceed the drilled meters for this run'
+  recoveryMeters: 'Recovery cannot exceed the drilled meters for this run',
+  timeFrom: 'Time from is outside your Time in and Time out',
+  timeTo: 'Time to is outside your Time in and Time out'
 };
 
 export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activityGroups = [] }) => {
@@ -155,7 +157,7 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
                       hasError: Boolean(lineError.depthTo)
                     })}
                   </td>
-                  <td>
+                  <td className={lineError.timeFrom ? 'tlcell-error' : undefined}>
                     {line.autoTimeFrom ? (
                       <div className="tlcell-auto">
                         <span className="tlauto-tag">AUTO</span>
@@ -168,7 +170,9 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
                       timeCell(index, 'timeFrom', { label: `Line ${index + 1} time from` })
                     )}
                   </td>
-                  <td>{timeCell(index, 'timeTo', { label: `Line ${index + 1} time to` })}</td>
+                  <td className={lineError.timeTo ? 'tlcell-error' : undefined}>
+                    {timeCell(index, 'timeTo', { label: `Line ${index + 1} time to` })}
+                  </td>
                   <td className={`tlnum${lineError.recoveryMeters ? ' tlcell-error' : ''}`}>
                     {cellInput(index, 'recoveryMeters', {
                       label: `Line ${index + 1} recovery`,
@@ -219,13 +223,6 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
           </tbody>
         </table>
       </div>
-
-      <Text size="xs" c="dimmed">
-        Pick an <strong>Activity</strong> for every row; use <strong>Comments</strong> for any free
-        text. Highlighted <strong>Drilled</strong> and <strong>Hours</strong> cells are calculated
-        automatically. An <strong>AUTO</strong> tag means the value was carried over from the row
-        above — you can still edit it.
-      </Text>
 
       {errorList.length ? (
         <Stack gap={2}>

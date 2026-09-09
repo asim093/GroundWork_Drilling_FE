@@ -49,6 +49,23 @@ export const clockDuration = (from, to) => {
 
 export const lineHours = (line) => clockDuration(line?.timeFrom, line?.timeTo);
 
+export const isWithinShift = (lineTime, timeIn, timeOut) => {
+  const point = parseClockHours(lineTime);
+  const start = parseClockHours(timeIn);
+  let end = parseClockHours(timeOut);
+  if (point === null || start === null || end === null) {
+    return true;
+  }
+  if (end <= start) {
+    end += 24;
+  }
+  let normalized = point;
+  if (normalized < start) {
+    normalized += 24;
+  }
+  return normalized >= start && normalized <= end;
+};
+
 export const totalDrilledMeters = (lines) =>
   round2((lines || []).reduce((sum, line) => sum + (lineDrilledMeters(line) ?? 0), 0));
 
@@ -82,8 +99,9 @@ export const shiftRecoveryPercent = (lines) => {
   return round2((recovered / drilled) * 100);
 };
 
-export const validateActivityLines = (lines) => {
+export const validateActivityLines = (lines, shift = {}) => {
   const errors = {};
+  const { timeIn, timeOut } = shift;
 
   (lines || []).forEach((line, index) => {
     const from = toNumber(line?.depthFrom);
@@ -101,6 +119,20 @@ export const validateActivityLines = (lines) => {
       errors[index] = {
         ...errors[index],
         recoveryMeters: 'Recovery m cannot exceed the drilled meters for this run'
+      };
+    }
+
+    if (timeIn && timeOut && line?.timeFrom && !isWithinShift(line.timeFrom, timeIn, timeOut)) {
+      errors[index] = {
+        ...errors[index],
+        timeFrom: 'Time from is outside your Time in and Time out'
+      };
+    }
+
+    if (timeIn && timeOut && line?.timeTo && !isWithinShift(line.timeTo, timeIn, timeOut)) {
+      errors[index] = {
+        ...errors[index],
+        timeTo: 'Time to is outside your Time in and Time out'
       };
     }
   });

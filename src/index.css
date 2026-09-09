@@ -96,6 +96,10 @@ body {
   min-width: 1180px;
 }
 
+.tlgrid.tlgrid-consumables {
+  min-width: 620px;
+}
+
 .tlgrid td .mantine-Select-input {
   padding-right: 26px;
 }

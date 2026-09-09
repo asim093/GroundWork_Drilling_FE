@@ -186,22 +186,6 @@ export const TimeLogFormPage = () => {
   const setFuel = (key, value) =>
     setForm((prev) => ({ ...prev, fuel: { ...prev.fuel, [key]: value } }));
 
-  const toggleAssistant = (checked) =>
-    setForm((prev) => ({
-      ...prev,
-      assistantEnabled: checked,
-      ...(checked
-        ? {}
-        : { assistantName: '', assistantTimeIn: '', assistantTimeOut: '' })
-    }));
-
-  const toggleMileage = (checked) =>
-    setForm((prev) => ({
-      ...prev,
-      mileageEnabled: checked,
-      ...(checked ? {} : { mileageStart: '', mileageEnd: '' })
-    }));
-
   const parseServerLineErrors = (error) => {
     const serverErrors = error?.response?.data?.errors;
     if (!Array.isArray(serverErrors)) {
@@ -219,7 +203,10 @@ export const TimeLogFormPage = () => {
   };
 
   const persist = async () => {
-    const clientLineErrors = validateActivityLines(form.activityLines);
+    const clientLineErrors = validateActivityLines(form.activityLines, {
+      timeIn: form.timeIn,
+      timeOut: form.timeOut
+    });
     if (clientLineErrors) {
       setLineErrors(clientLineErrors);
       throw new Error('Fix the highlighted activity line values before saving');
@@ -353,12 +340,15 @@ export const TimeLogFormPage = () => {
       filledValue(form.fuel.dyedLt) ||
       filledValue(form.fuel.dieselLt) ||
       filledValue(form.fuel.gasolineLt),
-    consumables: form.consumables.length > 0,
-    assistant:
-      form.assistantEnabled &&
-      Boolean(form.assistantName || form.assistantTimeIn || form.assistantTimeOut),
-    mileage:
-      form.mileageEnabled && (filledValue(form.mileageStart) || filledValue(form.mileageEnd))
+    consumables: form.consumables.some(
+      (item) =>
+        Boolean(item.itemName) ||
+        filledValue(item.qtyTaken) ||
+        filledValue(item.qtyReturned) ||
+        filledValue(item.qtyUsed)
+    ),
+    assistant: Boolean(form.assistantName || form.assistantTimeIn || form.assistantTimeOut),
+    mileage: filledValue(form.mileageStart) || filledValue(form.mileageEnd)
   };
 
   return (
@@ -407,7 +397,20 @@ export const TimeLogFormPage = () => {
           </Text>
         </Group>
 
-        <Accordion multiple defaultValue={['shift-time', 'activity-lines']} variant="separated" radius="md">
+        <Accordion
+          multiple
+          defaultValue={[
+            'shift-time',
+            'activity-lines',
+            'well-tag',
+            'fuel',
+            'consumables',
+            'assistant',
+            'mileage'
+          ]}
+          variant="separated"
+          radius="md"
+        >
           <Accordion.Item value="shift-time">
             <Accordion.Control icon={<CompletionDot done={filled.shiftTime} />}>
               Shift &amp; Time
@@ -584,25 +587,20 @@ export const TimeLogFormPage = () => {
               Assistant
             </Accordion.Control>
             <Accordion.Panel>
-              <Stack gap="md">
-                <Switch
-                  label="Did you have an assistant on this shift?"
-                  checked={form.assistantEnabled}
-                  disabled={readOnly}
-                  onChange={(event) => toggleAssistant(event.currentTarget.checked)}
-                />
-                {form.assistantEnabled ? (
-                  <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                    <TextInput
-                      label="Assistant name"
-                      value={form.assistantName}
-                      disabled={readOnly}
-                      onChange={(event) => setField('assistantName', event.currentTarget.value)}
-                    />
-                    {timeField('assistantTimeIn', 'Time in')}
-                    {timeField('assistantTimeOut', 'Time out')}
-                  </SimpleGrid>
-                ) : null}
+              <Stack gap="xs">
+                <Text size="xs" c="dimmed">
+                  Fill this in only if you had an assistant on this shift.
+                </Text>
+                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                  <TextInput
+                    label="Assistant name"
+                    value={form.assistantName}
+                    disabled={readOnly}
+                    onChange={(event) => setField('assistantName', event.currentTarget.value)}
+                  />
+                  {timeField('assistantTimeIn', 'Time in')}
+                  {timeField('assistantTimeOut', 'Time out')}
+                </SimpleGrid>
               </Stack>
             </Accordion.Panel>
           </Accordion.Item>
@@ -612,26 +610,22 @@ export const TimeLogFormPage = () => {
               Mileage
             </Accordion.Control>
             <Accordion.Panel>
-              <Stack gap="md">
-                <Switch
-                  label="Log mileage for this shift?"
-                  checked={form.mileageEnabled}
-                  disabled={readOnly}
-                  onChange={(event) => toggleMileage(event.currentTarget.checked)}
-                />
-                {form.mileageEnabled ? (
-                  <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                    {numberField('mileageStart', 'Mileage start')}
-                    {numberField('mileageEnd', 'Mileage end')}
-                    <TextInput
-                      label="Mileage total"
-                      value={mileagePreview === null ? '—' : `${mileagePreview}`}
-                      readOnly
-                      disabled
-                      styles={COMPUTED_INPUT_STYLES}
-                    />
-                  </SimpleGrid>
-                ) : null}
+              <Stack gap="xs">
+                <Text size="xs" c="dimmed">
+                  Leave blank if you did not drive a vehicle for this shift.
+                </Text>
+                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
+                  {numberField('mileageStart', 'Mileage start')}
+                  {numberField('mileageEnd', 'Mileage end')}
+                  <TextInput
+                    label="Mileage total"
+                    description="Mileage end − Mileage start"
+                    value={mileagePreview === null ? '—' : `${mileagePreview}`}
+                    readOnly
+                    disabled
+                    styles={COMPUTED_INPUT_STYLES}
+                  />
+                </SimpleGrid>
               </Stack>
             </Accordion.Panel>
           </Accordion.Item>
