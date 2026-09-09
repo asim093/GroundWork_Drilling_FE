@@ -50,7 +50,11 @@ import {
   updateTimeLog
 } from '../../services/timeLogService.js';
 import { TimeLogEntryView } from '../../components/timelog/TimeLogEntryView.jsx';
-import { listActivityOptions, listConsumableOptions } from '../../services/catalogService.js';
+import {
+  listActivityOptions,
+  listAssistantOptions,
+  listConsumableOptions
+} from '../../services/catalogService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
@@ -131,6 +135,7 @@ export const TimeLogFormPage = () => {
   const [lineErrors, setLineErrors] = useState({});
   const [activityGroups, setActivityGroups] = useState([]);
   const [consumableGroups, setConsumableGroups] = useState([]);
+  const [assistantOptions, setAssistantOptions] = useState([]);
 
   const readOnly = entry?.status === 'submitted';
 
@@ -201,7 +206,18 @@ export const TimeLogFormPage = () => {
     listConsumableOptions()
       .then((result) => setConsumableGroups(result.grouped))
       .catch(() => setConsumableGroups([]));
+    listAssistantOptions()
+      .then((result) => setAssistantOptions(result.options))
+      .catch(() => setAssistantOptions([]));
   }, []);
+
+  const assistantSelectData = useMemo(() => {
+    const name = form.assistantName?.trim();
+    if (name && !assistantOptions.some((option) => option.value === name)) {
+      return [{ value: name, label: `${name} (not in list)` }, ...assistantOptions];
+    }
+    return assistantOptions;
+  }, [assistantOptions, form.assistantName]);
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -240,8 +256,9 @@ export const TimeLogFormPage = () => {
       return next;
     });
 
-  const setAssistantName = (value) =>
+  const setAssistantName = (rawValue) =>
     setForm((prev) => {
+      const value = rawValue || '';
       const next = { ...prev, assistantName: value };
       const nowHasName = Boolean(value.trim());
       const hadName = Boolean(prev.assistantName.trim());
@@ -664,11 +681,16 @@ export const TimeLogFormPage = () => {
                   Fill this in only if you had an assistant on this shift.
                 </Text>
                 <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                  <TextInput
+                  <Select
                     label="Assistant name"
-                    value={form.assistantName}
+                    placeholder="Select an assistant"
+                    data={assistantSelectData}
+                    value={form.assistantName || null}
                     disabled={readOnly}
-                    onChange={(event) => setAssistantName(event.currentTarget.value)}
+                    onChange={setAssistantName}
+                    searchable
+                    clearable
+                    nothingFoundMessage="No assistants found"
                   />
                   {timeField('assistantTimeIn', 'Time in')}
                   {timeField('assistantTimeOut', 'Time out')}

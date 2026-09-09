@@ -5,6 +5,7 @@ export const EMPLOYEE_TYPES = [
   'Driller',
   'Driller Trainee',
   'Helper',
+  'Assistant',
   '5th Man'
 ];
 

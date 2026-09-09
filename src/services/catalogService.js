@@ -31,3 +31,11 @@ export const listConsumableOptions = async () => {
     grouped: groupBy(data.data, 'group', (item) => item.name)
   };
 };
+
+export const listAssistantOptions = async () => {
+  const { data } = await api.get('/catalog/assistants');
+  return {
+    items: data.data,
+    options: data.data.map((item) => ({ value: item.name, label: item.name }))
+  };
+};
