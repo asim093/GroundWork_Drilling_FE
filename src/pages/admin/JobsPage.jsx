@@ -11,10 +11,13 @@ import {
   Select,
   Stack,
   Table,
-  Text
+  Text,
+  TextInput
 } from '@mantine/core';
+import { useDebouncedValue } from '@mantine/hooks';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
+import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { JobFormModal } from '../../components/admin/JobFormModal.jsx';
 import { AssignUsersModal } from '../../components/admin/AssignUsersModal.jsx';
 import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
@@ -23,6 +26,7 @@ import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
 import { listJobs, archiveJob, unarchiveJob } from '../../services/jobService.js';
 import { listUsers } from '../../services/userService.js';
+import { rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
@@ -30,10 +34,13 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : 'â
 
 export const JobsPage = () => {
   usePageTitle('Jobs');
-  const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
+  const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter, setFilters } =
     useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
   const [operators, setOperators] = useState([]);
+  const [rigs, setRigs] = useState([]);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch] = useDebouncedValue(search, 300);
   const [loading, setLoading] = useState(true);
   const [formModal, setFormModal] = useState({ open: false, job: null });
   const [assignModal, setAssignModal] = useState({ open: false, job: null });
@@ -68,10 +75,14 @@ export const JobsPage = () => {
 
   const loadOperators = useCallback(async () => {
     try {
-      const response = await listUsers({ role: 'operator', active: 'true', limit: 100, sort: 'name', order: 'asc' });
-      setOperators(response.data);
+      const [users, rigList] = await Promise.all([
+        listUsers({ role: 'operator', active: 'true', limit: 100, sort: 'name', order: 'asc' }),
+        rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
+      ]);
+      setOperators(users.data);
+      setRigs(rigList.data);
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to load operators'));
+      notifyError(extractErrorMessage(error, 'Unable to load filters'));
     }
   }, []);
 
@@ -82,6 +93,10 @@ export const JobsPage = () => {
   useEffect(() => {
     loadOperators();
   }, [loadOperators]);
+
+  useEffect(() => {
+    setFilter('search', debouncedSearch);
+  }, [debouncedSearch, setFilter]);
 
   const handleUnarchive = async (job) => {
     setBusyId(job.id);
@@ -172,22 +187,34 @@ export const JobsPage = () => {
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
           <Group gap="sm" wrap="wrap" align="center">
+            <TextInput
+              placeholder="Search job #, client, location or operator"
+              value={search}
+              onChange={(event) => setSearch(event.currentTarget.value)}
+              leftSection={<NavIcon name="search" size={15} />}
+              w={400}
+            />
             <Select
               placeholder="All statuses"
               data={JOB_STATUS_OPTIONS}
               value={filters.status || null}
               onChange={(value) => setFilter('status', value)}
               clearable
-              w={180}
+              w={160}
             />
             <Select
-              placeholder="All operators"
-              data={operators.map((operator) => ({ value: operator.id, label: operator.name }))}
-              value={filters.assignedUser || null}
-              onChange={(value) => setFilter('assignedUser', value)}
+              placeholder="All rigs"
+              data={rigs.map((rig) => ({ value: rig.id, label: rig.name }))}
+              value={filters.rigNumber || null}
+              onChange={(value) => setFilter('rigNumber', value)}
               searchable
               clearable
-              w={220}
+              w={150}
+            />
+            <DateRangePicker
+              value={{ from: filters.from || '', to: filters.to || '' }}
+              onChange={(range) => setFilters(range)}
+              clearable
             />
             <Button ml="auto" leftSection={<NavIcon name="plus" size={16} />} onClick={openNewJob}>
               New job

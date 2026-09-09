@@ -13,6 +13,7 @@ import {
 } from '@mantine/core';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
+import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { TIME_LOG_STATUS_OPTIONS, TIME_LOG_STATUS_COLORS } from '../../constants/timeLogs.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
@@ -25,7 +26,7 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : 'â
 export const MySubmissionsPage = () => {
   usePageTitle('My submissions');
   const navigate = useNavigate();
-  const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
+  const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter, setFilters } =
     useListParams({ sort: 'date', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
   const [jobs, setJobs] = useState([]);
@@ -103,6 +104,16 @@ export const MySubmissionsPage = () => {
               clearable
               w={240}
             />
+            <div>
+              <Text size="sm" fw={600} mb={4}>
+                Date range
+              </Text>
+              <DateRangePicker
+                value={{ from: filters.from || '', to: filters.to || '' }}
+                onChange={(range) => setFilters(range)}
+                clearable
+              />
+            </div>
           </Group>
 
           {loading ? (

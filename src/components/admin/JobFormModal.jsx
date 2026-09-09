@@ -10,27 +10,30 @@ import {
   Stack,
   TextInput
 } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { createJob, updateJob } from '../../services/jobService.js';
 import { locationsService, rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 import { JOB_STATUS_OPTIONS } from '../../constants/jobs.js';
 
-const emptyForm = {
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+const makeEmptyForm = () => ({
   jobNumber: '',
   clientName: '',
   jobLocation: '',
   rigNumber: null,
   clientJobNumber: '',
   drillType: '',
-  scheduledDate: '',
+  scheduledDate: todayIso(),
   status: 'scheduled',
   assignedUserIds: []
-};
+});
 
 export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) => {
   const isEdit = Boolean(job);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(makeEmptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [locationOptions, setLocationOptions] = useState([]);
   const [rigOptions, setRigOptions] = useState([]);
@@ -53,7 +56,7 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
             status: job.status || 'scheduled',
             assignedUserIds: (job.assignedUserIds || []).map((entry) => entry.id || entry)
           }
-        : emptyForm
+        : makeEmptyForm()
     );
 
     Promise.all([
@@ -156,11 +159,11 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
               value={form.drillType}
               onChange={(event) => setField('drillType')(event.currentTarget.value)}
             />
-            <TextInput
+            <DatePickerInput
               label="Scheduled date"
-              type="date"
+              valueFormat="DD MMM YYYY"
               value={form.scheduledDate}
-              onChange={(event) => setField('scheduledDate')(event.currentTarget.value)}
+              onChange={setField('scheduledDate')}
             />
             <Select
               label="Status"
@@ -173,7 +176,6 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
 
           <MultiSelect
             label="Assigned operators"
-            description="Operators can also be assigned later from the Assign button."
             placeholder={operatorOptions.length ? 'Select operators' : 'No active operators available'}
             data={operatorOptions}
             value={form.assignedUserIds}

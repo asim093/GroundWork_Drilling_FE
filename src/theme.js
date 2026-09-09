@@ -58,6 +58,12 @@ export const theme = createTheme({
     xl: '0 28px 60px -22px rgba(18, 58, 62, 0.24)'
   },
   components: {
+    InputWrapper: {
+      styles: { label: { fontWeight: 600, marginBottom: 4 } }
+    },
+    Radio: { styles: { label: { fontWeight: 500 } } },
+    Checkbox: { styles: { label: { fontWeight: 500 } } },
+    Switch: { styles: { label: { fontWeight: 500 } } },
     TextInput: { defaultProps: { size: 'md', radius: 'md' } },
     PasswordInput: { defaultProps: { size: 'md', radius: 'md' } },
     Select: { defaultProps: { size: 'md', radius: 'md' } },
@@ -75,7 +81,13 @@ export const theme = createTheme({
     ActionIcon: { defaultProps: { radius: 'md' } },
     Paper: { defaultProps: { radius: 'lg' } },
     Card: { defaultProps: { radius: 'lg' } },
-    Badge: { defaultProps: { radius: 'sm' }, styles: { root: { fontWeight: 600, letterSpacing: '0.01em' } } },
+    Badge: {
+      defaultProps: { radius: 'sm' },
+      styles: {
+        root: { fontWeight: 600, letterSpacing: '0.01em' },
+        label: { overflow: 'visible' }
+      }
+    },
     Accordion: { defaultProps: { radius: 'lg' } },
     Modal: {
       defaultProps: { radius: 'lg' },

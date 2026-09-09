@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Accordion,
@@ -10,10 +10,10 @@ import {
   Loader,
   NumberInput,
   Paper,
+  Radio,
   Select,
   SimpleGrid,
   Stack,
-  Switch,
   Text,
   TextInput,
   Tooltip
@@ -33,6 +33,7 @@ import {
 } from '../../lib/timeLogForm.js';
 import {
   clockDuration,
+  defaultJobTimes,
   mileageTotal,
   shiftRecoveryPercent,
   totalDrilledMeters,
@@ -110,6 +111,13 @@ const StatTile = ({ label, value }) => (
 
 const filledValue = (value) => value !== '' && value !== null && value !== undefined;
 
+const AUTO_FLAG = {
+  assistantTimeIn: 'assistantTimeInAuto',
+  assistantTimeOut: 'assistantTimeOutAuto',
+  timeStarted: 'timeStartedAuto',
+  timeFinished: 'timeFinishedAuto'
+};
+
 export const TimeLogFormPage = () => {
   usePageTitle('Time & material log');
   const { jobId, id } = useParams();
@@ -132,6 +140,23 @@ export const TimeLogFormPage = () => {
   const recoveryPreview = shiftRecoveryPercent(form.activityLines);
   const mileagePreview = mileageTotal(form.mileageStart, form.mileageEnd);
   const hoursOnSitePreview = clockDuration(form.timeIn, form.timeOut);
+
+  const liveLineErrors = useMemo(
+    () =>
+      validateActivityLines(form.activityLines, {
+        timeIn: form.timeIn,
+        timeOut: form.timeOut
+      }) || {},
+    [form.activityLines, form.timeIn, form.timeOut]
+  );
+
+  const shownLineErrors = useMemo(() => {
+    const merged = { ...liveLineErrors };
+    Object.entries(lineErrors).forEach(([index, fields]) => {
+      merged[index] = { ...merged[index], ...fields };
+    });
+    return merged;
+  }, [liveLineErrors, lineErrors]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -179,6 +204,82 @@ export const TimeLogFormPage = () => {
   }, []);
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const updateTime = (key, value) =>
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+
+      if (AUTO_FLAG[key]) {
+        next[AUTO_FLAG[key]] = false;
+      }
+
+      if (key === 'timeIn' || key === 'timeOut') {
+        if (prev.assistantName.trim()) {
+          if (key === 'timeIn' && (prev.assistantTimeInAuto || !prev.assistantTimeIn)) {
+            next.assistantTimeIn = value;
+            next.assistantTimeInAuto = true;
+          }
+          if (key === 'timeOut' && (prev.assistantTimeOutAuto || !prev.assistantTimeOut)) {
+            next.assistantTimeOut = value;
+            next.assistantTimeOutAuto = true;
+          }
+        }
+        const jobTimes = defaultJobTimes(next.timeIn, next.timeOut);
+        if (jobTimes) {
+          if (prev.timeStartedAuto || !prev.timeStarted) {
+            next.timeStarted = jobTimes.timeStarted;
+            next.timeStartedAuto = true;
+          }
+          if (prev.timeFinishedAuto || !prev.timeFinished) {
+            next.timeFinished = jobTimes.timeFinished;
+            next.timeFinishedAuto = true;
+          }
+        }
+      }
+
+      return next;
+    });
+
+  const setAssistantName = (value) =>
+    setForm((prev) => {
+      const next = { ...prev, assistantName: value };
+      const nowHasName = Boolean(value.trim());
+      const hadName = Boolean(prev.assistantName.trim());
+
+      if (nowHasName && !hadName) {
+        if (!prev.assistantTimeIn && prev.timeIn) {
+          next.assistantTimeIn = prev.timeIn;
+          next.assistantTimeInAuto = true;
+        }
+        if (!prev.assistantTimeOut && prev.timeOut) {
+          next.assistantTimeOut = prev.timeOut;
+          next.assistantTimeOutAuto = true;
+        }
+      }
+
+      if (!nowHasName && hadName) {
+        if (prev.assistantTimeInAuto) {
+          next.assistantTimeIn = '';
+          next.assistantTimeInAuto = false;
+        }
+        if (prev.assistantTimeOutAuto) {
+          next.assistantTimeOut = '';
+          next.assistantTimeOutAuto = false;
+        }
+      }
+
+      return next;
+    });
+
+  const setWellTagChoice = (value) =>
+    setForm((prev) => ({
+      ...prev,
+      wellTag: {
+        ...prev.wellTag,
+        installed: value === 'installed',
+        decommissioned: value === 'decommissioned'
+      }
+    }));
 
   const setWellTag = (key, value) =>
     setForm((prev) => ({ ...prev, wellTag: { ...prev.wellTag, [key]: value } }));
@@ -307,7 +408,7 @@ export const TimeLogFormPage = () => {
       withDropdown
       clearable
       disabled={readOnly}
-      onChange={(value) => setField(key, value)}
+      onChange={(value) => updateTime(key, value)}
     />
   );
 
@@ -402,10 +503,10 @@ export const TimeLogFormPage = () => {
           defaultValue={[
             'shift-time',
             'activity-lines',
-            'well-tag',
-            'fuel',
             'consumables',
+            'fuel',
             'assistant',
+            'well-tag',
             'mileage'
           ]}
           variant="separated"
@@ -459,7 +560,6 @@ export const TimeLogFormPage = () => {
                   <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
                     <TextInput
                       label="Hours on site"
-                      description="Time out − Time in"
                       value={hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview}`}
                       readOnly
                       disabled
@@ -478,44 +578,16 @@ export const TimeLogFormPage = () => {
               Activity Lines
             </Accordion.Control>
             <Accordion.Panel>
-              <ActivityLinesSection
-                lines={form.activityLines}
-                disabled={readOnly}
-                errors={lineErrors}
-                activityGroups={activityGroups}
-                onChange={(lines) => {
-                  setLineErrors({});
-                  setField('activityLines', lines);
-                }}
-              />
-            </Accordion.Panel>
-          </Accordion.Item>
-
-          <Accordion.Item value="well-tag">
-            <Accordion.Control icon={<CompletionDot done={filled.wellTag} />}>
-              Well Tag
-            </Accordion.Control>
-            <Accordion.Panel>
               <Stack gap="lg">
-                <SimpleGrid cols={GRID} spacing="md">
-                  <Switch
-                    label="Installed"
-                    checked={form.wellTag.installed}
-                    disabled={readOnly}
-                    onChange={(event) => setWellTag('installed', event.currentTarget.checked)}
-                  />
-                  <Switch
-                    label="Decommissioned"
-                    checked={form.wellTag.decommissioned}
-                    disabled={readOnly}
-                    onChange={(event) => setWellTag('decommissioned', event.currentTarget.checked)}
-                  />
-                </SimpleGrid>
-                <TextInput
-                  label="Locates provided by"
-                  value={form.wellTag.locatesProvidedBy}
+                <ActivityLinesSection
+                  lines={form.activityLines}
                   disabled={readOnly}
-                  onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
+                  errors={shownLineErrors}
+                  activityGroups={activityGroups}
+                  onChange={(lines) => {
+                    setLineErrors({});
+                    setField('activityLines', lines);
+                  }}
                 />
 
                 <Box>
@@ -539,6 +611,20 @@ export const TimeLogFormPage = () => {
                   </Text>
                 </Box>
               </Stack>
+            </Accordion.Panel>
+          </Accordion.Item>
+
+          <Accordion.Item value="consumables">
+            <Accordion.Control icon={<CompletionDot done={filled.consumables} />}>
+              Consumables
+            </Accordion.Control>
+            <Accordion.Panel>
+              <ConsumablesSection
+                items={form.consumables}
+                disabled={readOnly}
+                groupedOptions={consumableGroups}
+                onChange={(items) => setField('consumables', items)}
+              />
             </Accordion.Panel>
           </Accordion.Item>
 
@@ -568,20 +654,6 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="consumables">
-            <Accordion.Control icon={<CompletionDot done={filled.consumables} />}>
-              Consumables
-            </Accordion.Control>
-            <Accordion.Panel>
-              <ConsumablesSection
-                items={form.consumables}
-                disabled={readOnly}
-                groupedOptions={consumableGroups}
-                onChange={(items) => setField('consumables', items)}
-              />
-            </Accordion.Panel>
-          </Accordion.Item>
-
           <Accordion.Item value="assistant">
             <Accordion.Control icon={<CompletionDot done={filled.assistant} />}>
               Assistant
@@ -596,11 +668,44 @@ export const TimeLogFormPage = () => {
                     label="Assistant name"
                     value={form.assistantName}
                     disabled={readOnly}
-                    onChange={(event) => setField('assistantName', event.currentTarget.value)}
+                    onChange={(event) => setAssistantName(event.currentTarget.value)}
                   />
                   {timeField('assistantTimeIn', 'Time in')}
                   {timeField('assistantTimeOut', 'Time out')}
                 </SimpleGrid>
+              </Stack>
+            </Accordion.Panel>
+          </Accordion.Item>
+
+          <Accordion.Item value="well-tag">
+            <Accordion.Control icon={<CompletionDot done={filled.wellTag} />}>
+              Well Tag
+            </Accordion.Control>
+            <Accordion.Panel>
+              <Stack gap="lg">
+                <Radio.Group
+                  label="Well tag"
+                  value={
+                    form.wellTag.installed
+                      ? 'installed'
+                      : form.wellTag.decommissioned
+                        ? 'decommissioned'
+                        : 'none'
+                  }
+                  onChange={setWellTagChoice}
+                >
+                  <Group mt="xs" gap="lg">
+                    <Radio value="none" label="Not applicable" disabled={readOnly} />
+                    <Radio value="installed" label="Installed" disabled={readOnly} />
+                    <Radio value="decommissioned" label="Decommissioned" disabled={readOnly} />
+                  </Group>
+                </Radio.Group>
+                <TextInput
+                  label="Locates provided by"
+                  value={form.wellTag.locatesProvidedBy}
+                  disabled={readOnly}
+                  onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
+                />
               </Stack>
             </Accordion.Panel>
           </Accordion.Item>
@@ -619,7 +724,6 @@ export const TimeLogFormPage = () => {
                   {numberField('mileageEnd', 'Mileage end')}
                   <TextInput
                     label="Mileage total"
-                    description="Mileage end − Mileage start"
                     value={mileagePreview === null ? '—' : `${mileagePreview}`}
                     readOnly
                     disabled

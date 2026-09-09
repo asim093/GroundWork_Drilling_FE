@@ -36,7 +36,7 @@ const formatDate = (value) =>
 
 const EMPTY_RANGE = { from: '', to: '' };
 
-export const DateRangePicker = ({ value, onChange, size, radius = 'sm' }) => {
+export const DateRangePicker = ({ value, onChange, size, radius = 'sm', clearable = false }) => {
   const [opened, setOpened] = useState(false);
   const [draft, setDraft] = useState(value || EMPTY_RANGE);
   const presets = buildPresets();
@@ -65,6 +65,14 @@ export const DateRangePicker = ({ value, onChange, size, radius = 'sm' }) => {
     }
   };
 
+  const clearRange = () => {
+    onChange({ from: '', to: '' });
+    setDraft(EMPTY_RANGE);
+    setOpened(false);
+  };
+
+  const hasValue = Boolean(current.from || current.to);
+
   return (
     <Popover
       opened={opened}
@@ -83,7 +91,9 @@ export const DateRangePicker = ({ value, onChange, size, radius = 'sm' }) => {
           onClick={() => handleOpenChange(!opened)}
           miw={250}
         >
-          {formatDate(current.from)} – {formatDate(current.to)}
+          {clearable && !hasValue
+            ? 'Any scheduled date'
+            : `${formatDate(current.from)} – ${formatDate(current.to)}`}
         </Button>
       </Popover.Target>
       <Popover.Dropdown>
@@ -114,6 +124,11 @@ export const DateRangePicker = ({ value, onChange, size, radius = 'sm' }) => {
           <Button onClick={applyCustom} disabled={!draft?.from || !draft?.to}>
             Apply range
           </Button>
+          {clearable && hasValue ? (
+            <Button variant="subtle" color="gray" onClick={clearRange}>
+              Clear
+            </Button>
+          ) : null}
         </Stack>
       </Popover.Dropdown>
     </Popover>

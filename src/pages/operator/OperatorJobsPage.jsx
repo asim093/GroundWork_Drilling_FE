@@ -13,6 +13,7 @@ import {
   Text,
   TextInput
 } from '@mantine/core';
+import { useDebouncedValue } from '@mantine/hooks';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
@@ -31,12 +32,16 @@ const TODAY_STATUS = {
   draft: { label: 'Draft today', color: 'yellow' }
 };
 
+const OPERATOR_STATUS_OPTIONS = JOB_STATUS_OPTIONS.filter((option) => option.value !== 'archived');
+
 export const OperatorJobsPage = () => {
   usePageTitle('Assigned jobs');
   const navigate = useNavigate();
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
     useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
+  const [search, setSearch] = useState('');
+  const [debouncedSearch] = useDebouncedValue(search, 300);
   const [loading, setLoading] = useState(true);
   const paramsRef = useRef(queryParams);
   paramsRef.current = queryParams;
@@ -59,6 +64,10 @@ export const OperatorJobsPage = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    setFilter('search', debouncedSearch);
+  }, [debouncedSearch, setFilter]);
 
   useEffect(() => {
     load();
@@ -136,13 +145,13 @@ export const OperatorJobsPage = () => {
           <Group gap="sm" wrap="wrap" align="center">
             <TextInput
               placeholder="Search job #, client or location"
-              value={filters.search || ''}
-              onChange={(event) => setFilter('search', event.currentTarget.value)}
-              w={360}
+              value={search}
+              onChange={(event) => setSearch(event.currentTarget.value)}
+              w={340}
             />
             <Select
               placeholder="All statuses"
-              data={JOB_STATUS_OPTIONS}
+              data={OPERATOR_STATUS_OPTIONS}
               value={filters.status || null}
               onChange={(value) => setFilter('status', value)}
               clearable

@@ -7,14 +7,16 @@ import { BonusBadge } from './BonusBadge.jsx';
 import { useClientTable } from '../../hooks/useClientTable.js';
 import { formatDate } from '../../lib/dateRange.js';
 
-const SEARCH_FIELDS = ['jobNumber', 'operator'];
-
 export const ReportEntriesTable = ({
   entries,
   showOperator = true,
   title = 'Submitted entries',
   entryHref
 }) => {
+  const searchFields = useMemo(
+    () => (showOperator ? ['jobNumber', 'operator'] : ['jobNumber']),
+    [showOperator]
+  );
   const navigate = useNavigate();
   const rows = useMemo(
     () =>
@@ -34,7 +36,7 @@ export const ReportEntriesTable = ({
   );
 
   const table = useClientTable(rows, {
-    searchFields: SEARCH_FIELDS,
+    searchFields,
     defaultSort: 'date',
     defaultOrder: 'desc'
   });
@@ -47,7 +49,7 @@ export const ReportEntriesTable = ({
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Text fw={700}>{title}</Text>
           <TextInput
-            placeholder="Search job # or operator"
+            placeholder={showOperator ? 'Search job # or operator' : 'Search job #'}
             value={table.search}
             onChange={(event) => table.setSearch(event.currentTarget.value)}
             w={260}

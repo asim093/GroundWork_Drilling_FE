@@ -7,8 +7,6 @@ import { BLANK_ACTIVITY_LINE } from '../../constants/timeLogs.js';
 const formatCalc = (value, suffix) =>
   value === null || value === undefined ? '—' : `${value}${suffix}`;
 
-const notEmpty = (value) => value !== null && value !== undefined && value !== '';
-
 const ERROR_LABELS = {
   activityId: 'Select an activity',
   depthTo: 'Depth to cannot be less than depth from',
@@ -29,9 +27,7 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
       {
         ...BLANK_ACTIVITY_LINE,
         depthFrom: previous?.depthTo ?? '',
-        timeFrom: previous?.timeTo ?? '',
-        autoDepthFrom: notEmpty(previous?.depthTo),
-        autoTimeFrom: notEmpty(previous?.timeTo)
+        timeFrom: previous?.timeTo ?? ''
       }
     ]);
   };
@@ -55,7 +51,7 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
       disabled={disabled}
       aria-label={extra.label}
       error={extra.hasError || undefined}
-      onChange={(value) => updateLine(index, { [key]: value, ...(extra.clearAuto || {}) })}
+      onChange={(value) => updateLine(index, { [key]: value })}
     />
   );
 
@@ -68,9 +64,7 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
       value={lines[index][key]}
       disabled={disabled}
       aria-label={extra.label}
-      onChange={(value) =>
-        updateLine(index, { [key]: value, ...(extra.clearAuto || {}) })
-      }
+      onChange={(value) => updateLine(index, { [key]: value })}
     />
   );
 
@@ -139,17 +133,7 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
                     />
                   </td>
                   <td className={`tlnum${lineError.depthFrom ? ' tlcell-error' : ''}`}>
-                    {line.autoDepthFrom ? (
-                      <div className="tlcell-auto">
-                        <span className="tlauto-tag">AUTO</span>
-                        {cellInput(index, 'depthFrom', {
-                          label: `Line ${index + 1} depth from`,
-                          clearAuto: { autoDepthFrom: false }
-                        })}
-                      </div>
-                    ) : (
-                      cellInput(index, 'depthFrom', { label: `Line ${index + 1} depth from` })
-                    )}
+                    {cellInput(index, 'depthFrom', { label: `Line ${index + 1} depth from` })}
                   </td>
                   <td className={`tlnum${lineError.depthTo ? ' tlcell-error' : ''}`}>
                     {cellInput(index, 'depthTo', {
@@ -158,17 +142,7 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
                     })}
                   </td>
                   <td className={lineError.timeFrom ? 'tlcell-error' : undefined}>
-                    {line.autoTimeFrom ? (
-                      <div className="tlcell-auto">
-                        <span className="tlauto-tag">AUTO</span>
-                        {timeCell(index, 'timeFrom', {
-                          label: `Line ${index + 1} time from`,
-                          clearAuto: { autoTimeFrom: false }
-                        })}
-                      </div>
-                    ) : (
-                      timeCell(index, 'timeFrom', { label: `Line ${index + 1} time from` })
-                    )}
+                    {timeCell(index, 'timeFrom', { label: `Line ${index + 1} time from` })}
                   </td>
                   <td className={lineError.timeTo ? 'tlcell-error' : undefined}>
                     {timeCell(index, 'timeTo', { label: `Line ${index + 1} time to` })}

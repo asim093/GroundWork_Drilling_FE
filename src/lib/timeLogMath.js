@@ -25,6 +25,35 @@ export const parseClockHours = (value) => {
   return hours + minutes / 60 + seconds / 3600;
 };
 
+export const clockToString = (hours) => {
+  const wrapped = ((hours % 24) + 24) % 24;
+  let hh = Math.floor(wrapped);
+  let mm = Math.round((wrapped - hh) * 60);
+  if (mm === 60) {
+    mm = 0;
+    hh = (hh + 1) % 24;
+  }
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+};
+
+export const defaultJobTimes = (timeIn, timeOut) => {
+  const start = parseClockHours(timeIn);
+  let end = parseClockHours(timeOut);
+  if (start === null || end === null) {
+    return null;
+  }
+  if (end <= start) {
+    end += 24;
+  }
+  let jobStart = start + 2;
+  let jobEnd = end - 2;
+  if (jobEnd <= jobStart) {
+    jobStart = start;
+    jobEnd = end;
+  }
+  return { timeStarted: clockToString(jobStart), timeFinished: clockToString(jobEnd) };
+};
+
 export const lineDrilledMeters = (line) => {
   const from = toNumber(line?.depthFrom);
   const to = toNumber(line?.depthTo);
