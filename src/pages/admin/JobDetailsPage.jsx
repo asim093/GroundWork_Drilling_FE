@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Anchor,
   Badge,
@@ -55,6 +55,7 @@ const DetailRow = ({ label, children }) => (
 export const JobDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [job, setJob] = useState(null);
   const [logs, setLogs] = useState([]);
   const [rigOptions, setRigOptions] = useState([]);
@@ -112,6 +113,16 @@ export const JobDetailsPage = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (loading || !job || location.hash !== '#log-history') {
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      document.getElementById('log-history')?.scrollIntoView({ block: 'start' });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [loading, job, location.hash]);
 
   const [logShift, setLogShift] = useState(null);
   const [logStatus, setLogStatus] = useState(null);
@@ -283,7 +294,7 @@ export const JobDetailsPage = () => {
         }
       />
 
-      <SectionCard title="Log history" subtitle="Time logs submitted for this job">
+      <SectionCard id="log-history" title="Log history" subtitle="Time logs submitted for this job">
         <Group gap="sm" wrap="wrap">
           <Select
             placeholder="All shifts"

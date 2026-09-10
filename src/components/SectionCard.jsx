@@ -1,7 +1,7 @@
 import { Group, Paper, Stack, Text } from '@mantine/core';
 
-export const SectionCard = ({ title, subtitle, action, children }) => (
-  <Paper withBorder radius="lg" p="lg">
+export const SectionCard = ({ id, title, subtitle, action, children }) => (
+  <Paper id={id} withBorder radius="lg" p="lg">
     <Stack gap="md">
       {title || subtitle || action ? (
         <Group justify="space-between" align="flex-start" wrap="nowrap">

@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  ActionIcon,
   Badge,
   Button,
   Card,
   Center,
   Group,
   Loader,
-  Modal,
   Select,
   Stack,
   Table,
   Text,
-  TextInput
+  TextInput,
+  Tooltip
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
@@ -23,12 +24,43 @@ import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
-import { listJobs, archiveJob, unarchiveJob } from '../../services/jobService.js';
+import { listJobs } from '../../services/jobService.js';
 import { rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
-import { notifyError, notifySuccess } from '../../lib/toast.js';
+import { notifyError } from '../../lib/toast.js';
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
+
+const daysLate = (value) => {
+  if (!value) {
+    return null;
+  }
+  const scheduled = new Date(value);
+  scheduled.setUTCHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  return Math.round((today - scheduled) / 86400000);
+};
+
+const logStatus = (job) => {
+  if (job.status === 'archived') {
+    return { variant: 'subtle', color: 'gray', label: 'Archived' };
+  }
+  if (job.status === 'submitted' || job.hasSubmittedLog) {
+    return { variant: 'light', color: 'green', label: 'A log has been submitted' };
+  }
+  const late = daysLate(job.scheduledDate);
+  if (late === null || late <= 0) {
+    return { variant: 'default', color: 'gray', label: 'No log yet — not overdue' };
+  }
+  if (late === 1) {
+    return { variant: 'light', color: 'yellow', label: '1 day past schedule with no log' };
+  }
+  if (late === 2) {
+    return { variant: 'light', color: 'orange', label: '2 days past schedule with no log' };
+  }
+  return { variant: 'light', color: 'red', label: `${late} days past schedule with no log` };
+};
 
 export const JobsPage = () => {
   usePageTitle('Jobs');
@@ -40,11 +72,9 @@ export const JobsPage = () => {
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [loading, setLoading] = useState(true);
-  const [formModal, setFormModal] = useState({ open: false, job: null });
-  const [archiveModal, setArchiveModal] = useState({ open: false, job: null });
-  const [busyId, setBusyId] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
 
-  const openNewJob = useCallback(() => setFormModal({ open: true, job: null }), []);
+  const openNewJob = useCallback(() => setFormOpen(true), []);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -96,95 +126,45 @@ export const JobsPage = () => {
     setFilter('search', debouncedSearch);
   }, [debouncedSearch, setFilter]);
 
-  const handleUnarchive = async (job) => {
-    setBusyId(job.id);
-
-    try {
-      await unarchiveJob(job.id);
-      notifySuccess(`Job ${job.jobNumber} unarchived`);
-      load();
-    } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to unarchive job'));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const confirmArchive = async () => {
-    const job = archiveModal.job;
-    setBusyId(job.id);
-
-    try {
-      await archiveJob(job.id);
-      notifySuccess(`Job ${job.jobNumber} archived`);
-      setArchiveModal({ open: false, job: null });
-      load();
-    } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to archive job'));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const rows = result.data.map((job) => (
-    <Table.Tr
-      key={job.id}
-      style={{ cursor: 'pointer' }}
-      onClick={() => navigate(`/admin/jobs/${job.id}`)}
-    >
-      <Table.Td>{job.jobNumber}</Table.Td>
-      <Table.Td>{job.clientName}</Table.Td>
-      <Table.Td>{job.jobLocation || '—'}</Table.Td>
-      <Table.Td>{job.rigNumber?.name || '—'}</Table.Td>
-      <Table.Td>{job.drillNumber || '—'}</Table.Td>
-      <Table.Td>{formatDate(job.scheduledDate)}</Table.Td>
-      <Table.Td>
-        <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'brand'}>
-          {job.status}
-        </Badge>
-      </Table.Td>
-      <Table.Td>
-        {job.siteManagers?.length
-          ? job.siteManagers
-              .map((entry) => `${entry.userId?.name || 'Unknown'} (${entry.shift})`)
-              .join(', ')
-          : job.assignedUserIds?.length
-            ? job.assignedUserIds.map((operator) => operator.name).join(', ')
+  const rows = result.data.map((job) => {
+    const status = logStatus(job);
+    return (
+      <Table.Tr key={job.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/admin/jobs/${job.id}`)}>
+        <Table.Td>{job.jobNumber}</Table.Td>
+        <Table.Td>{job.clientName}</Table.Td>
+        <Table.Td>{job.jobLocation || '—'}</Table.Td>
+        <Table.Td>{job.rigNumber?.name || '—'}</Table.Td>
+        <Table.Td>{job.drillNumber || '—'}</Table.Td>
+        <Table.Td>{formatDate(job.scheduledDate)}</Table.Td>
+        <Table.Td>
+          <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'brand'}>
+            {job.status}
+          </Badge>
+        </Table.Td>
+        <Table.Td>
+          {job.siteManagers?.length
+            ? job.siteManagers
+                .map((entry) => `${entry.userId?.name || 'Unknown'} (${entry.shift})`)
+                .join(', ')
             : '—'}
-      </Table.Td>
-      <Table.Td onClick={(event) => event.stopPropagation()}>
-        <Group gap="xs" wrap="nowrap" justify="flex-end">
-          {job.status === 'archived' ? (
-            <>
-              <Button
-                size="xs"
-                variant="light"
-                color="green"
-                loading={busyId === job.id}
-                onClick={() => handleUnarchive(job)}
+        </Table.Td>
+        <Table.Td onClick={(event) => event.stopPropagation()}>
+          <Group justify="flex-end">
+            <Tooltip label={status.label} withArrow>
+              <ActionIcon
+                variant={status.variant}
+                color={status.color}
+                onClick={() => navigate(`/admin/jobs/${job.id}#log-history`)}
+                aria-label="Open log history"
               >
-                Unarchive
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button size="xs" variant="default" onClick={() => setFormModal({ open: true, job })}>
-                Edit
-              </Button>
-              <Button
-                size="xs"
-                variant="light"
-                color="red"
-                onClick={() => setArchiveModal({ open: true, job })}
-              >
-                Archive
-              </Button>
-            </>
-          )}
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  ));
+                <NavIcon name="clipboard" size={17} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
+        </Table.Td>
+      </Table.Tr>
+    );
+  });
 
   return (
     <Stack gap="md">
@@ -264,7 +244,7 @@ export const JobsPage = () => {
                     />
                     <Table.Th>Status</Table.Th>
                     <Table.Th>Managers</Table.Th>
-                    <Table.Th />
+                    <Table.Th>Log</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -293,35 +273,7 @@ export const JobsPage = () => {
         </Stack>
       </Card>
 
-      <JobFormModal
-        opened={formModal.open}
-        job={formModal.job}
-        onClose={() => setFormModal({ open: false, job: null })}
-        onSaved={load}
-      />
-
-      <Modal
-        opened={archiveModal.open}
-        onClose={() => setArchiveModal({ open: false, job: null })}
-        title="Archive job"
-        centered
-      >
-        <Stack gap="md">
-          <Text size="sm">
-            Archive job {archiveModal.job?.jobNumber} — {archiveModal.job?.clientName}? It will be
-            hidden from managers&apos; assigned jobs and from the default admin list. You can
-            unarchive it later.
-          </Text>
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={() => setArchiveModal({ open: false, job: null })}>
-              Cancel
-            </Button>
-            <Button color="red" loading={busyId === archiveModal.job?.id} onClick={confirmArchive}>
-              Archive job
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+      <JobFormModal opened={formOpen} onClose={() => setFormOpen(false)} onSaved={load} />
     </Stack>
   );
 };
