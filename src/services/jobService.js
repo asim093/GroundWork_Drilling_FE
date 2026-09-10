@@ -20,11 +20,6 @@ export const updateJob = async (id, payload) => {
   return data.data;
 };
 
-export const setJobAssignments = async (id, userIds) => {
-  const { data } = await api.put(`/jobs/${id}/assignments`, { userIds });
-  return data.data;
-};
-
 export const archiveJob = async (id) => {
   const { data } = await api.post(`/jobs/${id}/archive`);
   return data.data;

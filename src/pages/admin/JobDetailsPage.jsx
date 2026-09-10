@@ -15,6 +15,8 @@ import {
 import { SectionCard } from '../../components/SectionCard.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
 import { InlineEditField } from '../../components/admin/InlineEditField.jsx';
+import { SiteManagerPicker } from '../../components/admin/SiteManagerPicker.jsx';
+import { RosterPicker } from '../../components/admin/RosterPicker.jsx';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { JOB_STATUS_COLORS } from '../../constants/jobs.js';
@@ -23,8 +25,9 @@ import { useClientTable } from '../../hooks/useClientTable.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { formatDate } from '../../lib/dateRange.js';
 import { getJob, updateJob } from '../../services/jobService.js';
+import { listUsers } from '../../services/userService.js';
 import { listTimeLogs } from '../../services/timeLogService.js';
-import { rigNumbersService } from '../../services/masterDataService.js';
+import { employeesService, rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
@@ -51,6 +54,8 @@ export const JobDetailsPage = () => {
   const [job, setJob] = useState(null);
   const [logs, setLogs] = useState([]);
   const [rigOptions, setRigOptions] = useState([]);
+  const [operators, setOperators] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
   usePageTitle(job ? `Job ${job.jobNumber}` : 'Job details');
@@ -59,14 +64,18 @@ export const JobDetailsPage = () => {
     setLoading(true);
 
     try {
-      const [jobData, logData, rigData] = await Promise.all([
+      const [jobData, logData, rigData, userData, employeeData] = await Promise.all([
         getJob(id),
         listTimeLogs({ job: id, limit: 200, sort: 'date', order: 'desc' }),
-        rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
+        rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
+        listUsers({ role: 'operator', active: 'true', limit: 200, sort: 'name', order: 'asc' }),
+        employeesService.list({ active: 'true', limit: 200, sort: 'name', order: 'asc' })
       ]);
       setJob(jobData);
       setLogs(logData.data);
       setRigOptions(rigData.data.map((rig) => ({ value: rig.id, label: rig.name })));
+      setOperators(userData.data);
+      setEmployees(employeeData.data);
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load this job'));
       navigate('/admin/jobs', { replace: true });
@@ -75,16 +84,23 @@ export const JobDetailsPage = () => {
     }
   }, [id, navigate]);
 
-  const saveField = async (field, value) => {
+  const saveField = async (field, value, message = 'Job updated') => {
     try {
       const updated = await updateJob(id, { [field]: value });
       setJob(updated);
-      notifySuccess('Job updated');
+      notifySuccess(message);
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to update the job'));
       throw error;
     }
   };
+
+  const managerValue = (job?.siteManagers || []).map((entry) => ({
+    userId: entry.userId?.id || entry.userId,
+    shift: entry.shift
+  }));
+
+  const rosterValue = (job?.rosterEmployeeIds || []).map((entry) => entry.id || entry);
 
   useEffect(() => {
     load();
@@ -218,41 +234,25 @@ export const JobDetailsPage = () => {
         </SimpleGrid>
       </SectionCard>
 
-      <SectionCard title="Managers" subtitle="The site managers responsible for each shift on this job">
-        {job.siteManagers?.length ? (
-          <Group gap="sm" wrap="wrap">
-            {job.siteManagers.map((entry) => (
-              <Badge
-                key={`${entry.userId?.id || entry.userId}-${entry.shift}`}
-                size="lg"
-                variant="light"
-              >
-                {entry.userId?.name || 'Unknown'} · {entry.shift}
-              </Badge>
-            ))}
-          </Group>
-        ) : (
+      <SectionCard title="Managers" subtitle="The managers responsible for each shift on this job">
+        {!managerValue.length ? (
           <Text c="dimmed" size="sm">
             No managers assigned — this job is not visible to any manager yet.
           </Text>
-        )}
+        ) : null}
+        <SiteManagerPicker
+          value={managerValue}
+          operators={operators}
+          onChange={(next) => saveField('siteManagers', next, 'Managers updated')}
+        />
       </SectionCard>
 
       <SectionCard title="Roster" subtitle="Crew available to be logged against this job">
-        {job.rosterEmployeeIds?.length ? (
-          <Group gap="sm" wrap="wrap">
-            {job.rosterEmployeeIds.map((employee) => (
-              <Badge key={employee.id || employee} size="lg" variant="light" color="gray">
-                {employee.name || 'Unknown'}
-                {employee.employeeType ? ` · ${employee.employeeType}` : ''}
-              </Badge>
-            ))}
-          </Group>
-        ) : (
-          <Text c="dimmed" size="sm">
-            No roster set for this job yet.
-          </Text>
-        )}
+        <RosterPicker
+          value={rosterValue}
+          employees={employees}
+          onChange={(next) => saveField('rosterEmployeeIds', next, 'Roster updated')}
+        />
       </SectionCard>
 
       <SectionCard title="Log history" subtitle="Time logs submitted for this job">

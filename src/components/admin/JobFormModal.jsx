@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   Autocomplete,
   Button,
-  Divider,
   Group,
   Modal,
   Select,
@@ -12,16 +11,10 @@ import {
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { createJob, updateJob } from '../../services/jobService.js';
-import {
-  employeesService,
-  locationsService,
-  rigNumbersService
-} from '../../services/masterDataService.js';
+import { locationsService, rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 import { JOB_STATUS_OPTIONS } from '../../constants/jobs.js';
-import { SiteManagerPicker } from './SiteManagerPicker.jsx';
-import { RosterPicker } from './RosterPicker.jsx';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -33,20 +26,15 @@ const makeEmptyForm = () => ({
   drillNumber: '',
   clientJobNumber: '',
   scheduledDate: todayIso(),
-  status: 'scheduled',
-  siteManagers: [],
-  rosterEmployeeIds: []
+  status: 'scheduled'
 });
 
-const idOf = (entry) => entry?.id || entry?._id || entry;
-
-export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) => {
+export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
   const isEdit = Boolean(job);
   const [form, setForm] = useState(makeEmptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [locationOptions, setLocationOptions] = useState([]);
   const [rigOptions, setRigOptions] = useState([]);
-  const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
     if (!opened) {
@@ -63,25 +51,18 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
             drillNumber: job.drillNumber || '',
             clientJobNumber: job.clientJobNumber || '',
             scheduledDate: job.scheduledDate ? job.scheduledDate.slice(0, 10) : '',
-            status: job.status || 'scheduled',
-            siteManagers: (job.siteManagers || []).map((entry) => ({
-              userId: idOf(entry.userId),
-              shift: entry.shift
-            })),
-            rosterEmployeeIds: (job.rosterEmployeeIds || []).map(idOf)
+            status: job.status || 'scheduled'
           }
         : makeEmptyForm()
     );
 
     Promise.all([
       locationsService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
-      rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
-      employeesService.list({ active: 'true', limit: 200, sort: 'name', order: 'asc' })
+      rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
     ])
-      .then(([locations, rigs, roster]) => {
+      .then(([locations, rigs]) => {
         setLocationOptions(locations.data.map((item) => item.name));
         setRigOptions(rigs.data.map((item) => ({ value: item.id, label: item.name })));
-        setEmployees(roster.data);
       })
       .catch((error) => notifyError(extractErrorMessage(error, 'Unable to load master data')));
   }, [opened, job]);
@@ -100,10 +81,7 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
       drillNumber: form.drillNumber.trim(),
       clientJobNumber: form.clientJobNumber.trim(),
       scheduledDate: form.scheduledDate || '',
-      status: form.status,
-      siteManagers: form.siteManagers,
-      rosterEmployeeIds: form.rosterEmployeeIds,
-      assignedUserIds: [...new Set(form.siteManagers.map((entry) => entry.userId))]
+      status: form.status
     };
 
     try {
@@ -112,7 +90,7 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
         notifySuccess('Job updated');
       } else {
         await createJob(payload);
-        notifySuccess('Job created');
+        notifySuccess('Job created — assign managers and roster on the job page');
       }
 
       onSaved();
@@ -125,13 +103,7 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={isEdit ? 'Edit job' : 'Create job'}
-      centered
-      size="xl"
-    >
+    <Modal opened={opened} onClose={onClose} title={isEdit ? 'Edit job' : 'Create job'} centered size="lg">
       <form onSubmit={handleSubmit}>
         <Stack gap="md">
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
@@ -188,22 +160,6 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
               allowDeselect={false}
             />
           </SimpleGrid>
-
-          <Divider />
-
-          <SiteManagerPicker
-            value={form.siteManagers}
-            onChange={setField('siteManagers')}
-            operators={operators}
-          />
-
-          <Divider />
-
-          <RosterPicker
-            value={form.rosterEmployeeIds}
-            onChange={setField('rosterEmployeeIds')}
-            employees={employees}
-          />
 
           <Group justify="flex-end" gap="sm">
             <Button variant="default" onClick={onClose} type="button">

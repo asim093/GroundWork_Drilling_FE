@@ -24,7 +24,6 @@ import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
 import { listJobs, archiveJob, unarchiveJob } from '../../services/jobService.js';
-import { listUsers } from '../../services/userService.js';
 import { rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
@@ -37,7 +36,6 @@ export const JobsPage = () => {
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter, setFilters } =
     useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
-  const [operators, setOperators] = useState([]);
   const [rigs, setRigs] = useState([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 300);
@@ -72,13 +70,14 @@ export const JobsPage = () => {
     }
   }, [queryParams]);
 
-  const loadOperators = useCallback(async () => {
+  const loadRigs = useCallback(async () => {
     try {
-      const [users, rigList] = await Promise.all([
-        listUsers({ role: 'operator', active: 'true', limit: 100, sort: 'name', order: 'asc' }),
-        rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
-      ]);
-      setOperators(users.data);
+      const rigList = await rigNumbersService.list({
+        active: 'true',
+        limit: 100,
+        sort: 'name',
+        order: 'asc'
+      });
       setRigs(rigList.data);
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load filters'));
@@ -90,8 +89,8 @@ export const JobsPage = () => {
   }, [load]);
 
   useEffect(() => {
-    loadOperators();
-  }, [loadOperators]);
+    loadRigs();
+  }, [loadRigs]);
 
   useEffect(() => {
     setFilter('search', debouncedSearch);
@@ -297,7 +296,6 @@ export const JobsPage = () => {
       <JobFormModal
         opened={formModal.open}
         job={formModal.job}
-        operators={operators}
         onClose={() => setFormModal({ open: false, job: null })}
         onSaved={load}
       />
