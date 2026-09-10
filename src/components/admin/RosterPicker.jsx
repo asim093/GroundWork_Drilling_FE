@@ -35,12 +35,12 @@ export const RosterPicker = ({ value = [], onChange, employees = [] }) => {
           {value.length} selected
         </Text>
       </Group>
-      <Group gap="sm" wrap="wrap">
+      <Group gap="sm" wrap="wrap" grow>
         <TextInput
           placeholder="Search name"
           value={search}
           onChange={(event) => setSearch(event.currentTarget.value)}
-          w={220}
+          style={{ minWidth: 160 }}
         />
         <Select
           placeholder="Any employee type"
@@ -48,7 +48,7 @@ export const RosterPicker = ({ value = [], onChange, employees = [] }) => {
           value={typeFilter}
           onChange={setTypeFilter}
           clearable
-          w={200}
+          style={{ minWidth: 160 }}
         />
       </Group>
       <ScrollArea.Autosize

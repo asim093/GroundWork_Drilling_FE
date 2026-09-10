@@ -1,129 +1,142 @@
 import { useMemo, useState } from 'react';
-import { ActionIcon, Box, Button, Group, Select, Stack, Text } from '@mantine/core';
-import { SHIFT_OPTIONS } from '../../constants/employees.js';
-import { NavIcon } from '../NavIcon.jsx';
+import {
+  Checkbox,
+  Group,
+  ScrollArea,
+  SegmentedControl,
+  Stack,
+  Text,
+  TextInput
+} from '@mantine/core';
 
-const ROW_STYLE = {
-  border: '1px solid var(--mantine-color-gray-3)',
-  borderRadius: 8,
-  padding: '6px 10px'
-};
+const MAX = 2;
+const OTHER = { Day: 'Night', Night: 'Day' };
+
+const ROW_STYLE = (selected) => ({
+  cursor: 'pointer',
+  borderRadius: 6,
+  padding: '8px 10px',
+  background: selected ? 'var(--mantine-color-brand-0)' : 'transparent'
+});
 
 export const SiteManagerPicker = ({ value = [], onChange, operators = [] }) => {
-  const [draftUser, setDraftUser] = useState(null);
-  const [draftShift, setDraftShift] = useState('Day');
+  const [search, setSearch] = useState('');
 
-  const operatorById = useMemo(
-    () => new Map(operators.map((operator) => [operator.id, operator])),
-    [operators]
+  const shiftByUser = useMemo(
+    () => new Map(value.map((entry) => [entry.userId, entry.shift])),
+    [value]
   );
 
-  const operatorOptions = operators.map((operator) => ({
-    value: operator.id,
-    label: `${operator.name} (${operator.email})`
-  }));
+  const visible = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return operators
+      .filter(
+        (operator) =>
+          !term ||
+          operator.name.toLowerCase().includes(term) ||
+          (operator.email || '').toLowerCase().includes(term)
+      )
+      .sort((a, b) => {
+        const rank = (id) => (shiftByUser.has(id) ? 0 : 1);
+        return rank(a.id) - rank(b.id) || a.name.localeCompare(b.name);
+      });
+  }, [operators, search, shiftByUser]);
 
-  const has = (userId, shift) =>
-    value.some((entry) => entry.userId === userId && entry.shift === shift);
-
-  const duplicate = Boolean(draftUser) && has(draftUser, draftShift);
-
-  const add = () => {
-    if (!draftUser || duplicate) {
+  const toggle = (userId) => {
+    if (shiftByUser.has(userId)) {
+      onChange(value.filter((entry) => entry.userId !== userId));
       return;
     }
-    onChange([...value, { userId: draftUser, shift: draftShift }]);
-    setDraftUser(null);
+    if (value.length >= MAX) {
+      return;
+    }
+    const takenShift = value[0]?.shift;
+    onChange([...value, { userId, shift: takenShift ? OTHER[takenShift] : 'Day' }]);
   };
 
-  const remove = (index) => onChange(value.filter((_, i) => i !== index));
-
-  const changeShift = (index, shift) => {
-    if (has(value[index].userId, shift)) {
-      return;
-    }
-    onChange(value.map((entry, i) => (i === index ? { ...entry, shift } : entry)));
+  const setShift = (userId, shift) => {
+    const other = value.find((entry) => entry.userId !== userId);
+    onChange(
+      value.map((entry) => {
+        if (entry.userId === userId) {
+          return { ...entry, shift };
+        }
+        if (other && entry.userId === other.userId) {
+          return { ...entry, shift: OTHER[shift] };
+        }
+        return entry;
+      })
+    );
   };
 
   return (
     <Stack gap="xs">
-      <Text size="sm" fw={600}>
-        Managers
-      </Text>
-      <Group gap="sm" align="flex-end" wrap="wrap">
-        <Select
-          placeholder="Select a manager"
-          data={operatorOptions}
-          value={draftUser}
-          onChange={setDraftUser}
-          searchable
-          clearable
-          w={280}
-        />
-        <Select
-          data={SHIFT_OPTIONS}
-          value={draftShift}
-          onChange={(next) => setDraftShift(next || 'Day')}
-          allowDeselect={false}
-          w={110}
-        />
-        <Button variant="light" onClick={add} disabled={!draftUser || duplicate}>
-          Add
-        </Button>
-      </Group>
-      {duplicate ? (
-        <Text size="xs" c="red">
-          That manager is already added for the {draftShift} shift.
+      <Group justify="space-between">
+        <Text size="sm" fw={600}>
+          Shift managers
         </Text>
-      ) : null}
-      {value.length ? (
-        <Stack gap={6}>
-          {value.map((entry, index) => {
-            const operator = operatorById.get(entry.userId);
-            return (
-              <Group
-                key={`${entry.userId}-${entry.shift}`}
-                justify="space-between"
-                wrap="nowrap"
-                style={ROW_STYLE}
-              >
-                <Box style={{ minWidth: 0 }}>
-                  <Text size="sm" truncate>
-                    {operator?.name || 'Unknown user'}
-                  </Text>
-                  {operator?.email ? (
-                    <Text size="xs" c="dimmed" truncate>
-                      {operator.email}
-                    </Text>
-                  ) : null}
-                </Box>
-                <Group gap="xs" wrap="nowrap">
-                  <Select
-                    data={SHIFT_OPTIONS}
-                    value={entry.shift}
-                    onChange={(next) => changeShift(index, next || entry.shift)}
-                    allowDeselect={false}
-                    size="xs"
-                    w={100}
-                  />
-                  <ActionIcon
-                    variant="subtle"
-                    color="red"
-                    onClick={() => remove(index)}
-                    aria-label="Remove manager"
-                  >
-                    <NavIcon name="trash" size={15} />
-                  </ActionIcon>
-                </Group>
-              </Group>
-            );
-          })}
-        </Stack>
-      ) : (
         <Text size="xs" c="dimmed">
-          No managers assigned yet.
+          {value.length} / {MAX} selected
         </Text>
-      )}
+      </Group>
+      <TextInput
+        placeholder="Search manager"
+        value={search}
+        onChange={(event) => setSearch(event.currentTarget.value)}
+      />
+      <ScrollArea.Autosize
+        mah={280}
+        type="auto"
+        style={{ border: '1px solid var(--mantine-color-gray-3)', borderRadius: 8 }}
+      >
+        {visible.length ? (
+          <Stack gap={0} p={4}>
+            {visible.map((operator) => {
+              const selectedShift = shiftByUser.get(operator.id);
+              const isSelected = Boolean(selectedShift);
+              const blocked = !isSelected && value.length >= MAX;
+              return (
+                <Group
+                  key={operator.id}
+                  wrap="nowrap"
+                  gap="sm"
+                  align="center"
+                  onClick={() => !blocked && toggle(operator.id)}
+                  style={{ ...ROW_STYLE(isSelected), opacity: blocked ? 0.45 : 1 }}
+                >
+                  <Checkbox checked={isSelected} readOnly tabIndex={-1} disabled={blocked} />
+                  <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                    <Text size="sm" truncate>
+                      {operator.name}
+                    </Text>
+                    {operator.email ? (
+                      <Text size="xs" c="dimmed" truncate>
+                        {operator.email}
+                      </Text>
+                    ) : null}
+                  </Stack>
+                  {isSelected ? (
+                    <SegmentedControl
+                      size="xs"
+                      data={['Day', 'Night']}
+                      value={selectedShift}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(shift) => setShift(operator.id, shift)}
+                    />
+                  ) : null}
+                </Group>
+              );
+            })}
+          </Stack>
+        ) : (
+          <Text size="sm" c="dimmed" ta="center" py="md">
+            {operators.length ? 'No managers match your search' : 'No active managers available.'}
+          </Text>
+        )}
+      </ScrollArea.Autosize>
+      <Text size="xs" c="dimmed">
+        Pick up to two managers; a job with a Day and a Night manager needs one on each shift.
+      </Text>
     </Stack>
   );
 };

@@ -3,6 +3,13 @@ import { NavIcon } from '../NavIcon.jsx';
 import { SiteManagerPicker } from './SiteManagerPicker.jsx';
 import { RosterPicker } from './RosterPicker.jsx';
 
+const TabLabel = ({ icon, children }) => (
+  <Group gap={6} wrap="nowrap">
+    <NavIcon name={icon} size={15} />
+    <span>{children}</span>
+  </Group>
+);
+
 export const PeopleAssignModal = ({
   opened,
   onClose,
@@ -16,11 +23,11 @@ export const PeopleAssignModal = ({
     <Stack gap="md">
       <Tabs defaultValue="managers" keepMounted={false}>
         <Tabs.List grow>
-          <Tabs.Tab value="managers" leftSection={<NavIcon name="users" size={15} />}>
-            Managers ({siteManagers.length})
+          <Tabs.Tab value="managers">
+            <TabLabel icon="users">Managers ({siteManagers.length})</TabLabel>
           </Tabs.Tab>
-          <Tabs.Tab value="crew" leftSection={<NavIcon name="idCard" size={15} />}>
-            Crew ({rosterEmployeeIds.length})
+          <Tabs.Tab value="crew">
+            <TabLabel icon="idCard">Crew ({rosterEmployeeIds.length})</TabLabel>
           </Tabs.Tab>
         </Tabs.List>
 
