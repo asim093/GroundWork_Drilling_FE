@@ -1,14 +1,29 @@
+import { useMemo } from 'react';
 import { Checkbox, Stack, Table, Text } from '@mantine/core';
 import { TimePicker } from '@mantine/dates';
 
-export const CrewSection = ({ crew = [], onChange, roster = [], disabled }) => {
-  const byId = new Map(crew.map((member) => [member.employeeId, member]));
+export const CrewSection = ({ crew = [], onChange, roster = [], disabled, shiftTimes }) => {
+  const byId = useMemo(() => new Map(crew.map((member) => [member.employeeId, member])), [crew]);
+
+  const orderedRoster = useMemo(() => {
+    const rank = (id) => (byId.has(id) ? 0 : 1);
+    return [...roster].sort(
+      (a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name)
+    );
+  }, [roster, byId]);
 
   const toggle = (employeeId) => {
     if (byId.has(employeeId)) {
       onChange(crew.filter((member) => member.employeeId !== employeeId));
     } else {
-      onChange([...crew, { employeeId, timeIn: '', timeOut: '' }]);
+      onChange([
+        ...crew,
+        {
+          employeeId,
+          timeIn: shiftTimes?.timeIn || '',
+          timeOut: shiftTimes?.timeOut || ''
+        }
+      ]);
     }
   };
 
@@ -44,11 +59,14 @@ export const CrewSection = ({ crew = [], onChange, roster = [], disabled }) => {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {roster.map((employee) => {
+            {orderedRoster.map((employee) => {
               const member = byId.get(employee.id);
               const active = Boolean(member);
               return (
-                <Table.Tr key={employee.id}>
+                <Table.Tr
+                  key={employee.id}
+                  style={active ? undefined : { opacity: 0.55 }}
+                >
                   <Table.Td>
                     <Checkbox
                       checked={active}
@@ -63,30 +81,43 @@ export const CrewSection = ({ crew = [], onChange, roster = [], disabled }) => {
                       {employee.employeeType}
                     </Text>
                   </Table.Td>
-                  <Table.Td>
-                    <TimePicker
-                      value={member?.timeIn || ''}
-                      format="12h"
-                      withDropdown
-                      clearable
-                      disabled={disabled || !active}
-                      onChange={(value) => setTime(employee.id, 'timeIn', value)}
-                      aria-label={`${employee.name} time in`}
-                      w={130}
-                    />
-                  </Table.Td>
-                  <Table.Td>
-                    <TimePicker
-                      value={member?.timeOut || ''}
-                      format="12h"
-                      withDropdown
-                      clearable
-                      disabled={disabled || !active}
-                      onChange={(value) => setTime(employee.id, 'timeOut', value)}
-                      aria-label={`${employee.name} time out`}
-                      w={130}
-                    />
-                  </Table.Td>
+                  {active ? (
+                    <>
+                      <Table.Td>
+                        <TimePicker
+                          value={member?.timeIn || ''}
+                          format="12h"
+                          withDropdown
+                          clearable
+                          disabled={disabled}
+                          onChange={(value) => setTime(employee.id, 'timeIn', value)}
+                          aria-label={`${employee.name} time in`}
+                          w={130}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <TimePicker
+                          value={member?.timeOut || ''}
+                          format="12h"
+                          withDropdown
+                          clearable
+                          disabled={disabled}
+                          onChange={(value) => setTime(employee.id, 'timeOut', value)}
+                          aria-label={`${employee.name} time out`}
+                          w={130}
+                        />
+                      </Table.Td>
+                    </>
+                  ) : (
+                    <>
+                      <Table.Td>
+                        <Text c="dimmed">—</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text c="dimmed">—</Text>
+                      </Table.Td>
+                    </>
+                  )}
                 </Table.Tr>
               );
             })}

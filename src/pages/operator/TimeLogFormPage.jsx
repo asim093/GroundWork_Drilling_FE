@@ -6,10 +6,12 @@ import {
   Box,
   Button,
   Center,
+  Divider,
   Group,
   Loader,
   NumberInput,
   Paper,
+  Progress,
   Radio,
   Select,
   SimpleGrid,
@@ -155,7 +157,7 @@ export const TimeLogFormPage = () => {
   const totalHours = totalLineHours(form.activityLines);
   const recoveryPreview = shiftRecoveryPercent(form.activityLines);
   const mileagePreview = mileageTotal(form.mileageStart, form.mileageEnd);
-  const hoursOnSitePreview = clockDuration(form.timeStarted, form.timeFinished);
+  const hoursOnSitePreview = clockDuration(form.timeIn, form.timeOut);
 
   const liveLineErrors = useMemo(
     () =>
@@ -220,7 +222,22 @@ export const TimeLogFormPage = () => {
       .catch(() => setConsumableGroups([]));
   }, []);
 
+  const [openSection, setOpenSection] = useState('shift-time');
+
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const setSiteTime = (key, value) =>
+    setForm((prev) => {
+      const next = value || '';
+      return {
+        ...prev,
+        [key]: next,
+        crew: prev.crew.map((member) => ({
+          ...member,
+          [key]: next || member[key]
+        }))
+      };
+    });
 
   const setWellTagChoice = (value) =>
     setForm((prev) => ({
@@ -370,6 +387,8 @@ export const TimeLogFormPage = () => {
   const filled = {
     shiftTime:
       Boolean(form.shift) ||
+      Boolean(form.timeIn) ||
+      Boolean(form.timeOut) ||
       Boolean(form.timeStarted) ||
       Boolean(form.timeFinished) ||
       hoursOnSitePreview !== null ||
@@ -405,6 +424,18 @@ export const TimeLogFormPage = () => {
     mileage: filledValue(form.mileageStart) || filledValue(form.mileageEnd)
   };
 
+  const sectionFlags = [
+    filled.shiftTime,
+    filled.crew,
+    filled.activityLines,
+    filled.consumables,
+    filled.fuel,
+    filled.wellTag,
+    filled.mileage
+  ];
+  const doneCount = sectionFlags.filter(Boolean).length;
+  const progressPct = Math.round((doneCount / sectionFlags.length) * 100);
+
   return (
     <AppLayout navItems={OPERATOR_NAV}>
       <Stack gap="lg">
@@ -439,6 +470,20 @@ export const TimeLogFormPage = () => {
           </SimpleGrid>
         </Paper>
 
+        {readOnly ? null : (
+          <Paper withBorder radius="lg" p="md">
+            <Group justify="space-between" mb={6}>
+              <Text size="sm" fw={600}>
+                {doneCount} of {sectionFlags.length} sections completed
+              </Text>
+              <Text size="xs" c="dimmed">
+                {progressPct}%
+              </Text>
+            </Group>
+            <Progress value={progressPct} size="sm" radius="xl" />
+          </Paper>
+        )}
+
         <Stack gap="sm">
         <Group gap={7} wrap="nowrap" px={4}>
           <Box
@@ -447,21 +492,13 @@ export const TimeLogFormPage = () => {
             style={{ borderRadius: '50%', backgroundColor: 'var(--mantine-color-brand-6)', flexShrink: 0 }}
           />
           <Text size="xs" c="dimmed">
-            A filled dot marks a section that already has entries.
+            A filled dot marks a section that already has entries. One section opens at a time.
           </Text>
         </Group>
 
         <Accordion
-          multiple
-          defaultValue={[
-            'shift-time',
-            'crew',
-            'activity-lines',
-            'consumables',
-            'fuel',
-            'well-tag',
-            'mileage'
-          ]}
+          value={openSection}
+          onChange={setOpenSection}
           variant="separated"
           radius="md"
         >
@@ -470,7 +507,7 @@ export const TimeLogFormPage = () => {
               Shift &amp; Time
             </Accordion.Control>
             <Accordion.Panel>
-              <Stack gap="lg">
+              <Stack gap="xl">
                 <SubGroup title="Date &amp; Shift">
                   <SimpleGrid cols={GRID} spacing="md">
                     <DatePickerInput
@@ -492,15 +529,47 @@ export const TimeLogFormPage = () => {
                   </SimpleGrid>
                 </SubGroup>
 
+                <Divider />
+
                 <SubGroup
                   title="Time on site"
                   caption="When the crew arrived on and left the site for this shift."
                 >
                   <SimpleGrid cols={GRID} spacing="md">
-                    {timeField('timeStarted', 'On site from')}
-                    {timeField('timeFinished', 'On site to')}
+                    <TimePicker
+                      label="Time In"
+                      value={form.timeIn}
+                      format="12h"
+                      withDropdown
+                      clearable
+                      disabled={readOnly}
+                      onChange={(value) => setSiteTime('timeIn', value)}
+                    />
+                    <TimePicker
+                      label="Time Out"
+                      value={form.timeOut}
+                      format="12h"
+                      withDropdown
+                      clearable
+                      disabled={readOnly}
+                      onChange={(value) => setSiteTime('timeOut', value)}
+                    />
                   </SimpleGrid>
                 </SubGroup>
+
+                <Divider />
+
+                <SubGroup
+                  title="Work time"
+                  caption="When drilling / activity work actually started and finished. Activity lines must fall inside this window."
+                >
+                  <SimpleGrid cols={GRID} spacing="md">
+                    {timeField('timeStarted', 'Time Started')}
+                    {timeField('timeFinished', 'Time Finished')}
+                  </SimpleGrid>
+                </SubGroup>
+
+                <Divider />
 
                 <SubGroup title="Hours Summary">
                   <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
@@ -526,6 +595,7 @@ export const TimeLogFormPage = () => {
                 crew={form.crew}
                 roster={roster}
                 disabled={readOnly}
+                shiftTimes={{ timeIn: form.timeIn, timeOut: form.timeOut }}
                 onChange={(crew) => setField('crew', crew)}
               />
             </Accordion.Panel>
@@ -672,16 +742,19 @@ export const TimeLogFormPage = () => {
         </Stack>
 
         {readOnly ? null : (
-          <div className="tl-footer-bar">
-            <Group grow>
-              <Button variant="default" onClick={handleSaveDraft} loading={saving}>
-                Save draft
-              </Button>
-              <Button onClick={handleSubmit} loading={submitting}>
-                Submit
-              </Button>
-            </Group>
-          </div>
+          <>
+            <Box h={72} aria-hidden />
+            <div className="tl-footer-bar">
+              <Group grow>
+                <Button variant="default" onClick={handleSaveDraft} loading={saving}>
+                  Save draft
+                </Button>
+                <Button onClick={handleSubmit} loading={submitting}>
+                  Submit
+                </Button>
+              </Group>
+            </div>
+          </>
         )}
       </Stack>
     </AppLayout>

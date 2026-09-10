@@ -79,8 +79,10 @@ export const TimeLogEntryView = ({ entry }) => {
         <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
           <Field label="Date" value={formatDate(entry.date)} />
           <Field label="Shift" value={show(entry.shift)} />
-          <Field label="On site from" value={show(entry.timeStarted)} />
-          <Field label="On site to" value={show(entry.timeFinished)} />
+          <Field label="Time in" value={show(entry.timeIn)} />
+          <Field label="Time out" value={show(entry.timeOut)} />
+          <Field label="Time started" value={show(entry.timeStarted)} />
+          <Field label="Time finished" value={show(entry.timeFinished)} />
           <Field label="Hours on site" value={show(entry.hoursOnSite)} />
           <Field label="Standby hours" value={show(entry.standbyHours)} />
           <Field label="Other hours" value={show(entry.otherHours)} />
