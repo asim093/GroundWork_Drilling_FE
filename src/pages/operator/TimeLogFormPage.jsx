@@ -22,8 +22,10 @@ import { DatePickerInput, TimePicker } from '@mantine/dates';
 import { AppLayout } from '../../components/AppLayout.jsx';
 import { OPERATOR_NAV } from '../../constants/nav.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { ActivityLinesSection } from '../../components/timelog/ActivityLinesSection.jsx';
 import { ConsumablesSection } from '../../components/timelog/ConsumablesSection.jsx';
+import { CrewSection } from '../../components/timelog/CrewSection.jsx';
 import { TIME_LOG_STATUS_COLORS } from '../../constants/timeLogs.js';
 import { SHIFT_OPTIONS } from '../../constants/employees.js';
 import {
@@ -33,7 +35,6 @@ import {
 } from '../../lib/timeLogForm.js';
 import {
   clockDuration,
-  defaultJobTimes,
   mileageTotal,
   shiftRecoveryPercent,
   totalDrilledMeters,
@@ -50,11 +51,7 @@ import {
   updateTimeLog
 } from '../../services/timeLogService.js';
 import { TimeLogEntryView } from '../../components/timelog/TimeLogEntryView.jsx';
-import {
-  listActivityOptions,
-  listAssistantOptions,
-  listConsumableOptions
-} from '../../services/catalogService.js';
+import { listActivityOptions, listConsumableOptions } from '../../services/catalogService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
@@ -67,6 +64,20 @@ const COMPUTED_INPUT_STYLES = {
     fontWeight: 600
   }
 };
+
+const idOf = (value) => value?.id || value?._id || value || '';
+
+const rosterOf = (job) =>
+  (job?.rosterEmployeeIds || []).map((employee) => ({
+    id: idOf(employee),
+    name: employee.name || 'Unknown',
+    employeeType: employee.employeeType || '—'
+  }));
+
+const myShiftsFor = (job, userId) =>
+  (job?.siteManagers || [])
+    .filter((manager) => idOf(manager.userId) === userId)
+    .map((manager) => manager.shift);
 
 const CompletionDot = ({ done }) => (
   <Tooltip
@@ -115,17 +126,11 @@ const StatTile = ({ label, value }) => (
 
 const filledValue = (value) => value !== '' && value !== null && value !== undefined;
 
-const AUTO_FLAG = {
-  assistantTimeIn: 'assistantTimeInAuto',
-  assistantTimeOut: 'assistantTimeOutAuto',
-  timeStarted: 'timeStartedAuto',
-  timeFinished: 'timeFinishedAuto'
-};
-
 export const TimeLogFormPage = () => {
   usePageTitle('Time & material log');
   const { jobId, id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [job, setJob] = useState(null);
   const [entry, setEntry] = useState(null);
   const [form, setForm] = useState(emptyTimeLogForm);
@@ -135,24 +140,30 @@ export const TimeLogFormPage = () => {
   const [lineErrors, setLineErrors] = useState({});
   const [activityGroups, setActivityGroups] = useState([]);
   const [consumableGroups, setConsumableGroups] = useState([]);
-  const [assistantOptions, setAssistantOptions] = useState([]);
 
   const readOnly = entry?.status === 'submitted';
+
+  const roster = useMemo(() => rosterOf(job), [job]);
+  const myShifts = useMemo(() => myShiftsFor(job, user?.id), [job, user?.id]);
+  const shiftOptions = myShifts.length
+    ? SHIFT_OPTIONS.filter((option) => myShifts.includes(option.value))
+    : SHIFT_OPTIONS;
+  const shiftLocked = readOnly || Boolean(entry) || myShifts.length === 1;
 
   const totalDrilled = totalDrilledMeters(form.activityLines);
   const totalRecovered = totalRecoveryMeters(form.activityLines);
   const totalHours = totalLineHours(form.activityLines);
   const recoveryPreview = shiftRecoveryPercent(form.activityLines);
   const mileagePreview = mileageTotal(form.mileageStart, form.mileageEnd);
-  const hoursOnSitePreview = clockDuration(form.timeIn, form.timeOut);
+  const hoursOnSitePreview = clockDuration(form.timeStarted, form.timeFinished);
 
   const liveLineErrors = useMemo(
     () =>
       validateActivityLines(form.activityLines, {
-        timeIn: form.timeIn,
-        timeOut: form.timeOut
+        timeStarted: form.timeStarted,
+        timeFinished: form.timeFinished
       }) || {},
-    [form.activityLines, form.timeIn, form.timeOut]
+    [form.activityLines, form.timeStarted, form.timeFinished]
   );
 
   const shownLineErrors = useMemo(() => {
@@ -180,9 +191,10 @@ export const TimeLogFormPage = () => {
           navigate(`/operator/log/${existing.data[0].id}`, { replace: true });
           return;
         }
+        const mine = myShiftsFor(loadedJob, user?.id);
         setJob(loadedJob);
         setEntry(null);
-        setForm(emptyTimeLogForm());
+        setForm({ ...emptyTimeLogForm(), shift: mine.length === 1 ? mine[0] : null });
       }
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to open the time log'));
@@ -190,7 +202,7 @@ export const TimeLogFormPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, jobId, navigate]);
+  }, [id, jobId, navigate, user?.id]);
 
   useEffect(() => {
     if (id && entry?.id === id) {
@@ -206,87 +218,9 @@ export const TimeLogFormPage = () => {
     listConsumableOptions()
       .then((result) => setConsumableGroups(result.grouped))
       .catch(() => setConsumableGroups([]));
-    listAssistantOptions()
-      .then((result) => setAssistantOptions(result.options))
-      .catch(() => setAssistantOptions([]));
   }, []);
 
-  const assistantSelectData = useMemo(() => {
-    const name = form.assistantName?.trim();
-    if (name && !assistantOptions.some((option) => option.value === name)) {
-      return [{ value: name, label: `${name} (not in list)` }, ...assistantOptions];
-    }
-    return assistantOptions;
-  }, [assistantOptions, form.assistantName]);
-
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
-
-  const updateTime = (key, value) =>
-    setForm((prev) => {
-      const next = { ...prev, [key]: value };
-
-      if (AUTO_FLAG[key]) {
-        next[AUTO_FLAG[key]] = false;
-      }
-
-      if (key === 'timeIn' || key === 'timeOut') {
-        if (prev.assistantName.trim()) {
-          if (key === 'timeIn' && (prev.assistantTimeInAuto || !prev.assistantTimeIn)) {
-            next.assistantTimeIn = value;
-            next.assistantTimeInAuto = true;
-          }
-          if (key === 'timeOut' && (prev.assistantTimeOutAuto || !prev.assistantTimeOut)) {
-            next.assistantTimeOut = value;
-            next.assistantTimeOutAuto = true;
-          }
-        }
-        const jobTimes = defaultJobTimes(next.timeIn, next.timeOut);
-        if (jobTimes) {
-          if (prev.timeStartedAuto || !prev.timeStarted) {
-            next.timeStarted = jobTimes.timeStarted;
-            next.timeStartedAuto = true;
-          }
-          if (prev.timeFinishedAuto || !prev.timeFinished) {
-            next.timeFinished = jobTimes.timeFinished;
-            next.timeFinishedAuto = true;
-          }
-        }
-      }
-
-      return next;
-    });
-
-  const setAssistantName = (rawValue) =>
-    setForm((prev) => {
-      const value = rawValue || '';
-      const next = { ...prev, assistantName: value };
-      const nowHasName = Boolean(value.trim());
-      const hadName = Boolean(prev.assistantName.trim());
-
-      if (nowHasName && !hadName) {
-        if (!prev.assistantTimeIn && prev.timeIn) {
-          next.assistantTimeIn = prev.timeIn;
-          next.assistantTimeInAuto = true;
-        }
-        if (!prev.assistantTimeOut && prev.timeOut) {
-          next.assistantTimeOut = prev.timeOut;
-          next.assistantTimeOutAuto = true;
-        }
-      }
-
-      if (!nowHasName && hadName) {
-        if (prev.assistantTimeInAuto) {
-          next.assistantTimeIn = '';
-          next.assistantTimeInAuto = false;
-        }
-        if (prev.assistantTimeOutAuto) {
-          next.assistantTimeOut = '';
-          next.assistantTimeOutAuto = false;
-        }
-      }
-
-      return next;
-    });
 
   const setWellTagChoice = (value) =>
     setForm((prev) => ({
@@ -321,9 +255,13 @@ export const TimeLogFormPage = () => {
   };
 
   const persist = async () => {
+    if (!form.shift) {
+      throw new Error('Select the shift before saving');
+    }
+
     const clientLineErrors = validateActivityLines(form.activityLines, {
-      timeIn: form.timeIn,
-      timeOut: form.timeOut
+      timeStarted: form.timeStarted,
+      timeFinished: form.timeFinished
     });
     if (clientLineErrors) {
       setLineErrors(clientLineErrors);
@@ -425,20 +363,19 @@ export const TimeLogFormPage = () => {
       withDropdown
       clearable
       disabled={readOnly}
-      onChange={(value) => updateTime(key, value)}
+      onChange={(value) => setField(key, value || '')}
     />
   );
 
   const filled = {
     shiftTime:
       Boolean(form.shift) ||
-      Boolean(form.timeIn) ||
-      Boolean(form.timeOut) ||
       Boolean(form.timeStarted) ||
       Boolean(form.timeFinished) ||
       hoursOnSitePreview !== null ||
       filledValue(form.standbyHours) ||
       filledValue(form.otherHours),
+    crew: form.crew.length > 0,
     wellTag:
       form.wellTag.installed ||
       form.wellTag.decommissioned ||
@@ -465,7 +402,6 @@ export const TimeLogFormPage = () => {
         filledValue(item.qtyReturned) ||
         filledValue(item.qtyUsed)
     ),
-    assistant: Boolean(form.assistantName || form.assistantTimeIn || form.assistantTimeOut),
     mileage: filledValue(form.mileageStart) || filledValue(form.mileageEnd)
   };
 
@@ -519,10 +455,10 @@ export const TimeLogFormPage = () => {
           multiple
           defaultValue={[
             'shift-time',
+            'crew',
             'activity-lines',
             'consumables',
             'fuel',
-            'assistant',
             'well-tag',
             'mileage'
           ]}
@@ -547,29 +483,22 @@ export const TimeLogFormPage = () => {
                     <Select
                       label="Shift"
                       placeholder="Select shift"
-                      data={SHIFT_OPTIONS}
+                      data={shiftOptions}
                       value={form.shift}
-                      disabled={readOnly}
+                      disabled={shiftLocked}
                       onChange={(value) => setField('shift', value)}
-                      clearable
+                      allowDeselect={false}
                     />
                   </SimpleGrid>
                 </SubGroup>
 
-                <SubGroup title="Your Time" caption="When you personally arrived and left the site.">
-                  <SimpleGrid cols={GRID} spacing="md">
-                    {timeField('timeIn', 'Time in')}
-                    {timeField('timeOut', 'Time out')}
-                  </SimpleGrid>
-                </SubGroup>
-
                 <SubGroup
-                  title="Job Time"
-                  caption="When drilling actually started and finished (can differ from your own time)."
+                  title="Time on site"
+                  caption="When the crew arrived on and left the site for this shift."
                 >
                   <SimpleGrid cols={GRID} spacing="md">
-                    {timeField('timeStarted', 'Time started')}
-                    {timeField('timeFinished', 'Time finished')}
+                    {timeField('timeStarted', 'On site from')}
+                    {timeField('timeFinished', 'On site to')}
                   </SimpleGrid>
                 </SubGroup>
 
@@ -587,6 +516,18 @@ export const TimeLogFormPage = () => {
                   </SimpleGrid>
                 </SubGroup>
               </Stack>
+            </Accordion.Panel>
+          </Accordion.Item>
+
+          <Accordion.Item value="crew">
+            <Accordion.Control icon={<CompletionDot done={filled.crew} />}>Crew</Accordion.Control>
+            <Accordion.Panel>
+              <CrewSection
+                crew={form.crew}
+                roster={roster}
+                disabled={readOnly}
+                onChange={(crew) => setField('crew', crew)}
+              />
             </Accordion.Panel>
           </Accordion.Item>
 
@@ -671,34 +612,6 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="assistant">
-            <Accordion.Control icon={<CompletionDot done={filled.assistant} />}>
-              Assistant
-            </Accordion.Control>
-            <Accordion.Panel>
-              <Stack gap="xs">
-                <Text size="xs" c="dimmed">
-                  Fill this in only if you had an assistant on this shift.
-                </Text>
-                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                  <Select
-                    label="Assistant name"
-                    placeholder="Select an assistant"
-                    data={assistantSelectData}
-                    value={form.assistantName || null}
-                    disabled={readOnly}
-                    onChange={setAssistantName}
-                    searchable
-                    clearable
-                    nothingFoundMessage="No assistants found"
-                  />
-                  {timeField('assistantTimeIn', 'Time in')}
-                  {timeField('assistantTimeOut', 'Time out')}
-                </SimpleGrid>
-              </Stack>
-            </Accordion.Panel>
-          </Accordion.Item>
-
           <Accordion.Item value="well-tag">
             <Accordion.Control icon={<CompletionDot done={filled.wellTag} />}>
               Well Tag
@@ -739,7 +652,7 @@ export const TimeLogFormPage = () => {
             <Accordion.Panel>
               <Stack gap="xs">
                 <Text size="xs" c="dimmed">
-                  Leave blank if you did not drive a vehicle for this shift.
+                  Leave blank if no vehicle was driven for this shift.
                 </Text>
                 <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
                   {numberField('mileageStart', 'Mileage start')}

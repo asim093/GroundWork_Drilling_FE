@@ -28,3 +28,9 @@ export const BLANK_CONSUMABLE = {
   qtyReturned: '',
   qtyUsed: ''
 };
+
+export const BLANK_CREW_ROW = {
+  employeeId: '',
+  timeIn: '',
+  timeOut: ''
+};

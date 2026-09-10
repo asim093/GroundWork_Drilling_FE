@@ -40,11 +40,9 @@ export const TimeLogEntryView = ({ entry }) => {
   const job = entry.jobId || {};
   const lines = entry.activityLines || [];
   const consumables = entry.consumables || [];
+  const crew = entry.crew || [];
   const fuel = entry.fuel || {};
   const wellTag = entry.wellTag || {};
-  const hasAssistant = Boolean(
-    entry.assistantName || entry.assistantTimeIn || entry.assistantTimeOut
-  );
   const hasMileage =
     entry.mileageStart !== null && entry.mileageStart !== undefined
       ? true
@@ -61,7 +59,7 @@ export const TimeLogEntryView = ({ entry }) => {
             <Text size="sm" c="dimmed">
               {job.jobLocation || 'No location'}
               {job.rigNumber?.name ? ` · Rig ${job.rigNumber.name}` : ''} ·{' '}
-              {entry.userId?.name || 'Operator'} · {formatDate(entry.date)}
+              {entry.userId?.name || 'Site manager'} · {formatDate(entry.date)}
             </Text>
           </Stack>
           <Stack gap={4} align="flex-end">
@@ -81,14 +79,41 @@ export const TimeLogEntryView = ({ entry }) => {
         <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
           <Field label="Date" value={formatDate(entry.date)} />
           <Field label="Shift" value={show(entry.shift)} />
-          <Field label="Time in" value={show(entry.timeIn)} />
-          <Field label="Time out" value={show(entry.timeOut)} />
-          <Field label="Time started" value={show(entry.timeStarted)} />
-          <Field label="Time finished" value={show(entry.timeFinished)} />
+          <Field label="On site from" value={show(entry.timeStarted)} />
+          <Field label="On site to" value={show(entry.timeFinished)} />
           <Field label="Hours on site" value={show(entry.hoursOnSite)} />
           <Field label="Standby hours" value={show(entry.standbyHours)} />
           <Field label="Other hours" value={show(entry.otherHours)} />
         </SimpleGrid>
+      </Section>
+
+      <Section title="Crew">
+        {crew.length ? (
+          <Table verticalSpacing="sm">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Name</Table.Th>
+                <Table.Th>Type</Table.Th>
+                <Table.Th>Time in</Table.Th>
+                <Table.Th>Time out</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {crew.map((member, index) => (
+                <Table.Tr key={member.employeeId?.id || member.employeeId?._id || index}>
+                  <Table.Td>{member.employeeId?.name || '—'}</Table.Td>
+                  <Table.Td>{member.employeeId?.employeeType || '—'}</Table.Td>
+                  <Table.Td>{show(member.timeIn)}</Table.Td>
+                  <Table.Td>{show(member.timeOut)}</Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        ) : (
+          <Text c="dimmed" size="sm">
+            No crew recorded.
+          </Text>
+        )}
       </Section>
 
       <Section title="Well Tag & shift totals">
@@ -208,16 +233,6 @@ export const TimeLogEntryView = ({ entry }) => {
           </Text>
         )}
       </Section>
-
-      {hasAssistant ? (
-        <Section title="Assistant">
-          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-            <Field label="Name" value={show(entry.assistantName)} />
-            <Field label="Time in" value={show(entry.assistantTimeIn)} />
-            <Field label="Time out" value={show(entry.assistantTimeOut)} />
-          </SimpleGrid>
-        </Section>
-      ) : null}
 
       {hasMileage ? (
         <Section title="Mileage">

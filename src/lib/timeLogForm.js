@@ -13,20 +13,14 @@ const toInputValue = (value) => (value === null || value === undefined ? '' : va
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
+const idOf = (value) => value?.id || value?._id || value || '';
+
 export const emptyTimeLogForm = () => ({
   date: todayIso(),
   shift: null,
-  timeIn: '',
-  timeOut: '',
-  assistantName: '',
-  assistantTimeIn: '',
-  assistantTimeOut: '',
-  assistantTimeInAuto: false,
-  assistantTimeOutAuto: false,
+  crew: [],
   timeStarted: '',
   timeFinished: '',
-  timeStartedAuto: false,
-  timeFinishedAuto: false,
   standbyHours: '',
   otherHours: '',
   mileageStart: '',
@@ -40,17 +34,13 @@ export const emptyTimeLogForm = () => ({
 export const timeLogFormFromEntry = (entry) => ({
   date: entry.date ? entry.date.slice(0, 10) : todayIso(),
   shift: entry.shift || null,
-  timeIn: entry.timeIn || '',
-  timeOut: entry.timeOut || '',
-  assistantName: entry.assistantName || '',
-  assistantTimeIn: entry.assistantTimeIn || '',
-  assistantTimeOut: entry.assistantTimeOut || '',
-  assistantTimeInAuto: false,
-  assistantTimeOutAuto: false,
+  crew: (entry.crew || []).map((member) => ({
+    employeeId: idOf(member.employeeId),
+    timeIn: member.timeIn || '',
+    timeOut: member.timeOut || ''
+  })),
   timeStarted: entry.timeStarted || '',
   timeFinished: entry.timeFinished || '',
-  timeStartedAuto: false,
-  timeFinishedAuto: false,
   standbyHours: toInputValue(entry.standbyHours),
   otherHours: toInputValue(entry.otherHours),
   mileageStart: toInputValue(entry.mileageStart),
@@ -89,14 +79,14 @@ export const timeLogFormFromEntry = (entry) => ({
 export const timeLogPayloadFromForm = (form) => ({
   date: form.date,
   shift: form.shift || null,
-  timeIn: form.timeIn,
-  timeOut: form.timeOut,
-  assistantName: form.assistantName,
-  assistantTimeIn: form.assistantTimeIn,
-  assistantTimeOut: form.assistantTimeOut,
+  crew: (form.crew || []).map((member) => ({
+    employeeId: member.employeeId,
+    timeIn: member.timeIn || '',
+    timeOut: member.timeOut || ''
+  })),
   timeStarted: form.timeStarted,
   timeFinished: form.timeFinished,
-  hoursOnSite: clockDuration(form.timeIn, form.timeOut),
+  hoursOnSite: clockDuration(form.timeStarted, form.timeFinished),
   standbyHours: toNumberOrNull(form.standbyHours),
   otherHours: toNumberOrNull(form.otherHours),
   mileageStart: toNumberOrNull(form.mileageStart),
