@@ -209,6 +209,25 @@ export const JobsPage = () => {
             </Button>
           </Group>
 
+          <Group justify="space-between" wrap="wrap" gap="xs">
+            <Text size="xs" c="dimmed">
+              {result.pagination
+                ? `${result.pagination.total} ${
+                    filters.status === 'archived' ? 'archived ' : ''
+                  }job${result.pagination.total === 1 ? '' : 's'}`
+                : ''}
+            </Text>
+            <Button
+              variant="subtle"
+              size="xs"
+              onClick={() =>
+                setFilter('status', filters.status === 'archived' ? null : 'archived')
+              }
+            >
+              {filters.status === 'archived' ? 'Show active jobs' : 'View archived jobs'}
+            </Button>
+          </Group>
+
           {loading ? (
             <Center py="xl">
               <Loader />

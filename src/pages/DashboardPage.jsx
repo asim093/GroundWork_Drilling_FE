@@ -223,9 +223,13 @@ const AdminDashboard = ({ data, user }) => (
         to="/admin/scheduling"
       />
       <StatCard
-        label="Jobs"
-        value={fmt(data.jobs.total)}
-        hint={`${data.jobs.byStatus.scheduled} scheduled · ${data.jobs.byStatus['in-progress']} in progress`}
+        label="Active jobs"
+        value={fmt(data.jobs.byStatus.scheduled + data.jobs.byStatus['in-progress'])}
+        hint={
+          data.jobs.byStatus.archived
+            ? `${data.jobs.byStatus.scheduled} scheduled · ${data.jobs.byStatus.archived} archived`
+            : `${data.jobs.byStatus.scheduled} scheduled · ${data.jobs.byStatus['in-progress']} in progress`
+        }
         icon="jobs"
         to="/admin/jobs"
       />
