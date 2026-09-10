@@ -11,8 +11,8 @@ import {
   Loader,
   NumberInput,
   Paper,
-  Progress,
   Radio,
+  ScrollArea,
   Select,
   SimpleGrid,
   Stack,
@@ -58,6 +58,17 @@ import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
 const GRID = { base: 1, sm: 2 };
+const FIELD_SIZE = 'sm';
+
+const SECTIONS = [
+  { value: 'shift-time', label: 'Shift & Time' },
+  { value: 'crew', label: 'Crew' },
+  { value: 'activity-lines', label: 'Activity Lines' },
+  { value: 'consumables', label: 'Consumables' },
+  { value: 'fuel', label: 'Fuel' },
+  { value: 'well-tag', label: 'Well Tag' },
+  { value: 'mileage', label: 'Mileage' }
+];
 
 const COMPUTED_INPUT_STYLES = {
   input: {
@@ -222,7 +233,16 @@ export const TimeLogFormPage = () => {
       .catch(() => setConsumableGroups([]));
   }, []);
 
-  const [openSection, setOpenSection] = useState('shift-time');
+  const [openSections, setOpenSections] = useState(SECTIONS.map((section) => section.value));
+
+  const goToSection = (value) => {
+    setOpenSections((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`sec-${value}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -366,6 +386,7 @@ export const TimeLogFormPage = () => {
   const numberField = (key, label) => (
     <NumberInput
       label={label}
+      size={FIELD_SIZE}
       value={form[key]}
       disabled={readOnly}
       onChange={(value) => setField(key, value)}
@@ -375,6 +396,7 @@ export const TimeLogFormPage = () => {
   const timeField = (key, label) => (
     <TimePicker
       label={label}
+      size={FIELD_SIZE}
       value={form[key]}
       format="12h"
       withDropdown
@@ -424,18 +446,6 @@ export const TimeLogFormPage = () => {
     mileage: filledValue(form.mileageStart) || filledValue(form.mileageEnd)
   };
 
-  const sectionFlags = [
-    filled.shiftTime,
-    filled.crew,
-    filled.activityLines,
-    filled.consumables,
-    filled.fuel,
-    filled.wellTag,
-    filled.mileage
-  ];
-  const doneCount = sectionFlags.filter(Boolean).length;
-  const progressPct = Math.round((doneCount / sectionFlags.length) * 100);
-
   return (
     <AppLayout navItems={OPERATOR_NAV}>
       <Stack gap="lg">
@@ -463,25 +473,42 @@ export const TimeLogFormPage = () => {
             Job details
           </Text>
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-            <TextInput label="Job number" value={job?.jobNumber || ''} readOnly disabled />
-            <TextInput label="Client" value={job?.clientName || ''} readOnly disabled />
-            <TextInput label="Job location" value={job?.jobLocation || ''} readOnly disabled />
-            <TextInput label="Rig number" value={job?.rigNumber?.name || '—'} readOnly disabled />
+            <TextInput label="Job number" size={FIELD_SIZE} value={job?.jobNumber || ''} readOnly disabled />
+            <TextInput label="Client" size={FIELD_SIZE} value={job?.clientName || ''} readOnly disabled />
+            <TextInput label="Job location" size={FIELD_SIZE} value={job?.jobLocation || ''} readOnly disabled />
+            <TextInput label="Rig number" size={FIELD_SIZE} value={job?.rigNumber?.name || '—'} readOnly disabled />
           </SimpleGrid>
         </Paper>
 
         {readOnly ? null : (
-          <Paper withBorder radius="lg" p="md">
-            <Group justify="space-between" mb={6}>
-              <Text size="sm" fw={600}>
-                {doneCount} of {sectionFlags.length} sections completed
-              </Text>
-              <Text size="xs" c="dimmed">
-                {progressPct}%
-              </Text>
-            </Group>
-            <Progress value={progressPct} size="sm" radius="xl" />
-          </Paper>
+          <Box
+            px="xs"
+            py={8}
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 5,
+              background: 'var(--mantine-color-body)',
+              borderBottom: '1px solid var(--hairline)'
+            }}
+          >
+            <ScrollArea type="never">
+              <Group gap="xs" wrap="nowrap">
+                {SECTIONS.map((section) => (
+                  <Button
+                    key={section.value}
+                    size="xs"
+                    variant="light"
+                    color="gray"
+                    style={{ flexShrink: 0 }}
+                    onClick={() => goToSection(section.value)}
+                  >
+                    {section.label}
+                  </Button>
+                ))}
+              </Group>
+            </ScrollArea>
+          </Box>
         )}
 
         <Stack gap="sm">
@@ -492,17 +519,18 @@ export const TimeLogFormPage = () => {
             style={{ borderRadius: '50%', backgroundColor: 'var(--mantine-color-brand-6)', flexShrink: 0 }}
           />
           <Text size="xs" c="dimmed">
-            A filled dot marks a section that already has entries. One section opens at a time.
+            A filled dot marks a section that already has entries.
           </Text>
         </Group>
 
         <Accordion
-          value={openSection}
-          onChange={setOpenSection}
+          multiple
+          value={openSections}
+          onChange={setOpenSections}
           variant="separated"
           radius="md"
         >
-          <Accordion.Item value="shift-time">
+          <Accordion.Item value="shift-time" id="sec-shift-time">
             <Accordion.Control icon={<CompletionDot done={filled.shiftTime} />}>
               Shift &amp; Time
             </Accordion.Control>
@@ -512,6 +540,7 @@ export const TimeLogFormPage = () => {
                   <SimpleGrid cols={GRID} spacing="md">
                     <DatePickerInput
                       label="Date"
+                      size={FIELD_SIZE}
                       value={form.date}
                       valueFormat="DD MMM YYYY"
                       disabled={readOnly}
@@ -519,6 +548,7 @@ export const TimeLogFormPage = () => {
                     />
                     <Select
                       label="Shift"
+                      size={FIELD_SIZE}
                       placeholder="Select shift"
                       data={shiftOptions}
                       value={form.shift}
@@ -538,6 +568,7 @@ export const TimeLogFormPage = () => {
                   <SimpleGrid cols={GRID} spacing="md">
                     <TimePicker
                       label="Time In"
+                      size={FIELD_SIZE}
                       value={form.timeIn}
                       format="12h"
                       withDropdown
@@ -547,6 +578,7 @@ export const TimeLogFormPage = () => {
                     />
                     <TimePicker
                       label="Time Out"
+                      size={FIELD_SIZE}
                       value={form.timeOut}
                       format="12h"
                       withDropdown
@@ -575,6 +607,7 @@ export const TimeLogFormPage = () => {
                   <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
                     <TextInput
                       label="Hours on site"
+                      size={FIELD_SIZE}
                       value={hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview}`}
                       readOnly
                       disabled
@@ -588,7 +621,7 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="crew">
+          <Accordion.Item value="crew" id="sec-crew">
             <Accordion.Control icon={<CompletionDot done={filled.crew} />}>Crew</Accordion.Control>
             <Accordion.Panel>
               <CrewSection
@@ -601,7 +634,7 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="activity-lines">
+          <Accordion.Item value="activity-lines" id="sec-activity-lines">
             <Accordion.Control icon={<CompletionDot done={filled.activityLines} />}>
               Activity Lines
             </Accordion.Control>
@@ -642,7 +675,7 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="consumables">
+          <Accordion.Item value="consumables" id="sec-consumables">
             <Accordion.Control icon={<CompletionDot done={filled.consumables} />}>
               Consumables
             </Accordion.Control>
@@ -656,24 +689,27 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="fuel">
+          <Accordion.Item value="fuel" id="sec-fuel">
             <Accordion.Control icon={<CompletionDot done={filled.fuel} />}>Fuel</Accordion.Control>
             <Accordion.Panel>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
                 <NumberInput
                   label="Dyed (L)"
+                  size={FIELD_SIZE}
                   value={form.fuel.dyedLt}
                   disabled={readOnly}
                   onChange={(value) => setFuel('dyedLt', value)}
                 />
                 <NumberInput
                   label="Diesel (L)"
+                  size={FIELD_SIZE}
                   value={form.fuel.dieselLt}
                   disabled={readOnly}
                   onChange={(value) => setFuel('dieselLt', value)}
                 />
                 <NumberInput
                   label="Gasoline (L)"
+                  size={FIELD_SIZE}
                   value={form.fuel.gasolineLt}
                   disabled={readOnly}
                   onChange={(value) => setFuel('gasolineLt', value)}
@@ -682,7 +718,7 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="well-tag">
+          <Accordion.Item value="well-tag" id="sec-well-tag">
             <Accordion.Control icon={<CompletionDot done={filled.wellTag} />}>
               Well Tag
             </Accordion.Control>
@@ -707,6 +743,7 @@ export const TimeLogFormPage = () => {
                 </Radio.Group>
                 <TextInput
                   label="Locates provided by"
+                  size={FIELD_SIZE}
                   value={form.wellTag.locatesProvidedBy}
                   disabled={readOnly}
                   onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
@@ -715,7 +752,7 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="mileage">
+          <Accordion.Item value="mileage" id="sec-mileage">
             <Accordion.Control icon={<CompletionDot done={filled.mileage} />}>
               Mileage
             </Accordion.Control>
@@ -729,6 +766,7 @@ export const TimeLogFormPage = () => {
                   {numberField('mileageEnd', 'Mileage end')}
                   <TextInput
                     label="Mileage total"
+                    size={FIELD_SIZE}
                     value={mileagePreview === null ? '—' : `${mileagePreview}`}
                     readOnly
                     disabled
@@ -743,13 +781,19 @@ export const TimeLogFormPage = () => {
 
         {readOnly ? null : (
           <>
-            <Box h={72} aria-hidden />
+            <Box h={56} aria-hidden />
             <div className="tl-footer-bar">
-              <Group grow>
-                <Button variant="default" onClick={handleSaveDraft} loading={saving}>
+              <Group justify="flex-end" gap="sm">
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={handleSaveDraft}
+                  loading={saving}
+                  disabled={submitting}
+                >
                   Save draft
                 </Button>
-                <Button onClick={handleSubmit} loading={submitting}>
+                <Button size="sm" onClick={handleSubmit} loading={submitting} disabled={saving}>
                   Submit
                 </Button>
               </Group>
