@@ -70,6 +70,8 @@ const SECTIONS = [
   { value: 'mileage', label: 'Mileage' }
 ];
 
+const ACCORDION_SECTIONS = ['shift-time', 'crew', 'activity-lines', 'consumables'];
+
 const COMPUTED_INPUT_STYLES = {
   input: {
     backgroundColor: 'var(--mantine-color-brand-0)',
@@ -124,6 +126,18 @@ const SubGroup = ({ title, caption, children }) => (
     </Box>
     {children}
   </Stack>
+);
+
+const PanelCard = ({ id, title, done, children }) => (
+  <Paper withBorder radius="md" p="md" id={id}>
+    <Group gap={8} mb="sm" wrap="nowrap">
+      <CompletionDot done={done} />
+      <Text fw={600} size="sm">
+        {title}
+      </Text>
+    </Group>
+    {children}
+  </Paper>
 );
 
 const StatTile = ({ label, value }) => (
@@ -233,10 +247,12 @@ export const TimeLogFormPage = () => {
       .catch(() => setConsumableGroups([]));
   }, []);
 
-  const [openSections, setOpenSections] = useState(SECTIONS.map((section) => section.value));
+  const [openSections, setOpenSections] = useState(ACCORDION_SECTIONS);
 
   const goToSection = (value) => {
-    setOpenSections((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    if (ACCORDION_SECTIONS.includes(value)) {
+      setOpenSections((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    }
     requestAnimationFrame(() => {
       document
         .getElementById(`sec-${value}`)
@@ -561,45 +577,45 @@ export const TimeLogFormPage = () => {
 
                 <Divider />
 
-                <SubGroup
-                  title="Time on site"
-                  caption="When the crew arrived on and left the site for this shift."
-                >
-                  <SimpleGrid cols={GRID} spacing="md">
-                    <TimePicker
-                      label="Time In"
-                      size={FIELD_SIZE}
-                      value={form.timeIn}
-                      format="12h"
-                      withDropdown
-                      clearable
-                      disabled={readOnly}
-                      onChange={(value) => setSiteTime('timeIn', value)}
-                    />
-                    <TimePicker
-                      label="Time Out"
-                      size={FIELD_SIZE}
-                      value={form.timeOut}
-                      format="12h"
-                      withDropdown
-                      clearable
-                      disabled={readOnly}
-                      onChange={(value) => setSiteTime('timeOut', value)}
-                    />
-                  </SimpleGrid>
-                </SubGroup>
+                <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="xl">
+                  <SubGroup
+                    title="Time on site"
+                    caption="When the crew arrived on and left the site for this shift."
+                  >
+                    <SimpleGrid cols={2} spacing="md">
+                      <TimePicker
+                        label="Time In"
+                        size={FIELD_SIZE}
+                        value={form.timeIn}
+                        format="12h"
+                        withDropdown
+                        clearable
+                        disabled={readOnly}
+                        onChange={(value) => setSiteTime('timeIn', value)}
+                      />
+                      <TimePicker
+                        label="Time Out"
+                        size={FIELD_SIZE}
+                        value={form.timeOut}
+                        format="12h"
+                        withDropdown
+                        clearable
+                        disabled={readOnly}
+                        onChange={(value) => setSiteTime('timeOut', value)}
+                      />
+                    </SimpleGrid>
+                  </SubGroup>
 
-                <Divider />
-
-                <SubGroup
-                  title="Work time"
-                  caption="When drilling / activity work actually started and finished. Activity lines must fall inside this window."
-                >
-                  <SimpleGrid cols={GRID} spacing="md">
-                    {timeField('timeStarted', 'Time Started')}
-                    {timeField('timeFinished', 'Time Finished')}
-                  </SimpleGrid>
-                </SubGroup>
+                  <SubGroup
+                    title="Work time"
+                    caption="When drilling / activity work actually started and finished. Activity lines must fall inside this window."
+                  >
+                    <SimpleGrid cols={2} spacing="md">
+                      {timeField('timeStarted', 'Time Started')}
+                      {timeField('timeFinished', 'Time Finished')}
+                    </SimpleGrid>
+                  </SubGroup>
+                </SimpleGrid>
 
                 <Divider />
 
@@ -689,94 +705,84 @@ export const TimeLogFormPage = () => {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="fuel" id="sec-fuel">
-            <Accordion.Control icon={<CompletionDot done={filled.fuel} />}>Fuel</Accordion.Control>
-            <Accordion.Panel>
-              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                <NumberInput
-                  label="Dyed (L)"
+        </Accordion>
+
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="sm">
+          <PanelCard id="sec-fuel" title="Fuel" done={filled.fuel}>
+            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+              <NumberInput
+                label="Dyed (L)"
+                size={FIELD_SIZE}
+                value={form.fuel.dyedLt}
+                disabled={readOnly}
+                onChange={(value) => setFuel('dyedLt', value)}
+              />
+              <NumberInput
+                label="Diesel (L)"
+                size={FIELD_SIZE}
+                value={form.fuel.dieselLt}
+                disabled={readOnly}
+                onChange={(value) => setFuel('dieselLt', value)}
+              />
+              <NumberInput
+                label="Gasoline (L)"
+                size={FIELD_SIZE}
+                value={form.fuel.gasolineLt}
+                disabled={readOnly}
+                onChange={(value) => setFuel('gasolineLt', value)}
+              />
+            </SimpleGrid>
+          </PanelCard>
+
+          <PanelCard id="sec-mileage" title="Mileage" done={filled.mileage}>
+            <Stack gap="xs">
+              <Text size="xs" c="dimmed">
+                Leave blank if no vehicle was driven for this shift.
+              </Text>
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
+                {numberField('mileageStart', 'Mileage start')}
+                {numberField('mileageEnd', 'Mileage end')}
+                <TextInput
+                  label="Mileage total"
                   size={FIELD_SIZE}
-                  value={form.fuel.dyedLt}
-                  disabled={readOnly}
-                  onChange={(value) => setFuel('dyedLt', value)}
-                />
-                <NumberInput
-                  label="Diesel (L)"
-                  size={FIELD_SIZE}
-                  value={form.fuel.dieselLt}
-                  disabled={readOnly}
-                  onChange={(value) => setFuel('dieselLt', value)}
-                />
-                <NumberInput
-                  label="Gasoline (L)"
-                  size={FIELD_SIZE}
-                  value={form.fuel.gasolineLt}
-                  disabled={readOnly}
-                  onChange={(value) => setFuel('gasolineLt', value)}
+                  value={mileagePreview === null ? '—' : `${mileagePreview}`}
+                  readOnly
+                  disabled
+                  styles={COMPUTED_INPUT_STYLES}
                 />
               </SimpleGrid>
-            </Accordion.Panel>
-          </Accordion.Item>
+            </Stack>
+          </PanelCard>
 
-          <Accordion.Item value="well-tag" id="sec-well-tag">
-            <Accordion.Control icon={<CompletionDot done={filled.wellTag} />}>
-              Well Tag
-            </Accordion.Control>
-            <Accordion.Panel>
-              <Stack gap="lg">
-                <Radio.Group
-                  label="Well tag"
-                  value={
-                    form.wellTag.installed
-                      ? 'installed'
-                      : form.wellTag.decommissioned
-                        ? 'decommissioned'
-                        : 'none'
-                  }
-                  onChange={setWellTagChoice}
-                >
-                  <Group mt="xs" gap="lg">
-                    <Radio value="none" label="Not applicable" disabled={readOnly} />
-                    <Radio value="installed" label="Installed" disabled={readOnly} />
-                    <Radio value="decommissioned" label="Decommissioned" disabled={readOnly} />
-                  </Group>
-                </Radio.Group>
-                <TextInput
-                  label="Locates provided by"
-                  size={FIELD_SIZE}
-                  value={form.wellTag.locatesProvidedBy}
-                  disabled={readOnly}
-                  onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
-                />
-              </Stack>
-            </Accordion.Panel>
-          </Accordion.Item>
-
-          <Accordion.Item value="mileage" id="sec-mileage">
-            <Accordion.Control icon={<CompletionDot done={filled.mileage} />}>
-              Mileage
-            </Accordion.Control>
-            <Accordion.Panel>
-              <Stack gap="xs">
-                <Text size="xs" c="dimmed">
-                  Leave blank if no vehicle was driven for this shift.
-                </Text>
-                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
-                  {numberField('mileageStart', 'Mileage start')}
-                  {numberField('mileageEnd', 'Mileage end')}
-                  <TextInput
-                    label="Mileage total"
-                    size={FIELD_SIZE}
-                    value={mileagePreview === null ? '—' : `${mileagePreview}`}
-                    readOnly
-                    disabled
-                    styles={COMPUTED_INPUT_STYLES}
-                  />
-                </SimpleGrid>
-              </Stack>
-            </Accordion.Panel>
-          </Accordion.Item>
-        </Accordion>
+          <PanelCard id="sec-well-tag" title="Well Tag" done={filled.wellTag}>
+            <Stack gap="md">
+              <Radio.Group
+                label="Well tag"
+                value={
+                  form.wellTag.installed
+                    ? 'installed'
+                    : form.wellTag.decommissioned
+                      ? 'decommissioned'
+                      : 'none'
+                }
+                onChange={setWellTagChoice}
+              >
+                <Group mt="xs" gap="lg">
+                  <Radio value="none" label="Not applicable" disabled={readOnly} />
+                  <Radio value="installed" label="Installed" disabled={readOnly} />
+                  <Radio value="decommissioned" label="Decommissioned" disabled={readOnly} />
+                </Group>
+              </Radio.Group>
+              <TextInput
+                label="Locates provided by"
+                size={FIELD_SIZE}
+                value={form.wellTag.locatesProvidedBy}
+                disabled={readOnly}
+                onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
+              />
+            </Stack>
+          </PanelCard>
+        </SimpleGrid>
         </Stack>
 
         {readOnly ? null : (

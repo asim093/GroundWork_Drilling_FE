@@ -242,17 +242,17 @@ body {
 
 .mantine-AppShell-navbar .mantine-NavLink-section svg,
 .mantine-AppShell-navbar .mantine-ActionIcon-root svg {
-  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 160ms ease;
 }
 
 .mantine-AppShell-navbar .mantine-NavLink-root:hover .mantine-NavLink-section svg,
 .mantine-AppShell-navbar .mantine-ActionIcon-root:hover svg {
-  transform: scale(1.2) rotate(-6deg);
+  transform: scale(1.12);
 }
 
 .mantine-AppShell-navbar .mantine-NavLink-root[data-active] .mantine-NavLink-section svg,
 .mantine-AppShell-navbar .mantine-ActionIcon-root[data-variant='light'] svg {
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 
 @media (prefers-reduced-motion: reduce) {
