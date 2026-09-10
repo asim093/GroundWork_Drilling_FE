@@ -4,6 +4,7 @@ import { KpiGrid } from '../../components/reports/KpiCard.jsx';
 import { ReportExportButtons } from '../../components/reports/ReportExportButtons.jsx';
 import { ConsumablesReportTable } from '../../components/reports/ConsumablesReportTable.jsx';
 import { ReportEntriesTable } from '../../components/reports/ReportEntriesTable.jsx';
+import { ReportGroupsTable } from '../../components/reports/ReportGroupsTable.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange } from '../../lib/dateRange.js';
@@ -80,6 +81,13 @@ export const MyReportsPage = () => {
       ) : (
         <Stack gap="lg">
           <KpiGrid items={kpiItems(report)} />
+          {report.groups?.length ? (
+            <ReportGroupsTable
+              groups={report.groups}
+              variant="employee"
+              title="Crew on my shifts"
+            />
+          ) : null}
           <ConsumablesReportTable consumables={report.consumables} />
           <ReportEntriesTable
             entries={report.entries}

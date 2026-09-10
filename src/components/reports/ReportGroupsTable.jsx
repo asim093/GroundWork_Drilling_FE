@@ -11,7 +11,7 @@ const VARIANTS = {
     title: 'Breakdown by employee',
     labelHeader: 'Employee',
     searchPlaceholder: 'Search employee',
-    note: 'Full shift meters count towards each crew member against their own tier. Click a row for detail.',
+    note: 'Full shift meters count towards each crew member against their own tier.',
     withBonus: true,
     clickable: true
   },
@@ -19,7 +19,7 @@ const VARIANTS = {
     title: 'Managers',
     labelHeader: 'Manager',
     searchPlaceholder: 'Search manager',
-    note: 'Bonus is attributed to the manager who logged each shift. Click a row for detail.',
+    note: 'Bonus is attributed to the manager who logged each shift.',
     withBonus: true,
     clickable: true
   },
@@ -44,7 +44,7 @@ const bonusLabel = (bonus) => {
   return `${detail}${bonus.aboveTopBand ? ' · above top band' : ''}`;
 };
 
-export const ReportGroupsTable = ({ groups, variant, onSelectGroup }) => {
+export const ReportGroupsTable = ({ groups, variant, onSelectGroup, title }) => {
   const config = VARIANTS[variant] || VARIANTS.job;
 
   const rows = useMemo(
@@ -78,14 +78,15 @@ export const ReportGroupsTable = ({ groups, variant, onSelectGroup }) => {
     <SortableTh field={field} label={label} sort={table.sort} order={table.order} onSort={table.toggleSort} />
   );
 
-  const { withBonus, clickable } = config;
+  const { withBonus } = config;
+  const clickable = config.clickable && typeof onSelectGroup === 'function';
   const colSpan = withBonus ? 10 : 8;
 
   return (
     <Card withBorder radius="lg" p="lg">
       <Stack gap="md">
         <Group justify="space-between" wrap="wrap" gap="sm">
-          <Text fw={700}>{config.title}</Text>
+          <Text fw={700}>{title || config.title}</Text>
           <TextInput
             placeholder={config.searchPlaceholder}
             value={table.search}
@@ -96,6 +97,7 @@ export const ReportGroupsTable = ({ groups, variant, onSelectGroup }) => {
         {config.note ? (
           <Text size="xs" c="dimmed">
             {config.note}
+            {clickable ? ' Click a row for detail.' : ''}
           </Text>
         ) : null}
 

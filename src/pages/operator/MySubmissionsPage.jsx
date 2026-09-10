@@ -72,6 +72,7 @@ export const MySubmissionsPage = () => {
       <Table.Td>{entry.jobId?.jobNumber || '—'}</Table.Td>
       <Table.Td>{entry.jobId?.clientName || '—'}</Table.Td>
       <Table.Td>{entry.shift || '—'}</Table.Td>
+      <Table.Td>{entry.crew?.length || 0}</Table.Td>
       <Table.Td>
         <Badge variant="light" color={TIME_LOG_STATUS_COLORS[entry.status]}>
           {entry.status}
@@ -130,6 +131,7 @@ export const MySubmissionsPage = () => {
                     <Table.Th>Job #</Table.Th>
                     <Table.Th>Client</Table.Th>
                     <Table.Th>Shift</Table.Th>
+                    <Table.Th>Crew</Table.Th>
                     <SortableTh field="status" label="Status" sort={sort} order={order} onSort={toggleSort} />
                     <Table.Th />
                   </Table.Tr>
@@ -139,7 +141,7 @@ export const MySubmissionsPage = () => {
                     rows
                   ) : (
                     <Table.Tr>
-                      <Table.Td colSpan={6}>
+                      <Table.Td colSpan={7}>
                         <Text c="dimmed" ta="center" py="md">
                           No submissions match the current filters
                         </Text>
