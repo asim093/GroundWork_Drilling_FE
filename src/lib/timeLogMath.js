@@ -47,6 +47,24 @@ export const clockDuration = (from, to) => {
   return round2(diff);
 };
 
+export const addClockHours = (value, delta) => {
+  const hours = parseClockHours(value);
+  if (hours === null) {
+    return '';
+  }
+  let next = (hours + delta) % 24;
+  if (next < 0) {
+    next += 24;
+  }
+  let h = Math.floor(next);
+  let m = Math.round((next - h) * 60);
+  if (m === 60) {
+    h = (h + 1) % 24;
+    m = 0;
+  }
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
 export const lineHours = (line) => clockDuration(line?.timeFrom, line?.timeTo);
 
 export const isWithinShift = (lineTime, timeIn, timeOut) => {
@@ -101,7 +119,8 @@ export const shiftRecoveryPercent = (lines) => {
 
 export const validateActivityLines = (lines, shift = {}) => {
   const errors = {};
-  const { timeStarted, timeFinished } = shift;
+  const windowStart = shift.timeIn || shift.timeStarted;
+  const windowEnd = shift.timeOut || shift.timeFinished;
 
   (lines || []).forEach((line, index) => {
     const from = toNumber(line?.depthFrom);
@@ -123,26 +142,26 @@ export const validateActivityLines = (lines, shift = {}) => {
     }
 
     if (
-      timeStarted &&
-      timeFinished &&
+      windowStart &&
+      windowEnd &&
       line?.timeFrom &&
-      !isWithinShift(line.timeFrom, timeStarted, timeFinished)
+      !isWithinShift(line.timeFrom, windowStart, windowEnd)
     ) {
       errors[index] = {
         ...errors[index],
-        timeFrom: 'Time from is outside the shift time started and time finished'
+        timeFrom: 'Time from is outside the on-site window (Time In to Time Out)'
       };
     }
 
     if (
-      timeStarted &&
-      timeFinished &&
+      windowStart &&
+      windowEnd &&
       line?.timeTo &&
-      !isWithinShift(line.timeTo, timeStarted, timeFinished)
+      !isWithinShift(line.timeTo, windowStart, windowEnd)
     ) {
       errors[index] = {
         ...errors[index],
-        timeTo: 'Time to is outside the shift time started and time finished'
+        timeTo: 'Time to is outside the on-site window (Time In to Time Out)'
       };
     }
   });

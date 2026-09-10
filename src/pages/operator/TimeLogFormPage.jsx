@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Badge,
@@ -32,6 +32,7 @@ import {
   timeLogPayloadFromForm
 } from '../../lib/timeLogForm.js';
 import {
+  addClockHours,
   clockDuration,
   mileageTotal,
   shiftRecoveryPercent,
@@ -180,6 +181,7 @@ export const TimeLogFormPage = () => {
   const [lineErrors, setLineErrors] = useState({});
   const [activityGroups, setActivityGroups] = useState([]);
   const [consumableGroups, setConsumableGroups] = useState([]);
+  const workTimeEdited = useRef({ timeStarted: false, timeFinished: false });
 
   const readOnly = entry?.status === 'submitted';
 
@@ -200,10 +202,12 @@ export const TimeLogFormPage = () => {
   const liveLineErrors = useMemo(
     () =>
       validateActivityLines(form.activityLines, {
+        timeIn: form.timeIn,
+        timeOut: form.timeOut,
         timeStarted: form.timeStarted,
         timeFinished: form.timeFinished
       }) || {},
-    [form.activityLines, form.timeStarted, form.timeFinished]
+    [form.activityLines, form.timeIn, form.timeOut, form.timeStarted, form.timeFinished]
   );
 
   const shownLineErrors = useMemo(() => {
@@ -223,6 +227,10 @@ export const TimeLogFormPage = () => {
         setEntry(loaded);
         setJob(loaded.jobId);
         setForm(timeLogFormFromEntry(loaded));
+        workTimeEdited.current = {
+          timeStarted: Boolean(loaded.timeStarted),
+          timeFinished: Boolean(loaded.timeFinished)
+        };
       } else {
         const loadedJob = await getAssignedJob(jobId);
         const today = new Date().toISOString().slice(0, 10);
@@ -235,6 +243,7 @@ export const TimeLogFormPage = () => {
         setJob(loadedJob);
         setEntry(null);
         setForm({ ...emptyTimeLogForm(), shift: mine.length === 1 ? mine[0] : null });
+        workTimeEdited.current = { timeStarted: false, timeFinished: false };
       }
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to open the time log'));
@@ -265,7 +274,7 @@ export const TimeLogFormPage = () => {
   const setSiteTime = (key, value) =>
     setForm((prev) => {
       const next = value || '';
-      return {
+      const updated = {
         ...prev,
         [key]: next,
         crew: prev.crew.map((member) => ({
@@ -273,6 +282,13 @@ export const TimeLogFormPage = () => {
           [key]: next || member[key]
         }))
       };
+      if (key === 'timeIn' && next && !workTimeEdited.current.timeStarted) {
+        updated.timeStarted = addClockHours(next, 2);
+      }
+      if (key === 'timeOut' && next && !workTimeEdited.current.timeFinished) {
+        updated.timeFinished = addClockHours(next, -2);
+      }
+      return updated;
     });
 
   const setWellTagChoice = (value) =>
@@ -313,6 +329,8 @@ export const TimeLogFormPage = () => {
     }
 
     const clientLineErrors = validateActivityLines(form.activityLines, {
+      timeIn: form.timeIn,
+      timeOut: form.timeOut,
       timeStarted: form.timeStarted,
       timeFinished: form.timeFinished
     });
@@ -418,7 +436,10 @@ export const TimeLogFormPage = () => {
       withDropdown
       clearable
       disabled={readOnly}
-      onChange={(value) => setField(key, value || '')}
+      onChange={(value) => {
+        workTimeEdited.current[key] = true;
+        setField(key, value || '');
+      }}
     />
   );
 
@@ -533,7 +554,7 @@ export const TimeLogFormPage = () => {
 
               <SubGroup
                 title="Site &amp; work times"
-                caption="Time In / Out sets hours on site. Activity lines must fall between Time Started and Time Finished."
+                caption="Time In / Out sets hours on site and bounds the activity lines. Time Started / Finished default to 2 hours inside Time In / Out — adjust if needed."
               >
                 <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
                   <TimePicker
