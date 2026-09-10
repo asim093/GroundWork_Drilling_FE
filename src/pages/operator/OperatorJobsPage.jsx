@@ -10,6 +10,7 @@ import {
   Select,
   Stack,
   Table,
+  Tabs,
   Text,
   TextInput
 } from '@mantine/core';
@@ -17,7 +18,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
-import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
+import { JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { listAssignedJobs } from '../../services/timeLogService.js';
@@ -32,8 +33,6 @@ const TODAY_STATUS = {
   submitted: { label: 'Logged today', color: 'green' },
   draft: { label: 'Draft today', color: 'yellow' }
 };
-
-const OPERATOR_STATUS_OPTIONS = JOB_STATUS_OPTIONS.filter((option) => option.value !== 'archived');
 
 const TODAY_FILTER_OPTIONS = [
   { value: 'logged', label: 'Logged today' },
@@ -56,12 +55,13 @@ export const OperatorJobsPage = () => {
     setFilter,
     setFilters
   } = useListParams({ sort: 'createdAt', order: 'desc' });
+  const [view, setView] = useState('active');
   const [result, setResult] = useState({ data: [], pagination: null });
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [loading, setLoading] = useState(true);
   const paramsRef = useRef(queryParams);
-  paramsRef.current = queryParams;
+  paramsRef.current = { ...queryParams, view };
 
   const load = useCallback(async ({ silent } = {}) => {
     if (!silent) {
@@ -88,7 +88,7 @@ export const OperatorJobsPage = () => {
 
   useEffect(() => {
     load();
-  }, [load, queryParams]);
+  }, [load, queryParams, view]);
 
   useEffect(() => {
     const tick = () => {
@@ -106,6 +106,8 @@ export const OperatorJobsPage = () => {
       window.removeEventListener('focus', tick);
     };
   }, [load]);
+
+  const isCompleted = view === 'completed';
 
   const rows = result.data.map((job) => {
     const todayStatus = job.todayLog ? TODAY_STATUS[job.todayLog.status] : null;
@@ -125,30 +127,38 @@ export const OperatorJobsPage = () => {
             {job.status}
           </Badge>
         </Table.Td>
-        <Table.Td>
-          {todayStatus ? (
-            <Badge variant="light" color={todayStatus.color}>
-              {todayStatus.label}
-            </Badge>
-          ) : (
-            <Text size="sm" c="dimmed">
-              Not logged today
-            </Text>
-          )}
-        </Table.Td>
+        {isCompleted ? null : (
+          <Table.Td>
+            {todayStatus ? (
+              <Badge variant="light" color={todayStatus.color}>
+                {todayStatus.label}
+              </Badge>
+            ) : (
+              <Text size="sm" c="dimmed">
+                Not logged today
+              </Text>
+            )}
+          </Table.Td>
+        )}
         <Table.Td>
           <Group justify="flex-end">
-            <Button
-              size="xs"
-              variant={job.todayLog?.status === 'submitted' ? 'default' : 'filled'}
-              onClick={() => navigate(target)}
-            >
-              {job.todayLog?.status === 'submitted'
-                ? "View today's log"
-                : job.todayLog
-                  ? "Continue today's log"
-                  : "Start today's log"}
-            </Button>
+            {isCompleted ? (
+              <Button size="xs" variant="default" onClick={() => navigate('/operator/submissions')}>
+                View submissions
+              </Button>
+            ) : (
+              <Button
+                size="xs"
+                variant={job.todayLog?.status === 'submitted' ? 'default' : 'filled'}
+                onClick={() => navigate(target)}
+              >
+                {job.todayLog?.status === 'submitted'
+                  ? "View today's log"
+                  : job.todayLog
+                    ? "Continue today's log"
+                    : "Start today's log"}
+              </Button>
+            )}
           </Group>
         </Table.Td>
       </Table.Tr>
@@ -159,20 +169,19 @@ export const OperatorJobsPage = () => {
     <Stack gap="md">
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
+          <Tabs value={view} onChange={setView}>
+            <Tabs.List>
+              <Tabs.Tab value="active">Active</Tabs.Tab>
+              <Tabs.Tab value="completed">Completed</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
+
           <Group gap="sm" wrap="wrap" align="center">
             <TextInput
               placeholder="Search job #, client or location"
               value={search}
               onChange={(event) => setSearch(event.currentTarget.value)}
               w={260}
-            />
-            <Select
-              placeholder="All statuses"
-              data={OPERATOR_STATUS_OPTIONS}
-              value={filters.status || null}
-              onChange={(value) => setFilter('status', value)}
-              clearable
-              w={150}
             />
             <Select
               placeholder="All rigs"
@@ -183,14 +192,16 @@ export const OperatorJobsPage = () => {
               clearable
               w={130}
             />
-            <Select
-              placeholder="Any day activity"
-              data={TODAY_FILTER_OPTIONS}
-              value={filters.today || null}
-              onChange={(value) => setFilter('today', value)}
-              clearable
-              w={170}
-            />
+            {isCompleted ? null : (
+              <Select
+                placeholder="Any day activity"
+                data={TODAY_FILTER_OPTIONS}
+                value={filters.today || null}
+                onChange={(value) => setFilter('today', value)}
+                clearable
+                w={170}
+              />
+            )}
             <DateRangePicker
               value={{ from: filters.from || '', to: filters.to || '' }}
               onChange={(range) =>
@@ -221,7 +232,7 @@ export const OperatorJobsPage = () => {
                       onSort={toggleSort}
                     />
                     <Table.Th>Job status</Table.Th>
-                    <Table.Th>Today</Table.Th>
+                    {isCompleted ? null : <Table.Th>Today</Table.Th>}
                     <Table.Th />
                   </Table.Tr>
                 </Table.Thead>
@@ -232,7 +243,9 @@ export const OperatorJobsPage = () => {
                     <Table.Tr>
                       <Table.Td colSpan={8}>
                         <Text c="dimmed" ta="center" py="md">
-                          No assigned jobs match the current filters
+                          {isCompleted
+                            ? 'No completed jobs yet'
+                            : 'No active jobs match the current filters'}
                         </Text>
                       </Table.Td>
                     </Table.Tr>
