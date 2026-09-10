@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import {
   Autocomplete,
   Button,
+  Divider,
   Group,
   Modal,
+  ScrollArea,
   Select,
   SimpleGrid,
   Stack,
@@ -11,12 +13,20 @@ import {
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { createJob, updateJob } from '../../services/jobService.js';
-import { locationsService, rigNumbersService } from '../../services/masterDataService.js';
+import { listUsers } from '../../services/userService.js';
+import {
+  employeesService,
+  locationsService,
+  rigNumbersService
+} from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 import { JOB_STATUS_OPTIONS } from '../../constants/jobs.js';
+import { PeopleSummary } from './PeopleSummary.jsx';
+import { PeopleAssignModal } from './PeopleAssignModal.jsx';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
+const FIELD = { size: 'sm', radius: 'sm' };
 
 const makeEmptyForm = () => ({
   jobNumber: '',
@@ -26,7 +36,9 @@ const makeEmptyForm = () => ({
   drillNumber: '',
   clientJobNumber: '',
   scheduledDate: todayIso(),
-  status: 'scheduled'
+  status: 'scheduled',
+  siteManagers: [],
+  rosterEmployeeIds: []
 });
 
 export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
@@ -35,6 +47,9 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
   const [submitting, setSubmitting] = useState(false);
   const [locationOptions, setLocationOptions] = useState([]);
   const [rigOptions, setRigOptions] = useState([]);
+  const [operators, setOperators] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [peopleOpen, setPeopleOpen] = useState(false);
 
   useEffect(() => {
     if (!opened) {
@@ -51,18 +66,30 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
             drillNumber: job.drillNumber || '',
             clientJobNumber: job.clientJobNumber || '',
             scheduledDate: job.scheduledDate ? job.scheduledDate.slice(0, 10) : '',
-            status: job.status || 'scheduled'
+            status: job.status || 'scheduled',
+            siteManagers: [],
+            rosterEmployeeIds: []
           }
         : makeEmptyForm()
     );
 
-    Promise.all([
+    const requests = [
       locationsService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
       rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
-    ])
-      .then(([locations, rigs]) => {
+    ];
+    if (!job) {
+      requests.push(
+        listUsers({ role: 'operator', active: 'true', limit: 200, sort: 'name', order: 'asc' }),
+        employeesService.list({ active: 'true', limit: 200, sort: 'name', order: 'asc' })
+      );
+    }
+
+    Promise.all(requests)
+      .then(([locations, rigs, users, roster]) => {
         setLocationOptions(locations.data.map((item) => item.name));
         setRigOptions(rigs.data.map((item) => ({ value: item.id, label: item.name })));
+        setOperators(users?.data || []);
+        setEmployees(roster?.data || []);
       })
       .catch((error) => notifyError(extractErrorMessage(error, 'Unable to load master data')));
   }, [opened, job]);
@@ -83,6 +110,10 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
       scheduledDate: form.scheduledDate || '',
       status: form.status
     };
+    if (!isEdit) {
+      payload.siteManagers = form.siteManagers;
+      payload.rosterEmployeeIds = form.rosterEmployeeIds;
+    }
 
     try {
       if (isEdit) {
@@ -90,7 +121,7 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
         notifySuccess('Job updated');
       } else {
         await createJob(payload);
-        notifySuccess('Job created — assign managers and roster on the job page');
+        notifySuccess('Job created');
       }
 
       onSaved();
@@ -103,23 +134,33 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title={isEdit ? 'Edit job' : 'Create job'} centered size="lg">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={isEdit ? 'Edit job' : 'Create job'}
+      centered
+      size="lg"
+      scrollAreaComponent={ScrollArea.Autosize}
+    >
       <form onSubmit={handleSubmit}>
-        <Stack gap="md">
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+        <Stack gap="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" verticalSpacing="md">
             <TextInput
+              {...FIELD}
               label="Job number"
               required
               value={form.jobNumber}
               onChange={(event) => setField('jobNumber')(event.currentTarget.value)}
             />
             <TextInput
+              {...FIELD}
               label="Client name"
               required
               value={form.clientName}
               onChange={(event) => setField('clientName')(event.currentTarget.value)}
             />
             <Autocomplete
+              {...FIELD}
               label="Job location"
               placeholder="Select or type a location"
               data={locationOptions}
@@ -127,6 +168,7 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
               onChange={setField('jobLocation')}
             />
             <Select
+              {...FIELD}
               label="Rig number"
               placeholder="Not assigned"
               data={rigOptions}
@@ -136,23 +178,27 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
               clearable
             />
             <TextInput
+              {...FIELD}
               label="Drill Number"
               placeholder="e.g. CME55, NQ, HQ3"
               value={form.drillNumber}
               onChange={(event) => setField('drillNumber')(event.currentTarget.value)}
             />
             <TextInput
+              {...FIELD}
               label="Client job number"
               value={form.clientJobNumber}
               onChange={(event) => setField('clientJobNumber')(event.currentTarget.value)}
             />
             <DatePickerInput
+              {...FIELD}
               label="Scheduled date"
               valueFormat="DD MMM YYYY"
               value={form.scheduledDate}
               onChange={setField('scheduledDate')}
             />
             <Select
+              {...FIELD}
               label="Status"
               data={JOB_STATUS_OPTIONS}
               value={form.status}
@@ -160,6 +206,24 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
               allowDeselect={false}
             />
           </SimpleGrid>
+
+          {isEdit ? null : (
+            <>
+              <Divider label="People" labelPosition="left" />
+              <PeopleSummary
+                siteManagers={form.siteManagers.map((entry) => ({
+                  userId: operators.find((operator) => operator.id === entry.userId) || entry.userId,
+                  shift: entry.shift
+                }))}
+                rosterEmployeeIds={form.rosterEmployeeIds.map(
+                  (id) => employees.find((employee) => employee.id === id) || id
+                )}
+                operators={operators}
+                employees={employees}
+                onManage={() => setPeopleOpen(true)}
+              />
+            </>
+          )}
 
           <Group justify="flex-end" gap="sm">
             <Button variant="default" onClick={onClose} type="button">
@@ -171,6 +235,18 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
           </Group>
         </Stack>
       </form>
+
+      <PeopleAssignModal
+        opened={peopleOpen}
+        onClose={() => setPeopleOpen(false)}
+        siteManagers={form.siteManagers}
+        rosterEmployeeIds={form.rosterEmployeeIds}
+        operators={operators}
+        employees={employees}
+        onChange={({ siteManagers, rosterEmployeeIds }) =>
+          setForm((prev) => ({ ...prev, siteManagers, rosterEmployeeIds }))
+        }
+      />
     </Modal>
   );
 };

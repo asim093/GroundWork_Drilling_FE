@@ -15,8 +15,8 @@ import {
 import { SectionCard } from '../../components/SectionCard.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
 import { InlineEditField } from '../../components/admin/InlineEditField.jsx';
-import { SiteManagerPicker } from '../../components/admin/SiteManagerPicker.jsx';
-import { RosterPicker } from '../../components/admin/RosterPicker.jsx';
+import { PeopleSummary } from '../../components/admin/PeopleSummary.jsx';
+import { PeopleAssignModal } from '../../components/admin/PeopleAssignModal.jsx';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { JOB_STATUS_COLORS } from '../../constants/jobs.js';
@@ -57,6 +57,7 @@ export const JobDetailsPage = () => {
   const [operators, setOperators] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [peopleOpen, setPeopleOpen] = useState(false);
 
   usePageTitle(job ? `Job ${job.jobNumber}` : 'Job details');
 
@@ -84,9 +85,9 @@ export const JobDetailsPage = () => {
     }
   }, [id, navigate]);
 
-  const saveField = async (field, value, message = 'Job updated') => {
+  const saveJob = async (patch, message = 'Job updated') => {
     try {
-      const updated = await updateJob(id, { [field]: value });
+      const updated = await updateJob(id, patch);
       setJob(updated);
       notifySuccess(message);
     } catch (error) {
@@ -94,6 +95,8 @@ export const JobDetailsPage = () => {
       throw error;
     }
   };
+
+  const saveField = (field, value, message) => saveJob({ [field]: value }, message);
 
   const managerValue = (job?.siteManagers || []).map((entry) => ({
     userId: entry.userId?.id || entry.userId,
@@ -234,26 +237,27 @@ export const JobDetailsPage = () => {
         </SimpleGrid>
       </SectionCard>
 
-      <SectionCard title="Managers" subtitle="The managers responsible for each shift on this job">
-        {!managerValue.length ? (
-          <Text c="dimmed" size="sm">
-            No managers assigned — this job is not visible to any manager yet.
-          </Text>
-        ) : null}
-        <SiteManagerPicker
-          value={managerValue}
+      <SectionCard title="People" subtitle="Shift managers and the crew that can be logged against this job">
+        <PeopleSummary
+          siteManagers={job.siteManagers}
+          rosterEmployeeIds={job.rosterEmployeeIds}
           operators={operators}
-          onChange={(next) => saveField('siteManagers', next, 'Managers updated')}
+          employees={employees}
+          onManage={() => setPeopleOpen(true)}
         />
       </SectionCard>
 
-      <SectionCard title="Roster" subtitle="Crew available to be logged against this job">
-        <RosterPicker
-          value={rosterValue}
-          employees={employees}
-          onChange={(next) => saveField('rosterEmployeeIds', next, 'Roster updated')}
-        />
-      </SectionCard>
+      <PeopleAssignModal
+        opened={peopleOpen}
+        onClose={() => setPeopleOpen(false)}
+        siteManagers={managerValue}
+        rosterEmployeeIds={rosterValue}
+        operators={operators}
+        employees={employees}
+        onChange={({ siteManagers, rosterEmployeeIds }) =>
+          saveJob({ siteManagers, rosterEmployeeIds }, 'People updated')
+        }
+      />
 
       <SectionCard title="Log history" subtitle="Time logs submitted for this job">
         <Table.ScrollContainer minWidth={640}>
