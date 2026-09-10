@@ -14,6 +14,7 @@ import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { SCHEDULING_STATUS_OPTIONS, SCHEDULING_STATUS_COLORS } from '../../constants/scheduling.js';
+import { SHIFT_OPTIONS } from '../../constants/employees.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange, formatDate } from '../../lib/dateRange.js';
@@ -61,28 +62,41 @@ export const SchedulingPage = () => {
   }, [loadJobs]);
 
   const rows = result.data.map((row) => (
-    <Table.Tr key={row.jobId}>
+    <Table.Tr key={row.key}>
       <Table.Td>{formatDate(row.date)}</Table.Td>
       <Table.Td>{row.jobNumber}</Table.Td>
       <Table.Td>{row.clientName}</Table.Td>
       <Table.Td>{row.jobLocation || '—'}</Table.Td>
       <Table.Td>
-        {row.operators.length ? (
+        {row.shift ? (
+          row.shift
+        ) : (
+          <Text c="dimmed" size="sm">
+            Unassigned
+          </Text>
+        )}
+      </Table.Td>
+      <Table.Td>
+        {row.manager?.name ? (
+          row.manager.name
+        ) : (
+          <Text c="dimmed" size="sm">
+            —
+          </Text>
+        )}
+      </Table.Td>
+      <Table.Td>
+        {row.crew?.length ? (
           <Group gap={4} wrap="wrap">
-            {row.operators.map((operator) => (
-              <Badge
-                key={operator.id}
-                size="sm"
-                variant="dot"
-                color={SCHEDULING_STATUS_COLORS[operator.status]}
-              >
-                {operator.name}
+            {row.crew.map((member) => (
+              <Badge key={member.id} size="sm" variant="light" color="gray">
+                {member.name}
               </Badge>
             ))}
           </Group>
         ) : (
           <Text c="dimmed" size="sm">
-            Unassigned
+            —
           </Text>
         )}
       </Table.Td>
@@ -113,12 +127,20 @@ export const SchedulingPage = () => {
               w={240}
             />
             <Select
+              placeholder="All shifts"
+              data={SHIFT_OPTIONS}
+              value={filters.shift || null}
+              onChange={(value) => setFilter('shift', value)}
+              clearable
+              w={140}
+            />
+            <Select
               placeholder="All statuses"
               data={SCHEDULING_STATUS_OPTIONS}
               value={filters.status || null}
               onChange={(value) => setFilter('status', value)}
               clearable
-              w={180}
+              w={160}
             />
           </Group>
 
@@ -127,7 +149,7 @@ export const SchedulingPage = () => {
               <Loader />
             </Center>
           ) : (
-            <Table.ScrollContainer minWidth={820}>
+            <Table.ScrollContainer minWidth={980}>
               <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
@@ -135,7 +157,9 @@ export const SchedulingPage = () => {
                     <SortableTh field="jobNumber" label="Job #" sort={sort} order={order} onSort={toggleSort} />
                     <Table.Th>Client</Table.Th>
                     <Table.Th>Location</Table.Th>
-                    <Table.Th>Managers</Table.Th>
+                    <Table.Th>Shift</Table.Th>
+                    <Table.Th>Manager</Table.Th>
+                    <Table.Th>Crew</Table.Th>
                     <Table.Th>Status</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
@@ -144,7 +168,7 @@ export const SchedulingPage = () => {
                     rows
                   ) : (
                     <Table.Tr>
-                      <Table.Td colSpan={6}>
+                      <Table.Td colSpan={8}>
                         <Text c="dimmed" ta="center" py="md">
                           No scheduled jobs match the current filters
                         </Text>
