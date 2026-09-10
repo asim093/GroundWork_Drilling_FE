@@ -88,6 +88,15 @@ const ICON_PATHS = {
       <circle cx="11" cy="11" r="7" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </>
+  ),
+  idCard: (
+    <>
+      <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
+      <circle cx="8" cy="11" r="2" />
+      <path d="M5 17c0-1.7 1.3-3 3-3s3 1.3 3 3" />
+      <line x1="14" y1="9" x2="19" y2="9" />
+      <line x1="14" y1="13" x2="19" y2="13" />
+    </>
   )
 };
 

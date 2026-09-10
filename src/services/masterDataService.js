@@ -24,3 +24,4 @@ export const rigNumbersService = makeMasterDataService('/rig-numbers');
 export const consumablesService = makeMasterDataService('/consumables');
 export const activityCategoriesService = makeMasterDataService('/activity-categories');
 export const activitiesService = makeMasterDataService('/activities');
+export const employeesService = makeMasterDataService('/employees');

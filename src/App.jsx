@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage.jsx';
 import { SetPasswordPage } from './pages/SetPasswordPage.jsx';
 import { DashboardPage } from './pages/DashboardPage.jsx';
 import { UsersPage } from './pages/admin/UsersPage.jsx';
+import { EmployeesPage } from './pages/admin/EmployeesPage.jsx';
 import { JobsPage } from './pages/admin/JobsPage.jsx';
 import { SchedulingPage } from './pages/admin/SchedulingPage.jsx';
 import { ReportsPage } from './pages/admin/ReportsPage.jsx';
@@ -28,6 +29,7 @@ const App = () => (
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="employees" element={<EmployeesPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="scheduling" element={<SchedulingPage />} />
         <Route path="reports" element={<ReportsPage />} />
