@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
+  Badge,
   Card,
   Center,
+  CloseButton,
   Divider,
   Grid,
   Group,
@@ -277,6 +280,8 @@ const MonthlyComparison = ({ comparison, loading, failed }) => {
 
 export const ReportsPage = () => {
   usePageTitle('Reports');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const jobFilter = searchParams.get('job') || null;
   const [range, setRange] = useState(currentMonthRange);
   const [groupBy, setGroupBy] = useState('none');
   const [summary, setSummary] = useState(null);
@@ -293,8 +298,17 @@ export const ReportsPage = () => {
     if (groupBy !== 'none') {
       params.groupBy = groupBy;
     }
+    if (jobFilter) {
+      params.job = jobFilter;
+    }
     return params;
-  }, [range, groupBy]);
+  }, [range, groupBy, jobFilter]);
+
+  const clearJobFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('job');
+    setSearchParams(next, { replace: true });
+  };
 
   const loadSummary = useCallback(async () => {
     setLoadingSummary(true);
@@ -350,25 +364,38 @@ export const ReportsPage = () => {
   return (
     <Stack gap="xl">
       <Paper withBorder radius="lg" p="lg">
-        <Group gap="sm" wrap="wrap" align="center" justify="space-between">
-          <Group gap="sm" wrap="wrap" align="center">
-            <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
-            <SegmentedControl
-              data={GROUP_BY_OPTIONS}
-              value={groupBy}
-              onChange={setGroupBy}
+        <Stack gap="sm">
+          <Group gap="sm" wrap="wrap" align="center" justify="space-between">
+            <Group gap="sm" wrap="wrap" align="center">
+              <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
+              <SegmentedControl
+                data={GROUP_BY_OPTIONS}
+                value={groupBy}
+                onChange={setGroupBy}
+                size="sm"
+                radius="sm"
+                style={{ border: '1px solid var(--mantine-color-gray-3)' }}
+              />
+            </Group>
+            <ReportExportButtons
+              onExport={handleExport}
+              disabled={loadingSummary || !summary}
               size="sm"
               radius="sm"
-              style={{ border: '1px solid var(--mantine-color-gray-3)' }}
             />
           </Group>
-          <ReportExportButtons
-            onExport={handleExport}
-            disabled={loadingSummary || !summary}
-            size="sm"
-            radius="sm"
-          />
-        </Group>
+          {jobFilter ? (
+            <Group gap={6}>
+              <Badge
+                variant="light"
+                size="lg"
+                rightSection={<CloseButton size="xs" onClick={clearJobFilter} aria-label="Clear job filter" />}
+              >
+                {summary?.scope || 'Filtered to one job'}
+              </Badge>
+            </Group>
+          ) : null}
+        </Stack>
       </Paper>
 
       {loadingSummary || !summary ? (

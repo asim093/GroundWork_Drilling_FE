@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Badge,
   Button,
@@ -33,6 +33,7 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '�
 
 export const JobsPage = () => {
   usePageTitle('Jobs');
+  const navigate = useNavigate();
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter, setFilters } =
     useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
@@ -127,7 +128,11 @@ export const JobsPage = () => {
   };
 
   const rows = result.data.map((job) => (
-    <Table.Tr key={job.id}>
+    <Table.Tr
+      key={job.id}
+      style={{ cursor: 'pointer' }}
+      onClick={() => navigate(`/admin/jobs/${job.id}`)}
+    >
       <Table.Td>{job.jobNumber}</Table.Td>
       <Table.Td>{job.clientName}</Table.Td>
       <Table.Td>{job.jobLocation || '—'}</Table.Td>
@@ -148,7 +153,7 @@ export const JobsPage = () => {
             ? job.assignedUserIds.map((operator) => operator.name).join(', ')
             : '—'}
       </Table.Td>
-      <Table.Td>
+      <Table.Td onClick={(event) => event.stopPropagation()}>
         <Group gap="xs" wrap="nowrap" justify="flex-end">
           {job.status === 'archived' ? (
             <>

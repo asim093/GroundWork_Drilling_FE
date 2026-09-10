@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/DashboardPage.jsx';
 import { UsersPage } from './pages/admin/UsersPage.jsx';
 import { EmployeesPage } from './pages/admin/EmployeesPage.jsx';
 import { JobsPage } from './pages/admin/JobsPage.jsx';
+import { JobDetailsPage } from './pages/admin/JobDetailsPage.jsx';
 import { SchedulingPage } from './pages/admin/SchedulingPage.jsx';
 import { ReportsPage } from './pages/admin/ReportsPage.jsx';
 import { SettingsPage } from './pages/admin/SettingsPage.jsx';
@@ -31,6 +32,7 @@ const App = () => (
         <Route path="users" element={<UsersPage />} />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="jobs" element={<JobsPage />} />
+        <Route path="jobs/:id" element={<JobDetailsPage />} />
         <Route path="scheduling" element={<SchedulingPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="time-logs/:id" element={<AdminTimeLogPage />} />
