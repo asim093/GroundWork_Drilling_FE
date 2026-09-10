@@ -21,6 +21,7 @@ const makeMasterDataService = (basePath) => ({
 
 export const locationsService = makeMasterDataService('/locations');
 export const rigNumbersService = makeMasterDataService('/rig-numbers');
+export const drillNumbersService = makeMasterDataService('/drill-numbers');
 export const consumablesService = makeMasterDataService('/consumables');
 export const activityCategoriesService = makeMasterDataService('/activity-categories');
 export const activitiesService = makeMasterDataService('/activities');

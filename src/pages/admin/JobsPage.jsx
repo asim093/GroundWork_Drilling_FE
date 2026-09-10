@@ -19,14 +19,13 @@ import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { JobFormModal } from '../../components/admin/JobFormModal.jsx';
-import { AssignUsersModal } from '../../components/admin/AssignUsersModal.jsx';
 import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
 import { listJobs, archiveJob, unarchiveJob } from '../../services/jobService.js';
 import { listUsers } from '../../services/userService.js';
-import { rigNumbersService } from '../../services/masterDataService.js';
+import { drillNumbersService, rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
@@ -39,11 +38,11 @@ export const JobsPage = () => {
   const [result, setResult] = useState({ data: [], pagination: null });
   const [operators, setOperators] = useState([]);
   const [rigs, setRigs] = useState([]);
+  const [drills, setDrills] = useState([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [loading, setLoading] = useState(true);
   const [formModal, setFormModal] = useState({ open: false, job: null });
-  const [assignModal, setAssignModal] = useState({ open: false, job: null });
   const [archiveModal, setArchiveModal] = useState({ open: false, job: null });
   const [busyId, setBusyId] = useState(null);
 
@@ -75,12 +74,14 @@ export const JobsPage = () => {
 
   const loadOperators = useCallback(async () => {
     try {
-      const [users, rigList] = await Promise.all([
+      const [users, rigList, drillList] = await Promise.all([
         listUsers({ role: 'operator', active: 'true', limit: 100, sort: 'name', order: 'asc' }),
-        rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
+        rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
+        drillNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
       ]);
       setOperators(users.data);
       setRigs(rigList.data);
+      setDrills(drillList.data);
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load filters'));
     }
@@ -134,6 +135,7 @@ export const JobsPage = () => {
       <Table.Td>{job.clientName}</Table.Td>
       <Table.Td>{job.jobLocation || '—'}</Table.Td>
       <Table.Td>{job.rigNumber?.name || '—'}</Table.Td>
+      <Table.Td>{job.drillNumber?.name || '—'}</Table.Td>
       <Table.Td>{formatDate(job.scheduledDate)}</Table.Td>
       <Table.Td>
         <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'brand'}>
@@ -141,9 +143,13 @@ export const JobsPage = () => {
         </Badge>
       </Table.Td>
       <Table.Td>
-        {job.assignedUserIds?.length
-          ? job.assignedUserIds.map((operator) => operator.name).join(', ')
-          : '—'}
+        {job.siteManagers?.length
+          ? job.siteManagers
+              .map((entry) => `${entry.userId?.name || 'Unknown'} (${entry.shift})`)
+              .join(', ')
+          : job.assignedUserIds?.length
+            ? job.assignedUserIds.map((operator) => operator.name).join(', ')
+            : '—'}
       </Table.Td>
       <Table.Td>
         <Group gap="xs" wrap="nowrap" justify="flex-end">
@@ -163,9 +169,6 @@ export const JobsPage = () => {
             <>
               <Button size="xs" variant="default" onClick={() => setFormModal({ open: true, job })}>
                 Edit
-              </Button>
-              <Button size="xs" variant="light" onClick={() => setAssignModal({ open: true, job })}>
-                Assign
               </Button>
               <Button
                 size="xs"
@@ -209,6 +212,15 @@ export const JobsPage = () => {
               onChange={(value) => setFilter('rigNumber', value)}
               searchable
               clearable
+              w={140}
+            />
+            <Select
+              placeholder="All drills"
+              data={drills.map((drill) => ({ value: drill.id, label: drill.name }))}
+              value={filters.drillNumber || null}
+              onChange={(value) => setFilter('drillNumber', value)}
+              searchable
+              clearable
               w={150}
             />
             <DateRangePicker
@@ -226,7 +238,7 @@ export const JobsPage = () => {
               <Loader />
             </Center>
           ) : (
-            <Table.ScrollContainer minWidth={900}>
+            <Table.ScrollContainer minWidth={1040}>
               <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
@@ -246,6 +258,7 @@ export const JobsPage = () => {
                     />
                     <Table.Th>Location</Table.Th>
                     <Table.Th>Rig</Table.Th>
+                    <Table.Th>Drill #</Table.Th>
                     <SortableTh
                       field="scheduledDate"
                       label="Scheduled"
@@ -254,7 +267,7 @@ export const JobsPage = () => {
                       onSort={toggleSort}
                     />
                     <Table.Th>Status</Table.Th>
-                    <Table.Th>Assigned</Table.Th>
+                    <Table.Th>Site managers</Table.Th>
                     <Table.Th />
                   </Table.Tr>
                 </Table.Thead>
@@ -263,7 +276,7 @@ export const JobsPage = () => {
                     rows
                   ) : (
                     <Table.Tr>
-                      <Table.Td colSpan={8}>
+                      <Table.Td colSpan={9}>
                         <Text c="dimmed" ta="center" py="md">
                           No jobs match the current filters
                         </Text>
@@ -289,14 +302,6 @@ export const JobsPage = () => {
         job={formModal.job}
         operators={operators}
         onClose={() => setFormModal({ open: false, job: null })}
-        onSaved={load}
-      />
-
-      <AssignUsersModal
-        opened={assignModal.open}
-        job={assignModal.job}
-        operators={operators}
-        onClose={() => setAssignModal({ open: false, job: null })}
         onSaved={load}
       />
 

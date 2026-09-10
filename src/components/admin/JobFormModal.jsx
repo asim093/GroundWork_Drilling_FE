@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import {
   Autocomplete,
   Button,
+  Divider,
   Group,
   Modal,
-  MultiSelect,
   Select,
   SimpleGrid,
   Stack,
@@ -12,10 +12,17 @@ import {
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { createJob, updateJob } from '../../services/jobService.js';
-import { locationsService, rigNumbersService } from '../../services/masterDataService.js';
+import {
+  drillNumbersService,
+  employeesService,
+  locationsService,
+  rigNumbersService
+} from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 import { JOB_STATUS_OPTIONS } from '../../constants/jobs.js';
+import { SiteManagerPicker } from './SiteManagerPicker.jsx';
+import { RosterPicker } from './RosterPicker.jsx';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -24,12 +31,15 @@ const makeEmptyForm = () => ({
   clientName: '',
   jobLocation: '',
   rigNumber: null,
+  drillNumber: null,
   clientJobNumber: '',
-  drillType: '',
   scheduledDate: todayIso(),
   status: 'scheduled',
-  assignedUserIds: []
+  siteManagers: [],
+  rosterEmployeeIds: []
 });
+
+const idOf = (entry) => entry?.id || entry?._id || entry;
 
 export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) => {
   const isEdit = Boolean(job);
@@ -37,6 +47,8 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
   const [submitting, setSubmitting] = useState(false);
   const [locationOptions, setLocationOptions] = useState([]);
   const [rigOptions, setRigOptions] = useState([]);
+  const [drillOptions, setDrillOptions] = useState([]);
+  const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
     if (!opened) {
@@ -50,22 +62,30 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
             clientName: job.clientName || '',
             jobLocation: job.jobLocation || '',
             rigNumber: job.rigNumber?.id || null,
+            drillNumber: job.drillNumber?.id || null,
             clientJobNumber: job.clientJobNumber || '',
-            drillType: job.drillType || '',
             scheduledDate: job.scheduledDate ? job.scheduledDate.slice(0, 10) : '',
             status: job.status || 'scheduled',
-            assignedUserIds: (job.assignedUserIds || []).map((entry) => entry.id || entry)
+            siteManagers: (job.siteManagers || []).map((entry) => ({
+              userId: idOf(entry.userId),
+              shift: entry.shift
+            })),
+            rosterEmployeeIds: (job.rosterEmployeeIds || []).map(idOf)
           }
         : makeEmptyForm()
     );
 
     Promise.all([
       locationsService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
-      rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
+      rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
+      drillNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
+      employeesService.list({ active: 'true', limit: 200, sort: 'name', order: 'asc' })
     ])
-      .then(([locations, rigs]) => {
+      .then(([locations, rigs, drills, roster]) => {
         setLocationOptions(locations.data.map((item) => item.name));
         setRigOptions(rigs.data.map((item) => ({ value: item.id, label: item.name })));
+        setDrillOptions(drills.data.map((item) => ({ value: item.id, label: item.name })));
+        setEmployees(roster.data);
       })
       .catch((error) => notifyError(extractErrorMessage(error, 'Unable to load master data')));
   }, [opened, job]);
@@ -81,11 +101,13 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
       clientName: form.clientName.trim(),
       jobLocation: form.jobLocation.trim(),
       rigNumber: form.rigNumber || '',
+      drillNumber: form.drillNumber || '',
       clientJobNumber: form.clientJobNumber.trim(),
-      drillType: form.drillType.trim(),
       scheduledDate: form.scheduledDate || '',
       status: form.status,
-      assignedUserIds: form.assignedUserIds
+      siteManagers: form.siteManagers,
+      rosterEmployeeIds: form.rosterEmployeeIds,
+      assignedUserIds: [...new Set(form.siteManagers.map((entry) => entry.userId))]
     };
 
     try {
@@ -106,18 +128,13 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
     }
   };
 
-  const operatorOptions = operators.map((operator) => ({
-    value: operator.id,
-    label: `${operator.name} (${operator.email})`
-  }));
-
   return (
     <Modal
       opened={opened}
       onClose={onClose}
       title={isEdit ? 'Edit job' : 'Create job'}
       centered
-      size="lg"
+      size="xl"
     >
       <form onSubmit={handleSubmit}>
         <Stack gap="md">
@@ -147,17 +164,22 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
               data={rigOptions}
               value={form.rigNumber}
               onChange={setField('rigNumber')}
+              searchable
+              clearable
+            />
+            <Select
+              label="Drill Number"
+              placeholder="Not assigned"
+              data={drillOptions}
+              value={form.drillNumber}
+              onChange={setField('drillNumber')}
+              searchable
               clearable
             />
             <TextInput
               label="Client job number"
               value={form.clientJobNumber}
               onChange={(event) => setField('clientJobNumber')(event.currentTarget.value)}
-            />
-            <TextInput
-              label="Drill type"
-              value={form.drillType}
-              onChange={(event) => setField('drillType')(event.currentTarget.value)}
             />
             <DatePickerInput
               label="Scheduled date"
@@ -174,15 +196,20 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
             />
           </SimpleGrid>
 
-          <MultiSelect
-            label="Assigned operators"
-            placeholder={operatorOptions.length ? 'Select operators' : 'No active operators available'}
-            data={operatorOptions}
-            value={form.assignedUserIds}
-            onChange={setField('assignedUserIds')}
-            searchable
-            clearable
-            maxDropdownHeight={200}
+          <Divider />
+
+          <SiteManagerPicker
+            value={form.siteManagers}
+            onChange={setField('siteManagers')}
+            operators={operators}
+          />
+
+          <Divider />
+
+          <RosterPicker
+            value={form.rosterEmployeeIds}
+            onChange={setField('rosterEmployeeIds')}
+            employees={employees}
           />
 
           <Group justify="flex-end" gap="sm">

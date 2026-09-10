@@ -5,6 +5,7 @@ import { BonusConfigPanel } from '../../components/settings/BonusConfigPanel.jsx
 import {
   activityCategoriesService,
   consumablesService,
+  drillNumbersService,
   locationsService,
   rigNumbersService
 } from '../../services/masterDataService.js';
@@ -31,6 +32,7 @@ export const SettingsPage = () => {
         <Tabs.List>
           <Tabs.Tab value="locations">Locations</Tabs.Tab>
           <Tabs.Tab value="rig-numbers">Rig numbers</Tabs.Tab>
+          <Tabs.Tab value="drill-numbers">Drill numbers</Tabs.Tab>
           <Tabs.Tab value="consumables">Consumables</Tabs.Tab>
           <Tabs.Tab value="activity-categories">Activity categories</Tabs.Tab>
           <Tabs.Tab value="activities">Activities</Tabs.Tab>
@@ -42,6 +44,9 @@ export const SettingsPage = () => {
         </Tabs.Panel>
         <Tabs.Panel value="rig-numbers" pt="md">
           <MasterDataPanel service={rigNumbersService} singular="Rig number" plural="Rig numbers" />
+        </Tabs.Panel>
+        <Tabs.Panel value="drill-numbers" pt="md">
+          <MasterDataPanel service={drillNumbersService} singular="Drill number" plural="Drill numbers" />
         </Tabs.Panel>
         <Tabs.Panel value="consumables" pt="md">
           <MasterDataPanel
