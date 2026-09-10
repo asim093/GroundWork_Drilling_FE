@@ -214,11 +214,13 @@ const AdminDashboard = ({ data, user }) => (
 
     <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="lg">
       <StatCard
-        label="Managers"
-        value={fmt(data.operators.total)}
-        hint={`${data.operators.active} active · ${data.operators.pendingInvite} pending`}
-        icon="users"
-        to="/admin/users"
+        label="Missing submissions"
+        value={fmt(data.thisMonth.scheduling.missing)}
+        hint={`${fmt(data.thisMonth.scheduling.draft)} in draft · ${fmt(
+          data.thisMonth.scheduling.submitted
+        )} submitted`}
+        icon="clipboard"
+        to="/admin/scheduling"
       />
       <StatCard
         label="Jobs"

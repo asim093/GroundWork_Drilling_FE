@@ -112,14 +112,7 @@ export const UsersPage = () => {
       <Table.Td>{user.phone || '—'}</Table.Td>
       <Table.Td>
         {user.employeeType ? (
-          <Stack gap={0}>
-            <Text size="sm">{user.employeeType}</Text>
-            {user.employeeCategory ? (
-              <Text size="xs" c="dimmed">
-                {user.employeeCategory}
-              </Text>
-            ) : null}
-          </Stack>
+          <Text size="sm">{user.employeeType}</Text>
         ) : (
           '—'
         )}

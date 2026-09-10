@@ -14,17 +14,13 @@ import {
 import { createUser, updateUser } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
-import {
-  EMPLOYEE_CATEGORY_OPTIONS,
-  MANAGER_TYPE_OPTIONS
-} from '../../constants/employees.js';
+import { MANAGER_TYPE_OPTIONS } from '../../constants/employees.js';
 
 const emptyForm = {
   name: '',
   email: '',
   phone: '',
   employeeType: null,
-  employeeCategory: null,
   active: true
 };
 
@@ -47,7 +43,6 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
             email: user.email || '',
             phone: user.phone || '',
             employeeType: user.employeeType || null,
-            employeeCategory: user.employeeCategory || null,
             active: user.active
           }
         : emptyForm
@@ -67,7 +62,6 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
           email: form.email.trim(),
           phone: form.phone.trim(),
           employeeType: form.employeeType,
-          employeeCategory: form.employeeCategory,
           active: form.active
         });
         notifySuccess('Manager updated');
@@ -78,8 +72,7 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
           name: form.name.trim(),
           email: form.email.trim(),
           phone: form.phone.trim() || undefined,
-          employeeType: form.employeeType || undefined,
-          employeeCategory: form.employeeCategory || undefined
+          employeeType: form.employeeType || undefined
         });
         notifySuccess(
           invite.delivered
@@ -154,14 +147,6 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
               data={MANAGER_TYPE_OPTIONS}
               value={form.employeeType}
               onChange={setField('employeeType')}
-              clearable
-            />
-            <Select
-              label="Category"
-              placeholder="Not set"
-              data={EMPLOYEE_CATEGORY_OPTIONS}
-              value={form.employeeCategory}
-              onChange={setField('employeeCategory')}
               clearable
             />
             {isEdit ? (
