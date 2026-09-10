@@ -18,10 +18,10 @@ import {
 } from '@mantine/core';
 import { ReportExportButtons } from '../../components/reports/ReportExportButtons.jsx';
 import { ReportGroupsTable } from '../../components/reports/ReportGroupsTable.jsx';
+import { GroupReportDrawer } from '../../components/reports/GroupReportDrawer.jsx';
 import { ConsumablesReportTable } from '../../components/reports/ConsumablesReportTable.jsx';
 import { ReportEntriesTable } from '../../components/reports/ReportEntriesTable.jsx';
 import { ReportCharts } from '../../components/reports/ReportCharts.jsx';
-import { UserReportDrawer } from '../../components/reports/UserReportDrawer.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange } from '../../lib/dateRange.js';
@@ -35,7 +35,7 @@ import { notifyError, notifyInfo } from '../../lib/toast.js';
 
 const GROUP_BY_OPTIONS = [
   { value: 'none', label: 'No grouping' },
-  { value: 'user', label: 'By user' },
+  { value: 'employee', label: 'By employee' },
   { value: 'job', label: 'By job' }
 ];
 
@@ -290,6 +290,7 @@ export const ReportsPage = () => {
   const [loadingComparison, setLoadingComparison] = useState(true);
   const [comparisonFailed, setComparisonFailed] = useState(false);
   const [drawerGroup, setDrawerGroup] = useState(null);
+  const [drawerVariant, setDrawerVariant] = useState('employee');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const chartsRef = useRef(null);
 
@@ -356,8 +357,9 @@ export const ReportsPage = () => {
     return downloadReport({ scope: 'summary', format, params: summaryParams(), charts });
   };
 
-  const openUserDrawer = (group) => {
+  const openGroupDrawer = (group, variant) => {
     setDrawerGroup(group);
+    setDrawerVariant(variant);
     setDrawerOpen(true);
   };
 
@@ -409,18 +411,29 @@ export const ReportsPage = () => {
           <ReportCharts
             ref={chartsRef}
             visible={false}
-            mode={summary.groupBy || 'none'}
+            mode={summary.groupBy === 'job' ? 'job' : 'none'}
             entries={summary.entries}
             eligibility={summary.bonusEligibility}
             recoveryPercent={summary.recoveryPercentOverall}
           />
 
-          {summary.groups?.length ? (
-            <ReportGroupsTable
-              groups={summary.groups}
-              groupBy={summary.groupBy}
-              onSelectUser={openUserDrawer}
-            />
+          {summary.groupBy === 'employee' ? (
+            <>
+              <ReportGroupsTable
+                groups={summary.groups}
+                variant="employee"
+                onSelectGroup={(group) => openGroupDrawer(group, 'employee')}
+              />
+              <ReportGroupsTable
+                groups={summary.managerGroups}
+                variant="manager"
+                onSelectGroup={(group) => openGroupDrawer(group, 'manager')}
+              />
+            </>
+          ) : null}
+
+          {summary.groupBy === 'job' && summary.groups?.length ? (
+            <ReportGroupsTable groups={summary.groups} variant="job" />
           ) : null}
 
           <ConsumablesReportTable consumables={summary.consumables} />
@@ -439,11 +452,11 @@ export const ReportsPage = () => {
         </Stack>
       )}
 
-      <UserReportDrawer
+      <GroupReportDrawer
         opened={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         group={drawerGroup}
-        entries={summary?.entries}
+        variant={drawerVariant}
         range={range}
       />
     </Stack>

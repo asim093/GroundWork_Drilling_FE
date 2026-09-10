@@ -6,6 +6,33 @@ import { useClientTable } from '../../hooks/useClientTable.js';
 
 const SEARCH_FIELDS = ['label', 'employeeType'];
 
+const VARIANTS = {
+  employee: {
+    title: 'Breakdown by employee',
+    labelHeader: 'Employee',
+    searchPlaceholder: 'Search employee',
+    note: 'Full shift meters count towards each crew member against their own tier. Click a row for detail.',
+    withBonus: true,
+    clickable: true
+  },
+  manager: {
+    title: 'Managers',
+    labelHeader: 'Manager',
+    searchPlaceholder: 'Search manager',
+    note: 'Bonus is attributed to the manager who logged each shift. Click a row for detail.',
+    withBonus: true,
+    clickable: true
+  },
+  job: {
+    title: 'Breakdown by job',
+    labelHeader: 'Job',
+    searchPlaceholder: 'Search job',
+    note: null,
+    withBonus: false,
+    clickable: false
+  }
+};
+
 const bonusLabel = (bonus) => {
   if (!bonus || typeof bonus.amount !== 'number' || !bonus.band) {
     return bonus?.note || 'Not available';
@@ -17,8 +44,8 @@ const bonusLabel = (bonus) => {
   return `${detail}${bonus.aboveTopBand ? ' · above top band' : ''}`;
 };
 
-export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
-  const isUser = groupBy === 'user';
+export const ReportGroupsTable = ({ groups, variant, onSelectGroup }) => {
+  const config = VARIANTS[variant] || VARIANTS.job;
 
   const rows = useMemo(
     () =>
@@ -48,50 +75,45 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
   });
 
   const th = (field, label) => (
-    <SortableTh
-      field={field}
-      label={label}
-      sort={table.sort}
-      order={table.order}
-      onSort={table.toggleSort}
-    />
+    <SortableTh field={field} label={label} sort={table.sort} order={table.order} onSort={table.toggleSort} />
   );
 
-  const colSpan = isUser ? 10 : 8;
+  const { withBonus, clickable } = config;
+  const colSpan = withBonus ? 10 : 8;
 
   return (
     <Card withBorder radius="lg" p="lg">
       <Stack gap="md">
         <Group justify="space-between" wrap="wrap" gap="sm">
-          <Text fw={700}>{isUser ? 'Breakdown by user' : 'Breakdown by job'}</Text>
+          <Text fw={700}>{config.title}</Text>
           <TextInput
-            placeholder={isUser ? 'Search manager' : 'Search job'}
+            placeholder={config.searchPlaceholder}
             value={table.search}
             onChange={(event) => table.setSearch(event.currentTarget.value)}
             w={240}
           />
         </Group>
-        {isUser ? (
+        {config.note ? (
           <Text size="xs" c="dimmed">
-            Click a row to see that manager&apos;s detailed report.
+            {config.note}
           </Text>
         ) : null}
 
-        <Table.ScrollContainer minWidth={isUser ? 1120 : 760}>
+        <Table.ScrollContainer minWidth={withBonus ? 1120 : 760}>
           <Table verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                {th('label', isUser ? 'Manager' : 'Job')}
-                {isUser ? th('employeeType', 'Employee type') : null}
-                {th('entries', 'Entries')}
+                {th('label', config.labelHeader)}
+                {withBonus ? th('employeeType', 'Type') : null}
+                {th('entries', 'Shifts')}
                 {th('hours', 'Hours')}
                 {th('drilled', 'Drilled (m)')}
                 {th('recovered', 'Recovered (m)')}
                 {th('eligible', 'Eligible')}
                 <Table.Th style={{ whiteSpace: 'nowrap' }}>Not eligible</Table.Th>
                 <Table.Th style={{ whiteSpace: 'nowrap' }}>Not available</Table.Th>
-                {isUser ? th('eligibleMeters', 'Eligible (m)') : null}
-                {isUser ? th('bonusAmount', 'Bonus') : null}
+                {withBonus ? th('eligibleMeters', 'Eligible (m)') : null}
+                {withBonus ? th('bonusAmount', 'Bonus') : null}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -99,11 +121,11 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
                 table.data.map((row) => (
                   <Table.Tr
                     key={row.key}
-                    style={isUser ? { cursor: 'pointer' } : undefined}
-                    onClick={isUser ? () => onSelectUser(row.raw) : undefined}
+                    style={clickable ? { cursor: 'pointer' } : undefined}
+                    onClick={clickable ? () => onSelectGroup(row.raw) : undefined}
                   >
                     <Table.Td>{row.label}</Table.Td>
-                    {isUser ? <Table.Td>{row.employeeType}</Table.Td> : null}
+                    {withBonus ? <Table.Td>{row.employeeType}</Table.Td> : null}
                     <Table.Td>{row.entries}</Table.Td>
                     <Table.Td>{row.hours}</Table.Td>
                     <Table.Td>{row.drilled}</Table.Td>
@@ -111,8 +133,8 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
                     <Table.Td>{row.eligible}</Table.Td>
                     <Table.Td>{row.notEligible}</Table.Td>
                     <Table.Td>{row.notAvailable}</Table.Td>
-                    {isUser ? <Table.Td>{row.eligibleMeters}</Table.Td> : null}
-                    {isUser ? (
+                    {withBonus ? <Table.Td>{row.eligibleMeters}</Table.Td> : null}
+                    {withBonus ? (
                       <Table.Td>
                         {row.bonusAmount !== null ? (
                           <Stack gap={0}>
