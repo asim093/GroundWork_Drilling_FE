@@ -7,6 +7,7 @@ import {
   Center,
   Group,
   Loader,
+  Select,
   SimpleGrid,
   Stack,
   Table,
@@ -17,10 +18,12 @@ import { NavIcon } from '../../components/NavIcon.jsx';
 import { InlineEditField } from '../../components/admin/InlineEditField.jsx';
 import { PeopleSummary } from '../../components/admin/PeopleSummary.jsx';
 import { PeopleAssignModal } from '../../components/admin/PeopleAssignModal.jsx';
+import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { JOB_STATUS_COLORS } from '../../constants/jobs.js';
-import { TIME_LOG_STATUS_COLORS } from '../../constants/timeLogs.js';
+import { TIME_LOG_STATUS_COLORS, TIME_LOG_STATUS_OPTIONS } from '../../constants/timeLogs.js';
+import { SHIFT_OPTIONS } from '../../constants/employees.js';
 import { useClientTable } from '../../hooks/useClientTable.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { formatDate } from '../../lib/dateRange.js';
@@ -34,7 +37,8 @@ import { notifyError, notifySuccess } from '../../lib/toast.js';
 const EDITABLE_STATUS_OPTIONS = [
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'in-progress', label: 'In progress' },
-  { value: 'submitted', label: 'Submitted' }
+  { value: 'submitted', label: 'Submitted' },
+  { value: 'archived', label: 'Archived' }
 ];
 
 const DetailRow = ({ label, children }) => (
@@ -109,18 +113,39 @@ export const JobDetailsPage = () => {
     load();
   }, [load]);
 
+  const [logShift, setLogShift] = useState(null);
+  const [logStatus, setLogStatus] = useState(null);
+  const [logRange, setLogRange] = useState({ from: '', to: '' });
+
   const logRows = useMemo(
     () =>
-      logs.map((entry) => ({
-        id: entry.id,
-        date: entry.date,
-        shift: entry.shift || '—',
-        crewCount: entry.crew?.length || 0,
-        drilled: entry.metersDrilled ?? 0,
-        recovered: entry.metersRecovered ?? 0,
-        status: entry.status
-      })),
-    [logs]
+      logs
+        .filter((entry) => {
+          if (logShift && entry.shift !== logShift) {
+            return false;
+          }
+          if (logStatus && entry.status !== logStatus) {
+            return false;
+          }
+          const day = entry.date ? entry.date.slice(0, 10) : '';
+          if (logRange.from && day < logRange.from) {
+            return false;
+          }
+          if (logRange.to && day > logRange.to) {
+            return false;
+          }
+          return true;
+        })
+        .map((entry) => ({
+          id: entry.id,
+          date: entry.date,
+          shift: entry.shift || '—',
+          crewCount: entry.crew?.length || 0,
+          drilled: entry.metersDrilled ?? 0,
+          recovered: entry.metersRecovered ?? 0,
+          status: entry.status
+        })),
+    [logs, logShift, logStatus, logRange]
   );
 
   const table = useClientTable(logRows, { defaultSort: 'date', defaultOrder: 'desc' });
@@ -225,7 +250,6 @@ export const JobDetailsPage = () => {
               type="select"
               data={EDITABLE_STATUS_OPTIONS}
               value={job.status}
-              readOnly={job.status === 'archived'}
               display={(current) => (
                 <Badge variant="light" color={JOB_STATUS_COLORS[current] || 'brand'}>
                   {current}
@@ -260,6 +284,29 @@ export const JobDetailsPage = () => {
       />
 
       <SectionCard title="Log history" subtitle="Time logs submitted for this job">
+        <Group gap="sm" wrap="wrap">
+          <Select
+            placeholder="All shifts"
+            data={SHIFT_OPTIONS}
+            value={logShift}
+            onChange={setLogShift}
+            clearable
+            w={130}
+          />
+          <Select
+            placeholder="All statuses"
+            data={TIME_LOG_STATUS_OPTIONS}
+            value={logStatus}
+            onChange={setLogStatus}
+            clearable
+            w={150}
+          />
+          <DateRangePicker
+            value={logRange}
+            onChange={setLogRange}
+            clearable
+          />
+        </Group>
         <Table.ScrollContainer minWidth={640}>
           <Table verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
