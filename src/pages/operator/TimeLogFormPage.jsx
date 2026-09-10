@@ -5,19 +5,16 @@ import {
   Box,
   Button,
   Center,
-  Divider,
   Group,
   Loader,
   NumberInput,
   Paper,
   Radio,
-  ScrollArea,
   Select,
   SimpleGrid,
   Stack,
   Text,
-  TextInput,
-  Tooltip
+  TextInput
 } from '@mantine/core';
 import { DatePickerInput, TimePicker } from '@mantine/dates';
 import { AppLayout } from '../../components/AppLayout.jsx';
@@ -56,18 +53,7 @@ import { listActivityOptions, listConsumableOptions } from '../../services/catal
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
-const GRID = { base: 1, sm: 2 };
 const FIELD_SIZE = 'sm';
-
-const SECTIONS = [
-  { value: 'shift-time', label: 'Shift & Time' },
-  { value: 'crew', label: 'Crew' },
-  { value: 'activity-lines', label: 'Activity Lines' },
-  { value: 'consumables', label: 'Consumables' },
-  { value: 'fuel', label: 'Fuel' },
-  { value: 'well-tag', label: 'Well Tag' },
-  { value: 'mileage', label: 'Mileage' }
-];
 
 const COMPUTED_INPUT_STYLES = {
   input: {
@@ -91,24 +77,6 @@ const myShiftsFor = (job, userId) =>
     .filter((manager) => idOf(manager.userId) === userId)
     .map((manager) => manager.shift);
 
-const CompletionDot = ({ done }) => (
-  <Tooltip
-    label={done ? 'This section has entries' : 'Nothing entered here yet'}
-    position="top"
-    withArrow
-  >
-    <Box
-      w={9}
-      h={9}
-      style={{
-        borderRadius: '50%',
-        backgroundColor: done ? 'var(--mantine-color-brand-6)' : 'transparent',
-        border: done ? 0 : '1.5px solid var(--mantine-color-gray-4)'
-      }}
-    />
-  </Tooltip>
-);
-
 const SubGroup = ({ title, caption, children }) => (
   <Stack gap="xs">
     <Box>
@@ -125,16 +93,64 @@ const SubGroup = ({ title, caption, children }) => (
   </Stack>
 );
 
-const PanelCard = ({ id, title, done, children }) => (
-  <Paper withBorder radius="md" p="md" id={id}>
-    <Group gap={8} mb="sm" wrap="nowrap">
-      <CompletionDot done={done} />
-      <Text fw={600} size="sm">
-        {title}
-      </Text>
+const PanelCard = ({ id, title, hint, done, stretch, children }) => (
+  <Paper
+    withBorder
+    radius="lg"
+    id={id}
+    style={{
+      height: stretch ? '100%' : undefined,
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column'
+    }}
+  >
+    <Group
+      justify="space-between"
+      wrap="nowrap"
+      px="lg"
+      py="sm"
+      style={{
+        borderBottom: '1px solid var(--hairline)',
+        background: 'var(--mantine-color-gray-0)'
+      }}
+    >
+      <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+        <Box
+          w={4}
+          h={18}
+          style={{ borderRadius: 4, background: 'var(--mantine-color-brand-5)', flexShrink: 0 }}
+        />
+        <Text fw={700} fz="sm" truncate>
+          {title}
+        </Text>
+        {hint ? (
+          <Text size="xs" c="dimmed" truncate visibleFrom="sm">
+            {hint}
+          </Text>
+        ) : null}
+      </Group>
+      {done ? (
+        <Badge size="sm" variant="light" color="teal" radius="sm" style={{ flexShrink: 0 }}>
+          Added
+        </Badge>
+      ) : null}
     </Group>
-    {children}
+    <Box p="lg" style={{ flex: 1 }}>
+      {children}
+    </Box>
   </Paper>
+);
+
+const JobFact = ({ label, value }) => (
+  <div>
+    <Text size="xs" c="dimmed" tt="uppercase" fw={600} style={{ letterSpacing: '0.04em' }}>
+      {label}
+    </Text>
+    <Text fw={600} size="sm" truncate>
+      {value || '—'}
+    </Text>
+  </div>
 );
 
 const StatTile = ({ label, value }) => (
@@ -243,12 +259,6 @@ export const TimeLogFormPage = () => {
       .then((result) => setConsumableGroups(result.grouped))
       .catch(() => setConsumableGroups([]));
   }, []);
-
-  const goToSection = (value) => {
-    document
-      .getElementById(`sec-${value}`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -414,7 +424,6 @@ export const TimeLogFormPage = () => {
 
   const filled = {
     shiftTime:
-      Boolean(form.shift) ||
       Boolean(form.timeIn) ||
       Boolean(form.timeOut) ||
       Boolean(form.timeStarted) ||
@@ -474,94 +483,59 @@ export const TimeLogFormPage = () => {
           </Text>
         ) : null}
 
-        <Paper withBorder radius="lg" p="lg">
-          <Text fw={700} mb="md">
-            Job details
-          </Text>
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-            <TextInput label="Job number" size={FIELD_SIZE} value={job?.jobNumber || ''} readOnly disabled />
-            <TextInput label="Client" size={FIELD_SIZE} value={job?.clientName || ''} readOnly disabled />
-            <TextInput label="Job location" size={FIELD_SIZE} value={job?.jobLocation || ''} readOnly disabled />
-            <TextInput label="Rig number" size={FIELD_SIZE} value={job?.rigNumber?.name || '—'} readOnly disabled />
+        <Paper withBorder radius="lg" p="md">
+          <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="lg">
+            <JobFact label="Job number" value={job?.jobNumber} />
+            <JobFact label="Client" value={job?.clientName} />
+            <JobFact label="Location" value={job?.jobLocation} />
+            <JobFact label="Rig" value={job?.rigNumber?.name} />
           </SimpleGrid>
         </Paper>
 
-        {readOnly ? null : (
-          <Box
-            px="xs"
-            py={8}
-            style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 5,
-              background: 'var(--mantine-color-body)',
-              borderBottom: '1px solid var(--hairline)'
-            }}
+        <Stack gap="md">
+        <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" style={{ alignItems: 'stretch' }}>
+          <PanelCard
+            id="sec-shift-time"
+            title="Shift & Time"
+            hint="Date, shift and hours"
+            done={filled.shiftTime}
+            stretch
           >
-            <ScrollArea type="never">
-              <Group gap="xs" wrap="nowrap">
-                {SECTIONS.map((section) => (
-                  <Button
-                    key={section.value}
-                    size="xs"
-                    variant="light"
-                    color="gray"
-                    style={{ flexShrink: 0 }}
-                    onClick={() => goToSection(section.value)}
-                  >
-                    {section.label}
-                  </Button>
-                ))}
-              </Group>
-            </ScrollArea>
-          </Box>
-        )}
-
-        <Stack gap="sm">
-        <Group gap={7} wrap="nowrap" px={4}>
-          <Box
-            w={9}
-            h={9}
-            style={{ borderRadius: '50%', backgroundColor: 'var(--mantine-color-brand-6)', flexShrink: 0 }}
-          />
-          <Text size="xs" c="dimmed">
-            A filled dot marks a section that already has entries.
-          </Text>
-        </Group>
-
-        <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="sm">
-          <PanelCard id="sec-shift-time" title="Shift & Time" done={filled.shiftTime}>
             <Stack gap="lg">
-              <SubGroup title="Date &amp; Shift">
-                <SimpleGrid cols={GRID} spacing="md">
-                  <DatePickerInput
-                    label="Date"
-                    size={FIELD_SIZE}
-                    value={form.date}
-                    valueFormat="DD MMM YYYY"
-                    disabled={readOnly}
-                    onChange={(value) => setField('date', value)}
-                  />
-                  <Select
-                    label="Shift"
-                    size={FIELD_SIZE}
-                    placeholder="Select shift"
-                    data={shiftOptions}
-                    value={form.shift}
-                    disabled={shiftLocked}
-                    onChange={(value) => setField('shift', value)}
-                    allowDeselect={false}
-                  />
-                </SimpleGrid>
-              </SubGroup>
-
-              <Divider />
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                <DatePickerInput
+                  label="Date"
+                  size={FIELD_SIZE}
+                  value={form.date}
+                  valueFormat="DD MMM YYYY"
+                  disabled={readOnly}
+                  onChange={(value) => setField('date', value)}
+                />
+                <Select
+                  label="Shift"
+                  size={FIELD_SIZE}
+                  placeholder="Select shift"
+                  data={shiftOptions}
+                  value={form.shift}
+                  disabled={shiftLocked}
+                  onChange={(value) => setField('shift', value)}
+                  allowDeselect={false}
+                />
+                <TextInput
+                  label="Hours on site"
+                  size={FIELD_SIZE}
+                  value={hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview}`}
+                  readOnly
+                  disabled
+                  styles={COMPUTED_INPUT_STYLES}
+                />
+              </SimpleGrid>
 
               <SubGroup
-                title="Time on site"
-                caption="When the crew arrived on and left the site for this shift."
+                title="Site &amp; work times"
+                caption="Time In / Out sets hours on site. Activity lines must fall between Time Started and Time Finished."
               >
-                <SimpleGrid cols={2} spacing="md">
+                <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
                   <TimePicker
                     label="Time In"
                     size={FIELD_SIZE}
@@ -582,39 +556,25 @@ export const TimeLogFormPage = () => {
                     disabled={readOnly}
                     onChange={(value) => setSiteTime('timeOut', value)}
                   />
-                </SimpleGrid>
-              </SubGroup>
-
-              <SubGroup
-                title="Work time"
-                caption="When drilling / activity work actually started and finished. Activity lines must fall inside this window."
-              >
-                <SimpleGrid cols={2} spacing="md">
                   {timeField('timeStarted', 'Time Started')}
                   {timeField('timeFinished', 'Time Finished')}
                 </SimpleGrid>
               </SubGroup>
 
-              <Divider />
-
-              <SubGroup title="Hours Summary">
-                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
-                  <TextInput
-                    label="Hours on site"
-                    size={FIELD_SIZE}
-                    value={hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview}`}
-                    readOnly
-                    disabled
-                    styles={COMPUTED_INPUT_STYLES}
-                  />
-                  {numberField('standbyHours', 'Standby hours')}
-                  {numberField('otherHours', 'Other hours')}
-                </SimpleGrid>
-              </SubGroup>
+              <SimpleGrid cols={2} spacing="md">
+                {numberField('standbyHours', 'Standby hours')}
+                {numberField('otherHours', 'Other hours')}
+              </SimpleGrid>
             </Stack>
           </PanelCard>
 
-          <PanelCard id="sec-crew" title="Crew" done={filled.crew}>
+          <PanelCard
+            id="sec-crew"
+            title="Crew"
+            hint="Who worked this shift"
+            done={filled.crew}
+            stretch
+          >
             <CrewSection
               crew={form.crew}
               roster={roster}
@@ -625,7 +585,12 @@ export const TimeLogFormPage = () => {
           </PanelCard>
         </SimpleGrid>
 
-        <PanelCard id="sec-activity-lines" title="Activity Lines" done={filled.activityLines}>
+        <PanelCard
+          id="sec-activity-lines"
+          title="Activity Lines"
+          hint="Drilling and activity detail"
+          done={filled.activityLines}
+        >
           <Stack gap="lg">
             <ActivityLinesSection
               lines={form.activityLines}
@@ -661,7 +626,12 @@ export const TimeLogFormPage = () => {
           </Stack>
         </PanelCard>
 
-        <PanelCard id="sec-consumables" title="Consumables" done={filled.consumables}>
+        <PanelCard
+          id="sec-consumables"
+          title="Consumables"
+          hint="Items taken and returned"
+          done={filled.consumables}
+        >
           <ConsumablesSection
             items={form.consumables}
             disabled={readOnly}
@@ -670,9 +640,9 @@ export const TimeLogFormPage = () => {
           />
         </PanelCard>
 
-        <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
-          <PanelCard id="sec-fuel" title="Fuel" done={filled.fuel}>
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" style={{ alignItems: 'start' }}>
+          <PanelCard id="sec-fuel" title="Fuel" hint="Litres used" done={filled.fuel}>
+            <SimpleGrid cols={3} spacing="md">
               <NumberInput
                 label="Dyed (L)"
                 size={FIELD_SIZE}
@@ -697,60 +667,64 @@ export const TimeLogFormPage = () => {
             </SimpleGrid>
           </PanelCard>
 
-          <PanelCard id="sec-mileage" title="Mileage" done={filled.mileage}>
-            <Stack gap="xs">
-              <Text size="xs" c="dimmed">
-                Leave blank if no vehicle was driven for this shift.
-              </Text>
-              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
-                {numberField('mileageStart', 'Mileage start')}
-                {numberField('mileageEnd', 'Mileage end')}
-                <TextInput
-                  label="Mileage total"
-                  size={FIELD_SIZE}
-                  value={mileagePreview === null ? '—' : `${mileagePreview}`}
-                  readOnly
-                  disabled
-                  styles={COMPUTED_INPUT_STYLES}
-                />
-              </SimpleGrid>
-            </Stack>
-          </PanelCard>
-
-          <PanelCard id="sec-well-tag" title="Well Tag" done={filled.wellTag}>
-            <Stack gap="md">
-              <Radio.Group
-                label="Well tag"
-                value={
-                  form.wellTag.installed
-                    ? 'installed'
-                    : form.wellTag.decommissioned
-                      ? 'decommissioned'
-                      : 'none'
-                }
-                onChange={setWellTagChoice}
-              >
-                <Group mt="xs" gap="lg">
-                  <Radio value="none" label="Not applicable" disabled={readOnly} />
-                  <Radio value="installed" label="Installed" disabled={readOnly} />
-                  <Radio value="decommissioned" label="Decommissioned" disabled={readOnly} />
-                </Group>
-              </Radio.Group>
+          <PanelCard
+            id="sec-mileage"
+            title="Mileage"
+            hint="Blank if no vehicle driven"
+            done={filled.mileage}
+          >
+            <SimpleGrid cols={3} spacing="md" style={{ alignItems: 'end' }}>
+              {numberField('mileageStart', 'Start')}
+              {numberField('mileageEnd', 'End')}
               <TextInput
-                label="Locates provided by"
+                label="Total"
                 size={FIELD_SIZE}
-                value={form.wellTag.locatesProvidedBy}
-                disabled={readOnly}
-                onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
+                value={mileagePreview === null ? '—' : `${mileagePreview}`}
+                readOnly
+                disabled
+                styles={COMPUTED_INPUT_STYLES}
               />
-            </Stack>
+            </SimpleGrid>
           </PanelCard>
         </SimpleGrid>
+
+        <PanelCard
+          id="sec-well-tag"
+          title="Well Tag"
+          hint="Only if a tag was installed or removed"
+          done={filled.wellTag}
+        >
+          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg" style={{ alignItems: 'center' }}>
+            <Radio.Group
+              value={
+                form.wellTag.installed
+                  ? 'installed'
+                  : form.wellTag.decommissioned
+                    ? 'decommissioned'
+                    : 'none'
+              }
+              onChange={setWellTagChoice}
+            >
+              <Group gap="lg">
+                <Radio value="none" label="Not applicable" disabled={readOnly} />
+                <Radio value="installed" label="Installed" disabled={readOnly} />
+                <Radio value="decommissioned" label="Decommissioned" disabled={readOnly} />
+              </Group>
+            </Radio.Group>
+            <TextInput
+              label="Locates provided by"
+              size={FIELD_SIZE}
+              value={form.wellTag.locatesProvidedBy}
+              disabled={readOnly}
+              onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
+            />
+          </SimpleGrid>
+        </PanelCard>
         </Stack>
 
         {readOnly ? null : (
           <>
-            <Box h={56} aria-hidden />
+            <Box h={12} aria-hidden />
             <div className="tl-footer-bar">
               <Group justify="flex-end" gap="sm">
                 <Button
