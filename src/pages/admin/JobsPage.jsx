@@ -11,6 +11,7 @@ import {
   Select,
   Stack,
   Table,
+  Tabs,
   Text,
   TextInput,
   Tooltip
@@ -20,12 +21,19 @@ import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { JobFormModal } from '../../components/admin/JobFormModal.jsx';
-import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
+import { JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
 import { listJobs } from '../../services/jobService.js';
+import { listUsers } from '../../services/userService.js';
 import { rigNumbersService } from '../../services/masterDataService.js';
+
+const JOB_VIEWS = [
+  { value: 'active', label: 'Active' },
+  { value: 'submitted', label: 'Submitted' },
+  { value: 'archived', label: 'Archived' }
+];
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError } from '../../lib/toast.js';
 
@@ -69,6 +77,7 @@ export const JobsPage = () => {
     useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
   const [rigs, setRigs] = useState([]);
+  const [managers, setManagers] = useState([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [loading, setLoading] = useState(true);
@@ -87,11 +96,13 @@ export const JobsPage = () => {
     }
   }, [searchParams, setSearchParams, openNewJob]);
 
+  const activeView = filters.view || 'active';
+
   const load = useCallback(async () => {
     setLoading(true);
 
     try {
-      const response = await listJobs(queryParams);
+      const response = await listJobs({ ...queryParams, view: queryParams.view || 'active' });
       setResult(response);
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load jobs'));
@@ -100,15 +111,14 @@ export const JobsPage = () => {
     }
   }, [queryParams]);
 
-  const loadRigs = useCallback(async () => {
+  const loadFilters = useCallback(async () => {
     try {
-      const rigList = await rigNumbersService.list({
-        active: 'true',
-        limit: 100,
-        sort: 'name',
-        order: 'asc'
-      });
+      const [rigList, managerList] = await Promise.all([
+        rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
+        listUsers({ role: 'operator', active: 'true', limit: 200, sort: 'name', order: 'asc' })
+      ]);
       setRigs(rigList.data);
+      setManagers(managerList.data);
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load filters'));
     }
@@ -119,8 +129,8 @@ export const JobsPage = () => {
   }, [load]);
 
   useEffect(() => {
-    loadRigs();
-  }, [loadRigs]);
+    loadFilters();
+  }, [loadFilters]);
 
   useEffect(() => {
     setFilter('search', debouncedSearch);
@@ -168,6 +178,22 @@ export const JobsPage = () => {
 
   return (
     <Stack gap="md">
+      <Tabs
+        value={activeView}
+        onChange={(value) => {
+          setFilter('view', value || 'active');
+          setPage(1);
+        }}
+      >
+        <Tabs.List>
+          {JOB_VIEWS.map((view) => (
+            <Tabs.Tab key={view.value} value={view.value}>
+              {view.label}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+      </Tabs>
+
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
           <Group gap="sm" wrap="nowrap" align="center">
@@ -179,12 +205,13 @@ export const JobsPage = () => {
               style={{ flex: 1, minWidth: 180 }}
             />
             <Select
-              placeholder="All statuses"
-              data={JOB_STATUS_OPTIONS}
-              value={filters.status || null}
-              onChange={(value) => setFilter('status', value)}
+              placeholder="All managers"
+              data={managers.map((manager) => ({ value: manager.id, label: manager.name }))}
+              value={filters.assignedUser || null}
+              onChange={(value) => setFilter('assignedUser', value)}
+              searchable
               clearable
-              w={150}
+              w={170}
             />
             <Select
               placeholder="All rigs"
@@ -206,25 +233,6 @@ export const JobsPage = () => {
               style={{ flexShrink: 0 }}
             >
               New job
-            </Button>
-          </Group>
-
-          <Group justify="space-between" wrap="wrap" gap="xs">
-            <Text size="xs" c="dimmed">
-              {result.pagination
-                ? `${result.pagination.total} ${
-                    filters.status === 'archived' ? 'archived ' : ''
-                  }job${result.pagination.total === 1 ? '' : 's'}`
-                : ''}
-            </Text>
-            <Button
-              variant="subtle"
-              size="xs"
-              onClick={() =>
-                setFilter('status', filters.status === 'archived' ? null : 'archived')
-              }
-            >
-              {filters.status === 'archived' ? 'Show active jobs' : 'View archived jobs'}
             </Button>
           </Group>
 
