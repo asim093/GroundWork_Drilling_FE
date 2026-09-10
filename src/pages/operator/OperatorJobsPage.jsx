@@ -16,6 +16,7 @@ import {
 import { useDebouncedValue } from '@mantine/hooks';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
+import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { JOB_STATUS_OPTIONS, JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
@@ -34,11 +35,27 @@ const TODAY_STATUS = {
 
 const OPERATOR_STATUS_OPTIONS = JOB_STATUS_OPTIONS.filter((option) => option.value !== 'archived');
 
+const TODAY_FILTER_OPTIONS = [
+  { value: 'logged', label: 'Logged today' },
+  { value: 'draft', label: 'Draft today' },
+  { value: 'none', label: 'Not logged today' }
+];
+
 export const OperatorJobsPage = () => {
   usePageTitle('Assigned jobs');
   const navigate = useNavigate();
-  const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
-    useListParams({ sort: 'createdAt', order: 'desc' });
+  const {
+    queryParams,
+    filters,
+    sort,
+    order,
+    limit,
+    setPage,
+    setLimit,
+    toggleSort,
+    setFilter,
+    setFilters
+  } = useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 300);
@@ -147,7 +164,7 @@ export const OperatorJobsPage = () => {
               placeholder="Search job #, client or location"
               value={search}
               onChange={(event) => setSearch(event.currentTarget.value)}
-              w={340}
+              w={260}
             />
             <Select
               placeholder="All statuses"
@@ -155,7 +172,31 @@ export const OperatorJobsPage = () => {
               value={filters.status || null}
               onChange={(value) => setFilter('status', value)}
               clearable
-              w={190}
+              w={150}
+            />
+            <Select
+              placeholder="All rigs"
+              data={result.filters?.rigs || []}
+              value={filters.rig || null}
+              onChange={(value) => setFilter('rig', value)}
+              searchable
+              clearable
+              w={130}
+            />
+            <Select
+              placeholder="Any day activity"
+              data={TODAY_FILTER_OPTIONS}
+              value={filters.today || null}
+              onChange={(value) => setFilter('today', value)}
+              clearable
+              w={170}
+            />
+            <DateRangePicker
+              value={{ from: filters.from || '', to: filters.to || '' }}
+              onChange={(range) =>
+                setFilters({ from: range.from || undefined, to: range.to || undefined })
+              }
+              clearable
             />
           </Group>
 
