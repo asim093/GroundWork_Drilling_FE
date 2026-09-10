@@ -77,6 +77,7 @@ export const EmployeesPage = () => {
   const rows = result.data.map((employee) => (
     <Table.Tr key={employee.id}>
       <Table.Td>{employee.name}</Table.Td>
+      <Table.Td>{employee.phone || '—'}</Table.Td>
       <Table.Td>{employee.employeeType || '—'}</Table.Td>
       <Table.Td>{employee.employeeCategory || '—'}</Table.Td>
       <Table.Td>
@@ -154,6 +155,7 @@ export const EmployeesPage = () => {
                 <Table.Thead>
                   <Table.Tr>
                     <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
+                    <Table.Th>Phone</Table.Th>
                     <Table.Th>Employee type</Table.Th>
                     <Table.Th>Category</Table.Th>
                     <Table.Th>Status</Table.Th>
@@ -172,7 +174,7 @@ export const EmployeesPage = () => {
                     rows
                   ) : (
                     <Table.Tr>
-                      <Table.Td colSpan={6}>
+                      <Table.Td colSpan={7}>
                         <Text c="dimmed" ta="center" py="md">
                           No employees match the current filters
                         </Text>

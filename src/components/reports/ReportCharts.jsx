@@ -16,11 +16,11 @@ const COLOR = {
   recovered: '#0c8599'
 };
 
-const MODE_UNIT = { none: 'day', user: 'site manager', job: 'job' };
+const MODE_UNIT = { none: 'day', user: 'manager', job: 'job' };
 
 const MODE_BAR_TITLE = {
   none: 'Drilled vs recovered meters over time',
-  user: 'Drilled vs recovered by site manager',
+  user: 'Drilled vs recovered by manager',
   job: 'Drilled vs recovered by job'
 };
 
@@ -55,7 +55,7 @@ const buildBuckets = (mode, entries) => {
 
     if (mode === 'user') {
       key = entry.userId || 'unknown';
-      label = entry.operator || 'Unknown site manager';
+      label = entry.operator || 'Unknown manager';
     } else if (mode === 'job') {
       key = entry.jobId || 'unknown';
       label = entry.jobNumber

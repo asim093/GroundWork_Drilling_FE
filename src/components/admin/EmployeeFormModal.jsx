@@ -10,6 +10,7 @@ import {
 
 const emptyForm = {
   name: '',
+  phone: '',
   employeeType: null,
   employeeCategory: null,
   active: true
@@ -29,6 +30,7 @@ export const EmployeeFormModal = ({ opened, onClose, employee, onSaved }) => {
       employee
         ? {
             name: employee.name || '',
+            phone: employee.phone || '',
             employeeType: employee.employeeType || null,
             employeeCategory: employee.employeeCategory || null,
             active: employee.active
@@ -45,6 +47,7 @@ export const EmployeeFormModal = ({ opened, onClose, employee, onSaved }) => {
 
     const payload = {
       name: form.name.trim(),
+      phone: form.phone.trim(),
       employeeType: form.employeeType,
       employeeCategory: form.employeeCategory || ''
     };
@@ -82,6 +85,11 @@ export const EmployeeFormModal = ({ opened, onClose, employee, onSaved }) => {
             value={form.name}
             onChange={(event) => setField('name')(event.currentTarget.value)}
             data-autofocus
+          />
+          <TextInput
+            label="Phone"
+            value={form.phone}
+            onChange={(event) => setField('phone')(event.currentTarget.value)}
           />
           <Select
             label="Employee type"

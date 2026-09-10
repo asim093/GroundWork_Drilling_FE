@@ -1,6 +1,6 @@
 export const ROLE_LABELS = {
   admin: 'Admin',
-  operator: 'Site Manager'
+  operator: 'Manager'
 };
 
 export const roleLabel = (role) => ROLE_LABELS[role] || role;

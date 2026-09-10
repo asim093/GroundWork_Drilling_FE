@@ -48,11 +48,11 @@ export const SiteManagerPicker = ({ value = [], onChange, operators = [] }) => {
   return (
     <Stack gap="xs">
       <Text size="sm" fw={600}>
-        Site managers
+        Managers
       </Text>
       <Group gap="sm" align="flex-end" wrap="wrap">
         <Select
-          placeholder="Select a site manager"
+          placeholder="Select a manager"
           data={operatorOptions}
           value={draftUser}
           onChange={setDraftUser}
@@ -73,7 +73,7 @@ export const SiteManagerPicker = ({ value = [], onChange, operators = [] }) => {
       </Group>
       {duplicate ? (
         <Text size="xs" c="red">
-          That site manager is already added for the {draftShift} shift.
+          That manager is already added for the {draftShift} shift.
         </Text>
       ) : null}
       {value.length ? (
@@ -110,7 +110,7 @@ export const SiteManagerPicker = ({ value = [], onChange, operators = [] }) => {
                     variant="subtle"
                     color="red"
                     onClick={() => remove(index)}
-                    aria-label="Remove site manager"
+                    aria-label="Remove manager"
                   >
                     <NavIcon name="trash" size={15} />
                   </ActionIcon>
@@ -121,7 +121,7 @@ export const SiteManagerPicker = ({ value = [], onChange, operators = [] }) => {
         </Stack>
       ) : (
         <Text size="xs" c="dimmed">
-          No site managers assigned yet.
+          No managers assigned yet.
         </Text>
       )}
     </Stack>

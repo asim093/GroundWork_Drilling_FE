@@ -28,7 +28,7 @@ const RAIL_WIDTH = 72;
 const QUICK_ACTIONS = {
   admin: [
     { label: 'Add job', to: '/admin/jobs?new=1' },
-    { label: 'Add site manager', to: '/admin/users?new=1' }
+    { label: 'Add manager', to: '/admin/users?new=1' }
   ]
 };
 

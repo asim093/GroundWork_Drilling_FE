@@ -13,7 +13,6 @@ import {
 import { DatePickerInput } from '@mantine/dates';
 import { createJob, updateJob } from '../../services/jobService.js';
 import {
-  drillNumbersService,
   employeesService,
   locationsService,
   rigNumbersService
@@ -31,7 +30,7 @@ const makeEmptyForm = () => ({
   clientName: '',
   jobLocation: '',
   rigNumber: null,
-  drillNumber: null,
+  drillNumber: '',
   clientJobNumber: '',
   scheduledDate: todayIso(),
   status: 'scheduled',
@@ -47,7 +46,6 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
   const [submitting, setSubmitting] = useState(false);
   const [locationOptions, setLocationOptions] = useState([]);
   const [rigOptions, setRigOptions] = useState([]);
-  const [drillOptions, setDrillOptions] = useState([]);
   const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
@@ -62,7 +60,7 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
             clientName: job.clientName || '',
             jobLocation: job.jobLocation || '',
             rigNumber: job.rigNumber?.id || null,
-            drillNumber: job.drillNumber?.id || null,
+            drillNumber: job.drillNumber || '',
             clientJobNumber: job.clientJobNumber || '',
             scheduledDate: job.scheduledDate ? job.scheduledDate.slice(0, 10) : '',
             status: job.status || 'scheduled',
@@ -78,13 +76,11 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
     Promise.all([
       locationsService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
       rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
-      drillNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
       employeesService.list({ active: 'true', limit: 200, sort: 'name', order: 'asc' })
     ])
-      .then(([locations, rigs, drills, roster]) => {
+      .then(([locations, rigs, roster]) => {
         setLocationOptions(locations.data.map((item) => item.name));
         setRigOptions(rigs.data.map((item) => ({ value: item.id, label: item.name })));
-        setDrillOptions(drills.data.map((item) => ({ value: item.id, label: item.name })));
         setEmployees(roster.data);
       })
       .catch((error) => notifyError(extractErrorMessage(error, 'Unable to load master data')));
@@ -101,7 +97,7 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
       clientName: form.clientName.trim(),
       jobLocation: form.jobLocation.trim(),
       rigNumber: form.rigNumber || '',
-      drillNumber: form.drillNumber || '',
+      drillNumber: form.drillNumber.trim(),
       clientJobNumber: form.clientJobNumber.trim(),
       scheduledDate: form.scheduledDate || '',
       status: form.status,
@@ -167,14 +163,11 @@ export const JobFormModal = ({ opened, onClose, job, operators = [], onSaved }) 
               searchable
               clearable
             />
-            <Select
+            <TextInput
               label="Drill Number"
-              placeholder="Not assigned"
-              data={drillOptions}
+              placeholder="e.g. CME55, NQ, HQ3"
               value={form.drillNumber}
-              onChange={setField('drillNumber')}
-              searchable
-              clearable
+              onChange={(event) => setField('drillNumber')(event.currentTarget.value)}
             />
             <TextInput
               label="Client job number"

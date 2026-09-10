@@ -166,7 +166,7 @@ const RecentTable = ({ rows, linkBase, showOperator, emptyText }) => {
           <Table.Tr>
             <Table.Th>Date</Table.Th>
             <Table.Th>Job #</Table.Th>
-            {showOperator ? <Table.Th>Site manager</Table.Th> : null}
+            {showOperator ? <Table.Th>Manager</Table.Th> : null}
             <Table.Th>Status</Table.Th>
           </Table.Tr>
         </Table.Thead>
@@ -214,7 +214,7 @@ const AdminDashboard = ({ data, user }) => (
 
     <SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }} spacing="lg">
       <StatCard
-        label="Site managers"
+        label="Managers"
         value={fmt(data.operators.total)}
         hint={`${data.operators.active} active · ${data.operators.pendingInvite} pending`}
         icon="users"

@@ -1,6 +1,6 @@
 export const ADMIN_NAV = [
   { to: '/admin', label: 'Dashboard', icon: 'home', end: true },
-  { to: '/admin/users', label: 'Site Managers', icon: 'users' },
+  { to: '/admin/users', label: 'Managers', icon: 'users' },
   { to: '/admin/employees', label: 'Employees', icon: 'idCard' },
   { to: '/admin/jobs', label: 'Jobs', icon: 'jobs' },
   { to: '/admin/scheduling', label: 'Scheduling', icon: 'calendar' },

@@ -25,7 +25,7 @@ import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
 import { listJobs, archiveJob, unarchiveJob } from '../../services/jobService.js';
 import { listUsers } from '../../services/userService.js';
-import { drillNumbersService, rigNumbersService } from '../../services/masterDataService.js';
+import { rigNumbersService } from '../../services/masterDataService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
@@ -38,7 +38,6 @@ export const JobsPage = () => {
   const [result, setResult] = useState({ data: [], pagination: null });
   const [operators, setOperators] = useState([]);
   const [rigs, setRigs] = useState([]);
-  const [drills, setDrills] = useState([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [loading, setLoading] = useState(true);
@@ -74,14 +73,12 @@ export const JobsPage = () => {
 
   const loadOperators = useCallback(async () => {
     try {
-      const [users, rigList, drillList] = await Promise.all([
+      const [users, rigList] = await Promise.all([
         listUsers({ role: 'operator', active: 'true', limit: 100, sort: 'name', order: 'asc' }),
-        rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' }),
-        drillNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
+        rigNumbersService.list({ active: 'true', limit: 100, sort: 'name', order: 'asc' })
       ]);
       setOperators(users.data);
       setRigs(rigList.data);
-      setDrills(drillList.data);
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load filters'));
     }
@@ -135,7 +132,7 @@ export const JobsPage = () => {
       <Table.Td>{job.clientName}</Table.Td>
       <Table.Td>{job.jobLocation || '—'}</Table.Td>
       <Table.Td>{job.rigNumber?.name || '—'}</Table.Td>
-      <Table.Td>{job.drillNumber?.name || '—'}</Table.Td>
+      <Table.Td>{job.drillNumber || '—'}</Table.Td>
       <Table.Td>{formatDate(job.scheduledDate)}</Table.Td>
       <Table.Td>
         <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'brand'}>
@@ -189,13 +186,13 @@ export const JobsPage = () => {
     <Stack gap="md">
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="wrap" align="center">
+          <Group gap="sm" wrap="nowrap" align="center">
             <TextInput
-              placeholder="Search job #, client, location or site manager"
+              placeholder="Search job #, client, location or manager"
               value={search}
               onChange={(event) => setSearch(event.currentTarget.value)}
               leftSection={<NavIcon name="search" size={15} />}
-              w={400}
+              style={{ flex: 1, minWidth: 180 }}
             />
             <Select
               placeholder="All statuses"
@@ -203,7 +200,7 @@ export const JobsPage = () => {
               value={filters.status || null}
               onChange={(value) => setFilter('status', value)}
               clearable
-              w={160}
+              w={150}
             />
             <Select
               placeholder="All rigs"
@@ -212,23 +209,18 @@ export const JobsPage = () => {
               onChange={(value) => setFilter('rigNumber', value)}
               searchable
               clearable
-              w={140}
-            />
-            <Select
-              placeholder="All drills"
-              data={drills.map((drill) => ({ value: drill.id, label: drill.name }))}
-              value={filters.drillNumber || null}
-              onChange={(value) => setFilter('drillNumber', value)}
-              searchable
-              clearable
-              w={150}
+              w={130}
             />
             <DateRangePicker
               value={{ from: filters.from || '', to: filters.to || '' }}
               onChange={(range) => setFilters(range)}
               clearable
             />
-            <Button ml="auto" leftSection={<NavIcon name="plus" size={16} />} onClick={openNewJob}>
+            <Button
+              leftSection={<NavIcon name="plus" size={16} />}
+              onClick={openNewJob}
+              style={{ flexShrink: 0 }}
+            >
               New job
             </Button>
           </Group>
@@ -267,7 +259,7 @@ export const JobsPage = () => {
                       onSort={toggleSort}
                     />
                     <Table.Th>Status</Table.Th>
-                    <Table.Th>Site managers</Table.Th>
+                    <Table.Th>Managers</Table.Th>
                     <Table.Th />
                   </Table.Tr>
                 </Table.Thead>
@@ -314,7 +306,7 @@ export const JobsPage = () => {
         <Stack gap="md">
           <Text size="sm">
             Archive job {archiveModal.job?.jobNumber} — {archiveModal.job?.clientName}? It will be
-            hidden from site managers&apos; assigned jobs and from the default admin list. You can
+            hidden from managers&apos; assigned jobs and from the default admin list. You can
             unarchive it later.
           </Text>
           <Group justify="flex-end" gap="sm">

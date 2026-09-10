@@ -16,7 +16,7 @@ import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 import {
   EMPLOYEE_CATEGORY_OPTIONS,
-  EMPLOYEE_TYPE_OPTIONS
+  MANAGER_TYPE_OPTIONS
 } from '../../constants/employees.js';
 
 const emptyForm = {
@@ -70,7 +70,7 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
           employeeCategory: form.employeeCategory,
           active: form.active
         });
-        notifySuccess('Site manager updated');
+        notifySuccess('Manager updated');
         onSaved();
         onClose();
       } else {
@@ -84,13 +84,13 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
         notifySuccess(
           invite.delivered
             ? `Invitation email sent to ${data.email}`
-            : 'Site manager created — send them the invite link below'
+            : 'Manager created — send them the invite link below'
         );
         onSaved();
         setInviteResult(invite);
       }
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to save site manager'));
+      notifyError(extractErrorMessage(error, 'Unable to save manager'));
     } finally {
       setSubmitting(false);
     }
@@ -100,15 +100,15 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
     <Modal
       opened={opened}
       onClose={onClose}
-      title={isEdit ? 'Edit site manager' : inviteResult ? 'Invitation' : 'New site manager'}
+      title={isEdit ? 'Edit manager' : inviteResult ? 'Invitation' : 'New manager'}
       centered
     >
       {inviteResult ? (
         <Stack gap="md">
           <Alert color={inviteResult.delivered ? 'green' : 'brand'} variant="light">
             {inviteResult.delivered
-              ? 'The site manager has been emailed a link to set their password.'
-              : 'Email delivery is not configured. Share this one-time link with the site manager so they can set their password.'}
+              ? 'The manager has been emailed a link to set their password.'
+              : 'Email delivery is not configured. Share this one-time link with the manager so they can set their password.'}
           </Alert>
           <TextInput label="Invite link" value={inviteResult.link} readOnly />
           <Group justify="space-between">
@@ -127,7 +127,7 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
           <Stack gap="md">
             {!isEdit ? (
               <Text size="sm" c="dimmed">
-                The site manager sets their own password from an emailed invitation link.
+                The manager sets their own password from an emailed invitation link.
               </Text>
             ) : null}
             <TextInput
@@ -149,15 +149,15 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
               onChange={(event) => setField('phone')(event.currentTarget.value)}
             />
             <Select
-              label="Employee type"
+              label="Manager type"
               placeholder="Not set"
-              data={EMPLOYEE_TYPE_OPTIONS}
+              data={MANAGER_TYPE_OPTIONS}
               value={form.employeeType}
               onChange={setField('employeeType')}
               clearable
             />
             <Select
-              label="Employee category"
+              label="Category"
               placeholder="Not set"
               data={EMPLOYEE_CATEGORY_OPTIONS}
               value={form.employeeCategory}

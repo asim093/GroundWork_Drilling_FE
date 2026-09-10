@@ -59,7 +59,7 @@ export const TimeLogEntryView = ({ entry }) => {
             <Text size="sm" c="dimmed">
               {job.jobLocation || 'No location'}
               {job.rigNumber?.name ? ` · Rig ${job.rigNumber.name}` : ''} ·{' '}
-              {entry.userId?.name || 'Site manager'} · {formatDate(entry.date)}
+              {entry.userId?.name || 'Manager'} · {formatDate(entry.date)}
             </Text>
           </Stack>
           <Stack gap={4} align="flex-end">

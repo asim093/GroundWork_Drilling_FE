@@ -17,7 +17,7 @@ import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { UserFormModal } from '../../components/admin/UserFormModal.jsx';
 import { useListParams } from '../../hooks/useListParams.js';
-import { EMPLOYEE_TYPE_OPTIONS } from '../../constants/employees.js';
+import { MANAGER_TYPE_OPTIONS } from '../../constants/employees.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
 import { listUsers, updateUser, resendInvite } from '../../services/userService.js';
@@ -35,7 +35,7 @@ const ACTIVE_FILTER_OPTIONS = [
 ];
 
 export const UsersPage = () => {
-  usePageTitle('Site Managers');
+  usePageTitle('Managers');
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
     useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
@@ -63,7 +63,7 @@ export const UsersPage = () => {
       const response = await listUsers(queryParams);
       setResult(response);
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to load site managers'));
+      notifyError(extractErrorMessage(error, 'Unable to load managers'));
     } finally {
       setLoading(false);
     }
@@ -78,10 +78,10 @@ export const UsersPage = () => {
 
     try {
       await updateUser(user.id, { active: !user.active });
-      notifySuccess(user.active ? 'Site manager deactivated' : 'Site manager activated');
+      notifySuccess(user.active ? 'Manager deactivated' : 'Manager activated');
       load();
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to update site manager'));
+      notifyError(extractErrorMessage(error, 'Unable to update manager'));
     } finally {
       setBusyId(null);
     }
@@ -192,8 +192,8 @@ export const UsersPage = () => {
               w={150}
             />
             <Select
-              placeholder="Any employee type"
-              data={EMPLOYEE_TYPE_OPTIONS}
+              placeholder="Any manager type"
+              data={MANAGER_TYPE_OPTIONS}
               value={filters.employeeType || null}
               onChange={(value) => setFilter('employeeType', value)}
               clearable
@@ -204,7 +204,7 @@ export const UsersPage = () => {
               leftSection={<NavIcon name="plus" size={16} />}
               onClick={openNewOperator}
             >
-              New site manager
+              New manager
             </Button>
           </Group>
 
@@ -239,7 +239,7 @@ export const UsersPage = () => {
                     <Table.Tr>
                       <Table.Td colSpan={7}>
                         <Text c="dimmed" ta="center" py="md">
-                          No site managers match the current filters
+                          No managers match the current filters
                         </Text>
                       </Table.Td>
                     </Table.Tr>
