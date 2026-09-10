@@ -135,7 +135,7 @@ export const SchedulingPage = () => {
                     <SortableTh field="jobNumber" label="Job #" sort={sort} order={order} onSort={toggleSort} />
                     <Table.Th>Client</Table.Th>
                     <Table.Th>Location</Table.Th>
-                    <Table.Th>Operators</Table.Th>
+                    <Table.Th>Site managers</Table.Th>
                     <Table.Th>Status</Table.Th>
                   </Table.Tr>
                 </Table.Thead>

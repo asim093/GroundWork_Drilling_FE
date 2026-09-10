@@ -70,7 +70,7 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
           employeeCategory: form.employeeCategory,
           active: form.active
         });
-        notifySuccess('Operator updated');
+        notifySuccess('Site manager updated');
         onSaved();
         onClose();
       } else {
@@ -84,13 +84,13 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
         notifySuccess(
           invite.delivered
             ? `Invitation email sent to ${data.email}`
-            : 'Operator created — send them the invite link below'
+            : 'Site manager created — send them the invite link below'
         );
         onSaved();
         setInviteResult(invite);
       }
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to save operator'));
+      notifyError(extractErrorMessage(error, 'Unable to save site manager'));
     } finally {
       setSubmitting(false);
     }
@@ -100,15 +100,15 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
     <Modal
       opened={opened}
       onClose={onClose}
-      title={isEdit ? 'Edit operator' : inviteResult ? 'Invitation' : 'New operator'}
+      title={isEdit ? 'Edit site manager' : inviteResult ? 'Invitation' : 'New site manager'}
       centered
     >
       {inviteResult ? (
         <Stack gap="md">
           <Alert color={inviteResult.delivered ? 'green' : 'brand'} variant="light">
             {inviteResult.delivered
-              ? 'The operator has been emailed a link to set their password.'
-              : 'Email delivery is not configured. Share this one-time link with the operator so they can set their password.'}
+              ? 'The site manager has been emailed a link to set their password.'
+              : 'Email delivery is not configured. Share this one-time link with the site manager so they can set their password.'}
           </Alert>
           <TextInput label="Invite link" value={inviteResult.link} readOnly />
           <Group justify="space-between">
@@ -127,7 +127,7 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
           <Stack gap="md">
             {!isEdit ? (
               <Text size="sm" c="dimmed">
-                The operator sets their own password from an emailed invitation link.
+                The site manager sets their own password from an emailed invitation link.
               </Text>
             ) : null}
             <TextInput

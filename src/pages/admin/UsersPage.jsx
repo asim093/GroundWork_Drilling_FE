@@ -35,7 +35,7 @@ const ACTIVE_FILTER_OPTIONS = [
 ];
 
 export const UsersPage = () => {
-  usePageTitle('Operators');
+  usePageTitle('Site Managers');
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
     useListParams({ sort: 'createdAt', order: 'desc' });
   const [result, setResult] = useState({ data: [], pagination: null });
@@ -63,7 +63,7 @@ export const UsersPage = () => {
       const response = await listUsers(queryParams);
       setResult(response);
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to load operators'));
+      notifyError(extractErrorMessage(error, 'Unable to load site managers'));
     } finally {
       setLoading(false);
     }
@@ -78,10 +78,10 @@ export const UsersPage = () => {
 
     try {
       await updateUser(user.id, { active: !user.active });
-      notifySuccess(user.active ? 'Operator deactivated' : 'Operator activated');
+      notifySuccess(user.active ? 'Site manager deactivated' : 'Site manager activated');
       load();
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to update operator'));
+      notifyError(extractErrorMessage(error, 'Unable to update site manager'));
     } finally {
       setBusyId(null);
     }
@@ -204,7 +204,7 @@ export const UsersPage = () => {
               leftSection={<NavIcon name="plus" size={16} />}
               onClick={openNewOperator}
             >
-              New operator
+              New site manager
             </Button>
           </Group>
 
@@ -239,7 +239,7 @@ export const UsersPage = () => {
                     <Table.Tr>
                       <Table.Td colSpan={7}>
                         <Text c="dimmed" ta="center" py="md">
-                          No operators match the current filters
+                          No site managers match the current filters
                         </Text>
                       </Table.Td>
                     </Table.Tr>

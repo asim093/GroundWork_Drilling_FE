@@ -39,7 +39,7 @@ export const UserReportDrawer = ({ opened, onClose, group, entries, range }) => 
   );
 
   if (!group) {
-    return <Drawer opened={opened} onClose={onClose} position="right" size="xl" title="Operator report" />;
+    return <Drawer opened={opened} onClose={onClose} position="right" size="xl" title="Site manager report" />;
   }
 
   const rec = recoveryPercent(group.totals.metersDrilled, group.totals.metersRecovered);
@@ -111,7 +111,7 @@ export const UserReportDrawer = ({ opened, onClose, group, entries, range }) => 
         <ReportEntriesTable
           entries={userEntries}
           showOperator={false}
-          title="This operator's submitted entries"
+          title="This site manager's submitted entries"
           entryHref={(entryId) => `/admin/time-logs/${entryId}`}
         />
       </Stack>

@@ -65,7 +65,7 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Text fw={700}>{isUser ? 'Breakdown by user' : 'Breakdown by job'}</Text>
           <TextInput
-            placeholder={isUser ? 'Search operator' : 'Search job'}
+            placeholder={isUser ? 'Search site manager' : 'Search job'}
             value={table.search}
             onChange={(event) => table.setSearch(event.currentTarget.value)}
             w={240}
@@ -73,7 +73,7 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
         </Group>
         {isUser ? (
           <Text size="xs" c="dimmed">
-            Click a row to see that operator&apos;s detailed report.
+            Click a row to see that site manager&apos;s detailed report.
           </Text>
         ) : null}
 
@@ -81,7 +81,7 @@ export const ReportGroupsTable = ({ groups, groupBy, onSelectUser }) => {
           <Table verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                {th('label', isUser ? 'Operator' : 'Job')}
+                {th('label', isUser ? 'Site manager' : 'Job')}
                 {isUser ? th('employeeType', 'Employee type') : null}
                 {th('entries', 'Entries')}
                 {th('hours', 'Hours')}

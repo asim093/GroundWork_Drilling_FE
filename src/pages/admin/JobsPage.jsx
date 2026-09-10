@@ -191,7 +191,7 @@ export const JobsPage = () => {
         <Stack gap="md">
           <Group gap="sm" wrap="wrap" align="center">
             <TextInput
-              placeholder="Search job #, client, location or operator"
+              placeholder="Search job #, client, location or site manager"
               value={search}
               onChange={(event) => setSearch(event.currentTarget.value)}
               leftSection={<NavIcon name="search" size={15} />}
@@ -314,7 +314,7 @@ export const JobsPage = () => {
         <Stack gap="md">
           <Text size="sm">
             Archive job {archiveModal.job?.jobNumber} — {archiveModal.job?.clientName}? It will be
-            hidden from operators&apos; assigned jobs and from the default admin list. You can
+            hidden from site managers&apos; assigned jobs and from the default admin list. You can
             unarchive it later.
           </Text>
           <Group justify="flex-end" gap="sm">

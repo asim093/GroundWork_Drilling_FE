@@ -49,7 +49,7 @@ export const ReportEntriesTable = ({
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Text fw={700}>{title}</Text>
           <TextInput
-            placeholder={showOperator ? 'Search job # or operator' : 'Search job #'}
+            placeholder={showOperator ? 'Search job # or site manager' : 'Search job #'}
             value={table.search}
             onChange={(event) => table.setSearch(event.currentTarget.value)}
             w={260}
@@ -63,7 +63,7 @@ export const ReportEntriesTable = ({
                 <SortableTh field="date" label="Date" sort={table.sort} order={table.order} onSort={table.toggleSort} />
                 <SortableTh field="jobNumber" label="Job #" sort={table.sort} order={table.order} onSort={table.toggleSort} />
                 {showOperator ? (
-                  <SortableTh field="operator" label="Operator" sort={table.sort} order={table.order} onSort={table.toggleSort} />
+                  <SortableTh field="operator" label="Site manager" sort={table.sort} order={table.order} onSort={table.toggleSort} />
                 ) : null}
                 <SortableTh field="hours" label="Hours" sort={table.sort} order={table.order} onSort={table.toggleSort} />
                 <SortableTh field="drilled" label="Drilled (m)" sort={table.sort} order={table.order} onSort={table.toggleSort} />

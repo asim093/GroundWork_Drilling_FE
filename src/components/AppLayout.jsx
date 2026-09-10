@@ -15,6 +15,7 @@ import {
   Tooltip
 } from '@mantine/core';
 import { useAuth } from '../context/AuthContext.jsx';
+import { roleLabel } from '../constants/roles.js';
 import { usePageTitleValue } from '../context/PageTitleContext.jsx';
 import { notifySuccess } from '../lib/toast.js';
 import { NavIcon } from './NavIcon.jsx';
@@ -27,7 +28,7 @@ const RAIL_WIDTH = 72;
 const QUICK_ACTIONS = {
   admin: [
     { label: 'Add job', to: '/admin/jobs?new=1' },
-    { label: 'Add operator', to: '/admin/users?new=1' }
+    { label: 'Add site manager', to: '/admin/users?new=1' }
   ]
 };
 
@@ -180,7 +181,7 @@ export const AppLayout = ({ navItems = [], children }) => {
           <Divider mb="sm" />
           {railMode ? (
             <Stack gap="sm" align="center">
-              <Tooltip label={`${user?.name} · ${user?.role}`} position="right" withArrow>
+              <Tooltip label={`${user?.name} · ${roleLabel(user?.role)}`} position="right" withArrow>
                 <Avatar radius="xl" color="brand" variant="filled">
                   {initials(user?.name)}
                 </Avatar>
@@ -207,8 +208,8 @@ export const AppLayout = ({ navItems = [], children }) => {
                   <Text size="sm" fw={600} truncate>
                     {user?.name}
                   </Text>
-                  <Text size="xs" c="dimmed" tt="capitalize">
-                    {user?.role}
+                  <Text size="xs" c="dimmed">
+                    {roleLabel(user?.role)}
                   </Text>
                 </Box>
               </Group>
