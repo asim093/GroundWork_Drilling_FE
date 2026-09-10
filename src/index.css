@@ -240,6 +240,10 @@ body {
   box-shadow: 0 -6px 22px -10px rgba(18, 58, 62, 0.14);
 }
 
+[id^='sec-'] {
+  scroll-margin-top: 64px;
+}
+
 .mantine-AppShell-navbar .mantine-NavLink-section svg,
 .mantine-AppShell-navbar .mantine-ActionIcon-root svg {
   transition: transform 160ms ease;

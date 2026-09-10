@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Accordion,
   Badge,
   Box,
   Button,
@@ -69,8 +68,6 @@ const SECTIONS = [
   { value: 'well-tag', label: 'Well Tag' },
   { value: 'mileage', label: 'Mileage' }
 ];
-
-const ACCORDION_SECTIONS = ['shift-time', 'crew', 'activity-lines', 'consumables'];
 
 const COMPUTED_INPUT_STYLES = {
   input: {
@@ -247,17 +244,10 @@ export const TimeLogFormPage = () => {
       .catch(() => setConsumableGroups([]));
   }, []);
 
-  const [openSections, setOpenSections] = useState(ACCORDION_SECTIONS);
-
   const goToSection = (value) => {
-    if (ACCORDION_SECTIONS.includes(value)) {
-      setOpenSections((prev) => (prev.includes(value) ? prev : [...prev, value]));
-    }
-    requestAnimationFrame(() => {
-      document
-        .getElementById(`sec-${value}`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    document
+      .getElementById(`sec-${value}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -539,175 +529,148 @@ export const TimeLogFormPage = () => {
           </Text>
         </Group>
 
-        <Accordion
-          multiple
-          value={openSections}
-          onChange={setOpenSections}
-          variant="separated"
-          radius="md"
-        >
-          <Accordion.Item value="shift-time" id="sec-shift-time">
-            <Accordion.Control icon={<CompletionDot done={filled.shiftTime} />}>
-              Shift &amp; Time
-            </Accordion.Control>
-            <Accordion.Panel>
-              <Stack gap="xl">
-                <SubGroup title="Date &amp; Shift">
-                  <SimpleGrid cols={GRID} spacing="md">
-                    <DatePickerInput
-                      label="Date"
-                      size={FIELD_SIZE}
-                      value={form.date}
-                      valueFormat="DD MMM YYYY"
-                      disabled={readOnly}
-                      onChange={(value) => setField('date', value)}
-                    />
-                    <Select
-                      label="Shift"
-                      size={FIELD_SIZE}
-                      placeholder="Select shift"
-                      data={shiftOptions}
-                      value={form.shift}
-                      disabled={shiftLocked}
-                      onChange={(value) => setField('shift', value)}
-                      allowDeselect={false}
-                    />
-                  </SimpleGrid>
-                </SubGroup>
-
-                <Divider />
-
-                <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="xl">
-                  <SubGroup
-                    title="Time on site"
-                    caption="When the crew arrived on and left the site for this shift."
-                  >
-                    <SimpleGrid cols={2} spacing="md">
-                      <TimePicker
-                        label="Time In"
-                        size={FIELD_SIZE}
-                        value={form.timeIn}
-                        format="12h"
-                        withDropdown
-                        clearable
-                        disabled={readOnly}
-                        onChange={(value) => setSiteTime('timeIn', value)}
-                      />
-                      <TimePicker
-                        label="Time Out"
-                        size={FIELD_SIZE}
-                        value={form.timeOut}
-                        format="12h"
-                        withDropdown
-                        clearable
-                        disabled={readOnly}
-                        onChange={(value) => setSiteTime('timeOut', value)}
-                      />
-                    </SimpleGrid>
-                  </SubGroup>
-
-                  <SubGroup
-                    title="Work time"
-                    caption="When drilling / activity work actually started and finished. Activity lines must fall inside this window."
-                  >
-                    <SimpleGrid cols={2} spacing="md">
-                      {timeField('timeStarted', 'Time Started')}
-                      {timeField('timeFinished', 'Time Finished')}
-                    </SimpleGrid>
-                  </SubGroup>
+        <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="sm">
+          <PanelCard id="sec-shift-time" title="Shift & Time" done={filled.shiftTime}>
+            <Stack gap="lg">
+              <SubGroup title="Date &amp; Shift">
+                <SimpleGrid cols={GRID} spacing="md">
+                  <DatePickerInput
+                    label="Date"
+                    size={FIELD_SIZE}
+                    value={form.date}
+                    valueFormat="DD MMM YYYY"
+                    disabled={readOnly}
+                    onChange={(value) => setField('date', value)}
+                  />
+                  <Select
+                    label="Shift"
+                    size={FIELD_SIZE}
+                    placeholder="Select shift"
+                    data={shiftOptions}
+                    value={form.shift}
+                    disabled={shiftLocked}
+                    onChange={(value) => setField('shift', value)}
+                    allowDeselect={false}
+                  />
                 </SimpleGrid>
+              </SubGroup>
 
-                <Divider />
+              <Divider />
 
-                <SubGroup title="Hours Summary">
-                  <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
-                    <TextInput
-                      label="Hours on site"
-                      size={FIELD_SIZE}
-                      value={hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview}`}
-                      readOnly
-                      disabled
-                      styles={COMPUTED_INPUT_STYLES}
-                    />
-                    {numberField('standbyHours', 'Standby hours')}
-                    {numberField('otherHours', 'Other hours')}
-                  </SimpleGrid>
-                </SubGroup>
-              </Stack>
-            </Accordion.Panel>
-          </Accordion.Item>
+              <SubGroup
+                title="Time on site"
+                caption="When the crew arrived on and left the site for this shift."
+              >
+                <SimpleGrid cols={2} spacing="md">
+                  <TimePicker
+                    label="Time In"
+                    size={FIELD_SIZE}
+                    value={form.timeIn}
+                    format="12h"
+                    withDropdown
+                    clearable
+                    disabled={readOnly}
+                    onChange={(value) => setSiteTime('timeIn', value)}
+                  />
+                  <TimePicker
+                    label="Time Out"
+                    size={FIELD_SIZE}
+                    value={form.timeOut}
+                    format="12h"
+                    withDropdown
+                    clearable
+                    disabled={readOnly}
+                    onChange={(value) => setSiteTime('timeOut', value)}
+                  />
+                </SimpleGrid>
+              </SubGroup>
 
-          <Accordion.Item value="crew" id="sec-crew">
-            <Accordion.Control icon={<CompletionDot done={filled.crew} />}>Crew</Accordion.Control>
-            <Accordion.Panel>
-              <CrewSection
-                crew={form.crew}
-                roster={roster}
-                disabled={readOnly}
-                shiftTimes={{ timeIn: form.timeIn, timeOut: form.timeOut }}
-                onChange={(crew) => setField('crew', crew)}
-              />
-            </Accordion.Panel>
-          </Accordion.Item>
+              <SubGroup
+                title="Work time"
+                caption="When drilling / activity work actually started and finished. Activity lines must fall inside this window."
+              >
+                <SimpleGrid cols={2} spacing="md">
+                  {timeField('timeStarted', 'Time Started')}
+                  {timeField('timeFinished', 'Time Finished')}
+                </SimpleGrid>
+              </SubGroup>
 
-          <Accordion.Item value="activity-lines" id="sec-activity-lines">
-            <Accordion.Control icon={<CompletionDot done={filled.activityLines} />}>
-              Activity Lines
-            </Accordion.Control>
-            <Accordion.Panel>
-              <Stack gap="lg">
-                <ActivityLinesSection
-                  lines={form.activityLines}
-                  disabled={readOnly}
-                  errors={shownLineErrors}
-                  activityGroups={activityGroups}
-                  onChange={(lines) => {
-                    setLineErrors({});
-                    setField('activityLines', lines);
-                  }}
+              <Divider />
+
+              <SubGroup title="Hours Summary">
+                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" style={{ alignItems: 'end' }}>
+                  <TextInput
+                    label="Hours on site"
+                    size={FIELD_SIZE}
+                    value={hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview}`}
+                    readOnly
+                    disabled
+                    styles={COMPUTED_INPUT_STYLES}
+                  />
+                  {numberField('standbyHours', 'Standby hours')}
+                  {numberField('otherHours', 'Other hours')}
+                </SimpleGrid>
+              </SubGroup>
+            </Stack>
+          </PanelCard>
+
+          <PanelCard id="sec-crew" title="Crew" done={filled.crew}>
+            <CrewSection
+              crew={form.crew}
+              roster={roster}
+              disabled={readOnly}
+              shiftTimes={{ timeIn: form.timeIn, timeOut: form.timeOut }}
+              onChange={(crew) => setField('crew', crew)}
+            />
+          </PanelCard>
+        </SimpleGrid>
+
+        <PanelCard id="sec-activity-lines" title="Activity Lines" done={filled.activityLines}>
+          <Stack gap="lg">
+            <ActivityLinesSection
+              lines={form.activityLines}
+              disabled={readOnly}
+              errors={shownLineErrors}
+              activityGroups={activityGroups}
+              onChange={(lines) => {
+                setLineErrors({});
+                setField('activityLines', lines);
+              }}
+            />
+
+            <Box>
+              <Text fw={600} size="sm" mb="xs">
+                Shift totals (calculated)
+              </Text>
+              <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+                <StatTile label="Total Drilled" value={`${totalDrilled} m`} />
+                <StatTile
+                  label="Total Recovered"
+                  value={totalRecovered === null ? '—' : `${totalRecovered} m`}
                 />
+                <StatTile label="Total Hours" value={`${totalHours} h`} />
+                <StatTile
+                  label="Recovery %"
+                  value={recoveryPreview === null ? '—' : `${recoveryPreview}%`}
+                />
+              </SimpleGrid>
+              <Text size="xs" c="dimmed" mt="xs">
+                Calculated from the activity lines and cannot be edited directly.
+              </Text>
+            </Box>
+          </Stack>
+        </PanelCard>
 
-                <Box>
-                  <Text fw={600} size="sm" mb="xs">
-                    Shift totals (calculated)
-                  </Text>
-                  <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-                    <StatTile label="Total Drilled" value={`${totalDrilled} m`} />
-                    <StatTile
-                      label="Total Recovered"
-                      value={totalRecovered === null ? '—' : `${totalRecovered} m`}
-                    />
-                    <StatTile label="Total Hours" value={`${totalHours} h`} />
-                    <StatTile
-                      label="Recovery %"
-                      value={recoveryPreview === null ? '—' : `${recoveryPreview}%`}
-                    />
-                  </SimpleGrid>
-                  <Text size="xs" c="dimmed" mt="xs">
-                    Calculated from the activity lines and cannot be edited directly.
-                  </Text>
-                </Box>
-              </Stack>
-            </Accordion.Panel>
-          </Accordion.Item>
+        <PanelCard id="sec-consumables" title="Consumables" done={filled.consumables}>
+          <ConsumablesSection
+            items={form.consumables}
+            disabled={readOnly}
+            groupedOptions={consumableGroups}
+            onChange={(items) => setField('consumables', items)}
+          />
+        </PanelCard>
 
-          <Accordion.Item value="consumables" id="sec-consumables">
-            <Accordion.Control icon={<CompletionDot done={filled.consumables} />}>
-              Consumables
-            </Accordion.Control>
-            <Accordion.Panel>
-              <ConsumablesSection
-                items={form.consumables}
-                disabled={readOnly}
-                groupedOptions={consumableGroups}
-                onChange={(items) => setField('consumables', items)}
-              />
-            </Accordion.Panel>
-          </Accordion.Item>
-
-        </Accordion>
-
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="sm">
+        <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
           <PanelCard id="sec-fuel" title="Fuel" done={filled.fuel}>
             <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
               <NumberInput
