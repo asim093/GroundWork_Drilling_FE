@@ -1,10 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Center, Group, Loader, Paper, SegmentedControl, Stack, Tabs, Text } from '@mantine/core';
+import {
+  Center,
+  Group,
+  Loader,
+  Paper,
+  Select,
+  SegmentedControl,
+  Stack,
+  Tabs,
+  Text,
+  Tooltip
+} from '@mantine/core';
 import { ReportExportButtons } from '../../components/reports/ReportExportButtons.jsx';
 import { ClientHoursTable } from '../../components/reports/ClientHoursTable.jsx';
 import { PersonHoursTable } from '../../components/reports/PersonHoursTable.jsx';
 import { LedgerReportTable } from '../../components/reports/LedgerReportTable.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
+import { NavIcon } from '../../components/NavIcon.jsx';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange } from '../../lib/dateRange.js';
 import {
@@ -99,7 +111,7 @@ const MonthlyFuel = ({ monthly }) =>
     </Paper>
   ) : null;
 
-const HoursTab = ({ range }) => {
+const HoursTab = ({ range, client }) => {
   const [scope, setScope] = useState('client');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -108,39 +120,46 @@ const HoursTab = ({ range }) => {
     setLoading(true);
 
     try {
-      setReport(await getHoursReport({ from: range.from, to: range.to, scope }));
+      setReport(await getHoursReport({ from: range.from, to: range.to, scope, client: client || undefined }));
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load the hours report'));
     } finally {
       setLoading(false);
     }
-  }, [range, scope]);
+  }, [range, scope, client]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const handleExport = (format) => downloadReport({ report: 'hours', format, params: { from: range.from, to: range.to, scope } });
+  const handleExport = (format) =>
+    downloadReport({ report: 'hours', format, params: { from: range.from, to: range.to, scope, client: client || undefined } });
 
   return (
-    <Stack gap="lg">
+    <Stack gap="md">
       <Group justify="space-between" wrap="wrap" gap="sm">
-        <SegmentedControl
-          data={HOURS_SCOPE_OPTIONS}
-          value={scope}
-          onChange={setScope}
-          size="sm"
-          radius="sm"
-          style={{ border: '1px solid var(--mantine-color-gray-3)' }}
-        />
+        <Group gap="xs" wrap="wrap">
+          <SegmentedControl
+            data={HOURS_SCOPE_OPTIONS}
+            value={scope}
+            onChange={setScope}
+            size="sm"
+            radius="sm"
+            style={{ border: '1px solid var(--mantine-color-gray-3)' }}
+          />
+          <Tooltip
+            multiline
+            w={260}
+            label="Billable hours = actual work time (Time Started/Finished), billed to the client. Paid hours = full on-site time (Time In/Out), what employees are paid for — always ≥ billable hours."
+          >
+            <Group gap={4} c="dimmed" style={{ cursor: 'help' }}>
+              <NavIcon name="info" size={15} />
+              <Text size="xs">Billable vs paid?</Text>
+            </Group>
+          </Tooltip>
+        </Group>
         <ReportExportButtons onExport={handleExport} disabled={loading || !report} size="sm" radius="sm" />
       </Group>
-
-      <Text size="xs" c="dimmed">
-        Billable hours = actual work time (Time Started/Finished), billed to the client. Paid hours
-        = full on-site time (Time In/Out), what employees are paid for — paid hours is always ≥
-        billable hours.
-      </Text>
 
       {loading || !report ? (
         <Center py="xl">
@@ -157,7 +176,7 @@ const HoursTab = ({ range }) => {
   );
 };
 
-const ConsumablesTab = ({ range }) => {
+const ConsumablesTab = ({ range, client }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -165,22 +184,23 @@ const ConsumablesTab = ({ range }) => {
     setLoading(true);
 
     try {
-      setReport(await getConsumablesReport({ from: range.from, to: range.to }));
+      setReport(await getConsumablesReport({ from: range.from, to: range.to, client: client || undefined }));
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load the consumables report'));
     } finally {
       setLoading(false);
     }
-  }, [range]);
+  }, [range, client]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const handleExport = (format) => downloadReport({ report: 'consumables', format, params: { from: range.from, to: range.to } });
+  const handleExport = (format) =>
+    downloadReport({ report: 'consumables', format, params: { from: range.from, to: range.to, client: client || undefined } });
 
   return (
-    <Stack gap="lg">
+    <Stack gap="md">
       <Group justify="flex-end">
         <ReportExportButtons onExport={handleExport} disabled={loading || !report} size="sm" radius="sm" />
       </Group>
@@ -205,7 +225,7 @@ const ConsumablesTab = ({ range }) => {
   );
 };
 
-const FuelTab = ({ range }) => {
+const FuelTab = ({ range, client }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -213,22 +233,23 @@ const FuelTab = ({ range }) => {
     setLoading(true);
 
     try {
-      setReport(await getFuelReport({ from: range.from, to: range.to }));
+      setReport(await getFuelReport({ from: range.from, to: range.to, client: client || undefined }));
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load the fuel report'));
     } finally {
       setLoading(false);
     }
-  }, [range]);
+  }, [range, client]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const handleExport = (format) => downloadReport({ report: 'fuel', format, params: { from: range.from, to: range.to } });
+  const handleExport = (format) =>
+    downloadReport({ report: 'fuel', format, params: { from: range.from, to: range.to, client: client || undefined } });
 
   return (
-    <Stack gap="lg">
+    <Stack gap="md">
       <Group justify="flex-end">
         <ReportExportButtons onExport={handleExport} disabled={loading || !report} size="sm" radius="sm" />
       </Group>
@@ -255,31 +276,57 @@ const FuelTab = ({ range }) => {
 
 export const ReportsPage = () => {
   usePageTitle('Reports');
+  const [tab, setTab] = useState('hours');
   const [range, setRange] = useState(currentMonthRange);
+  const [client, setClient] = useState(null);
+  const [clientOptions, setClientOptions] = useState([]);
+
+  useEffect(() => {
+    getHoursReport({ from: range.from, to: range.to, scope: 'client' })
+      .then((report) => {
+        const names = [...new Set((report.jobs || []).map((job) => job.clientName).filter(Boolean))].sort();
+        setClientOptions(names.map((name) => ({ value: name, label: name })));
+      })
+      .catch(() => setClientOptions([]));
+  }, [range]);
 
   return (
-    <Stack gap="xl">
-      <Paper withBorder radius="lg" p="lg">
-        <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
-      </Paper>
+    <Tabs value={tab} onChange={setTab} keepMounted={false}>
+      <Stack gap="lg">
+        <Paper withBorder radius="lg" p="md">
+          <Group justify="space-between" wrap="wrap" gap="md">
+            <Tabs.List>
+              <Tabs.Tab value="hours">Hours</Tabs.Tab>
+              <Tabs.Tab value="consumables">Consumables</Tabs.Tab>
+              <Tabs.Tab value="fuel">Fuel</Tabs.Tab>
+            </Tabs.List>
+            <Group gap="sm" wrap="wrap">
+              <Select
+                placeholder="All clients"
+                data={clientOptions}
+                value={client}
+                onChange={setClient}
+                clearable
+                size="sm"
+                radius="sm"
+                searchable
+                w={220}
+              />
+              <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
+            </Group>
+          </Group>
+        </Paper>
 
-      <Tabs defaultValue="hours" keepMounted={false}>
-        <Tabs.List>
-          <Tabs.Tab value="hours">Hours</Tabs.Tab>
-          <Tabs.Tab value="consumables">Consumables</Tabs.Tab>
-          <Tabs.Tab value="fuel">Fuel</Tabs.Tab>
-        </Tabs.List>
-
-        <Tabs.Panel value="hours" pt="md">
-          <HoursTab range={range} />
+        <Tabs.Panel value="hours">
+          <HoursTab range={range} client={client} />
         </Tabs.Panel>
-        <Tabs.Panel value="consumables" pt="md">
-          <ConsumablesTab range={range} />
+        <Tabs.Panel value="consumables">
+          <ConsumablesTab range={range} client={client} />
         </Tabs.Panel>
-        <Tabs.Panel value="fuel" pt="md">
-          <FuelTab range={range} />
+        <Tabs.Panel value="fuel">
+          <FuelTab range={range} client={client} />
         </Tabs.Panel>
-      </Tabs>
-    </Stack>
+      </Stack>
+    </Tabs>
   );
 };

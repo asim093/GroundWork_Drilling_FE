@@ -1,13 +1,17 @@
+import { useEffect, useRef } from 'react';
 import { ActionIcon, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
 import { TimePicker } from '@mantine/dates';
 import { NavIcon } from '../NavIcon.jsx';
 import { BLANK_ACTIVITY_LINE } from '../../constants/timeLogs.js';
+import { lineHours } from '../../lib/timeLogMath.js';
 
 const ERROR_LABELS = {
   activityId: 'Select an activity',
   timeFrom: 'Time from is outside your Time in and Time out, or overlaps another line',
   timeTo: 'Time to is outside your Time in and Time out, is before Time from, or overlaps another line'
 };
+
+const formatHours = (value) => (value === null || value === undefined ? '—' : `${value} h`);
 
 export const ActivityLinesSection = ({
   lines,
@@ -17,6 +21,22 @@ export const ActivityLinesSection = ({
   activityGroups = [],
   shiftTimeIn = ''
 }) => {
+  const prevShiftTimeIn = useRef(shiftTimeIn);
+
+  // Keeps the first activity line's Time From mirroring the shift's Time In until the
+  // user directly edits that field (or clears it), per the "auto-fill from Time In" rule.
+  useEffect(() => {
+    if (shiftTimeIn && lines.length > 0) {
+      const first = lines[0];
+      const untouched = first.timeFrom === '' || first.timeFrom === prevShiftTimeIn.current;
+      if (untouched && first.timeFrom !== shiftTimeIn) {
+        onChange(lines.map((line, i) => (i === 0 ? { ...line, timeFrom: shiftTimeIn } : line)));
+      }
+    }
+    prevShiftTimeIn.current = shiftTimeIn;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shiftTimeIn]);
+
   const updateLine = (index, patch) => {
     onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
   };
@@ -66,7 +86,7 @@ export const ActivityLinesSection = ({
                 )}
               </Group>
 
-              <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="sm">
+              <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="sm">
                 <Select
                   label="Activity"
                   size="sm"
@@ -100,6 +120,20 @@ export const ActivityLinesSection = ({
                   disabled={disabled}
                   error={Boolean(lineError.timeTo)}
                   onChange={(value) => updateLine(index, { timeTo: value || '' })}
+                />
+                <TextInput
+                  label="Hours"
+                  size="sm"
+                  value={formatHours(lineHours(line))}
+                  readOnly
+                  disabled
+                  styles={{
+                    input: {
+                      backgroundColor: 'var(--mantine-color-brand-0)',
+                      color: 'var(--mantine-color-brand-9)',
+                      fontWeight: 600
+                    }
+                  }}
                 />
               </SimpleGrid>
 

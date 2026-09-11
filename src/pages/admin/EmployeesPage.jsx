@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
+  ActionIcon,
   Badge,
   Button,
   Card,
   Center,
   Group,
   Loader,
+  Paper,
   Select,
   Stack,
   Table,
@@ -16,6 +18,7 @@ import {
 } from '@mantine/core';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
+import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
 import { UserFormModal } from '../../components/admin/UserFormModal.jsx';
 import { EmployeeFormModal } from '../../components/admin/EmployeeFormModal.jsx';
 import { useListParams } from '../../hooks/useListParams.js';
@@ -40,6 +43,56 @@ const ACTIVE_FILTER_OPTIONS = [
   { value: 'true', label: 'Active' },
   { value: 'false', label: 'Inactive' }
 ];
+
+const countActive = (...values) => values.filter(Boolean).length;
+
+const ManagerCard = ({ user, busy, onEdit, onToggleActive, onResendInvite }) => (
+  <Paper withBorder radius="md" p="sm">
+    <Stack gap={6}>
+      <Group justify="space-between" wrap="nowrap" align="flex-start">
+        <Stack gap={0} style={{ minWidth: 0 }}>
+          <Text fw={600} size="sm" truncate>
+            {user.name}
+          </Text>
+          <Text size="xs" c="dimmed" truncate>
+            {user.email}
+          </Text>
+        </Stack>
+        <Badge variant="light" color={user.active ? 'green' : 'gray'} size="sm">
+          {user.active ? 'Active' : 'Inactive'}
+        </Badge>
+      </Group>
+      <Group gap={6} wrap="wrap">
+        {user.phone ? (
+          <Text size="xs" c="dimmed">
+            {user.phone}
+          </Text>
+        ) : null}
+        {user.employeeType ? (
+          <Badge variant="outline" color="gray" size="sm">
+            {user.employeeType}
+          </Badge>
+        ) : null}
+        {user.pendingInvite ? (
+          <Badge variant="outline" color="orange" size="sm">
+            Pending invite
+          </Badge>
+        ) : null}
+      </Group>
+      <Group gap="xs" wrap="wrap">
+        <Button size="xs" variant="subtle" loading={busy} onClick={onResendInvite}>
+          {user.pendingInvite ? 'Resend invite' : 'Send reset link'}
+        </Button>
+        <Button size="xs" variant="default" onClick={onEdit}>
+          Edit
+        </Button>
+        <Button size="xs" variant="light" color={user.active ? 'red' : 'green'} loading={busy} onClick={onToggleActive}>
+          {user.active ? 'Deactivate' : 'Activate'}
+        </Button>
+      </Group>
+    </Stack>
+  </Paper>
+);
 
 const ManagersTab = () => {
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
@@ -111,6 +164,35 @@ const ManagersTab = () => {
     }
   };
 
+  const filterFields = (
+    <>
+      <Select
+        label="Account"
+        placeholder="Any account"
+        data={STATUS_FILTER_OPTIONS}
+        value={filters.status || null}
+        onChange={(value) => setFilter('status', value)}
+        clearable
+      />
+      <Select
+        label="State"
+        placeholder="Any state"
+        data={ACTIVE_FILTER_OPTIONS}
+        value={filters.active || null}
+        onChange={(value) => setFilter('active', value)}
+        clearable
+      />
+      <Select
+        label="Manager type"
+        placeholder="Any manager type"
+        data={MANAGER_TYPE_OPTIONS}
+        value={filters.employeeType || null}
+        onChange={(value) => setFilter('employeeType', value)}
+        clearable
+      />
+    </>
+  );
+
   const rows = result.data.map((user) => (
     <Table.Tr key={user.id}>
       <Table.Td>{user.name}</Table.Td>
@@ -160,45 +242,36 @@ const ManagersTab = () => {
   return (
     <Card withBorder radius="md" p="md">
       <Stack gap="md">
-        <Group gap="sm" wrap="wrap" align="center">
+        <Group gap="sm" wrap="nowrap" align="center">
           <TextInput
             placeholder="Search name or email"
             value={filters.search || ''}
             onChange={(event) => setFilter('search', event.currentTarget.value)}
-            w={{ base: '100%', sm: 300 }}
+            style={{ flex: 1 }}
           />
-          <Select
-            placeholder="Any account"
-            data={STATUS_FILTER_OPTIONS}
-            value={filters.status || null}
-            onChange={(value) => setFilter('status', value)}
-            clearable
-            w={{ base: '100%', sm: 170 }}
-          />
-          <Select
-            placeholder="Any state"
-            data={ACTIVE_FILTER_OPTIONS}
-            value={filters.active || null}
-            onChange={(value) => setFilter('active', value)}
-            clearable
-            w={{ base: '100%', sm: 150 }}
-          />
-          <Select
-            placeholder="Any manager type"
-            data={MANAGER_TYPE_OPTIONS}
-            value={filters.employeeType || null}
-            onChange={(value) => setFilter('employeeType', value)}
-            clearable
-            w={{ base: '100%', sm: 190 }}
-          />
+          <Group gap="xs" wrap="nowrap" hiddenFrom="sm">
+            <MobileFilterDrawer
+              title="Filter managers"
+              activeCount={countActive(filters.status, filters.active, filters.employeeType)}
+            >
+              {filterFields}
+            </MobileFilterDrawer>
+            <ActionIcon size="lg" radius="md" onClick={openNewManager} aria-label="New manager">
+              <NavIcon name="plus" size={18} />
+            </ActionIcon>
+          </Group>
           <Button
-            ml={{ base: 0, sm: 'auto' }}
-            w={{ base: '100%', sm: 'auto' }}
+            visibleFrom="sm"
             leftSection={<NavIcon name="plus" size={16} />}
             onClick={openNewManager}
+            style={{ flexShrink: 0 }}
           >
             New manager
           </Button>
+        </Group>
+
+        <Group gap="sm" wrap="wrap" visibleFrom="sm">
+          {filterFields}
         </Group>
 
         {loading ? (
@@ -206,34 +279,55 @@ const ManagersTab = () => {
             <Loader />
           </Center>
         ) : (
-          <Table.ScrollContainer minWidth={940}>
-            <Table verticalSpacing="sm" highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
-                  <SortableTh field="email" label="Email" sort={sort} order={order} onSort={toggleSort} />
-                  <Table.Th>Phone</Table.Th>
-                  <Table.Th>Employee type</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                  <SortableTh field="createdAt" label="Added" sort={sort} order={order} onSort={toggleSort} />
-                  <Table.Th />
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {rows.length ? (
-                  rows
-                ) : (
+          <>
+            <Stack gap="xs" hiddenFrom="sm">
+              {result.data.length ? (
+                result.data.map((user) => (
+                  <ManagerCard
+                    key={user.id}
+                    user={user}
+                    busy={busyId === user.id}
+                    onEdit={() => setModal({ open: true, user })}
+                    onToggleActive={() => handleToggleActive(user)}
+                    onResendInvite={() => handleResendInvite(user)}
+                  />
+                ))
+              ) : (
+                <Text c="dimmed" ta="center" py="md" size="sm">
+                  No managers match the current filters
+                </Text>
+              )}
+            </Stack>
+
+            <Table.ScrollContainer minWidth={940} visibleFrom="sm">
+              <Table verticalSpacing="sm" highlightOnHover>
+                <Table.Thead>
                   <Table.Tr>
-                    <Table.Td colSpan={7}>
-                      <Text c="dimmed" ta="center" py="md">
-                        No managers match the current filters
-                      </Text>
-                    </Table.Td>
+                    <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
+                    <SortableTh field="email" label="Email" sort={sort} order={order} onSort={toggleSort} />
+                    <Table.Th>Phone</Table.Th>
+                    <Table.Th>Employee type</Table.Th>
+                    <Table.Th>Status</Table.Th>
+                    <SortableTh field="createdAt" label="Added" sort={sort} order={order} onSort={toggleSort} />
+                    <Table.Th />
                   </Table.Tr>
-                )}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+                </Table.Thead>
+                <Table.Tbody>
+                  {rows.length ? (
+                    rows
+                  ) : (
+                    <Table.Tr>
+                      <Table.Td colSpan={7}>
+                        <Text c="dimmed" ta="center" py="md">
+                          No managers match the current filters
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </>
         )}
 
         <ListPagination pagination={result.pagination} limit={limit} onPageChange={setPage} onLimitChange={setLimit} />
@@ -248,6 +342,44 @@ const ManagersTab = () => {
     </Card>
   );
 };
+
+const CrewCard = ({ employee, busy, onEdit, onToggleActive }) => (
+  <Paper withBorder radius="md" p="sm">
+    <Stack gap={6}>
+      <Group justify="space-between" wrap="nowrap" align="flex-start">
+        <Text fw={600} size="sm" truncate>
+          {employee.name}
+        </Text>
+        <Badge variant="light" color={employee.active ? 'green' : 'gray'} size="sm">
+          {employee.active ? 'Active' : 'Inactive'}
+        </Badge>
+      </Group>
+      <Group gap={6} wrap="wrap">
+        {employee.phone ? (
+          <Text size="xs" c="dimmed">
+            {employee.phone}
+          </Text>
+        ) : null}
+        <Badge variant="outline" color="gray" size="sm">
+          {employee.employeeType || '—'}
+        </Badge>
+        {employee.employeeCategory ? (
+          <Badge variant="outline" color="gray" size="sm">
+            {employee.employeeCategory}
+          </Badge>
+        ) : null}
+      </Group>
+      <Group gap="xs" wrap="wrap">
+        <Button size="xs" variant="default" onClick={onEdit}>
+          Edit
+        </Button>
+        <Button size="xs" variant="light" color={employee.active ? 'red' : 'green'} loading={busy} onClick={onToggleActive}>
+          {employee.active ? 'Deactivate' : 'Reactivate'}
+        </Button>
+      </Group>
+    </Stack>
+  </Paper>
+);
 
 const CrewTab = () => {
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
@@ -294,6 +426,35 @@ const CrewTab = () => {
     }
   };
 
+  const filterFields = (
+    <>
+      <Select
+        label="Employee type"
+        placeholder="Any employee type"
+        data={EMPLOYEE_TYPE_OPTIONS}
+        value={filters.employeeType || null}
+        onChange={(value) => setFilter('employeeType', value)}
+        clearable
+      />
+      <Select
+        label="Category"
+        placeholder="Any category"
+        data={EMPLOYEE_CATEGORY_OPTIONS}
+        value={filters.employeeCategory || null}
+        onChange={(value) => setFilter('employeeCategory', value)}
+        clearable
+      />
+      <Select
+        label="State"
+        placeholder="Any state"
+        data={ACTIVE_FILTER_OPTIONS}
+        value={filters.active || null}
+        onChange={(value) => setFilter('active', value)}
+        clearable
+      />
+    </>
+  );
+
   const rows = result.data.map((employee) => (
     <Table.Tr key={employee.id}>
       <Table.Td>{employee.name}</Table.Td>
@@ -328,45 +489,36 @@ const CrewTab = () => {
   return (
     <Card withBorder radius="md" p="md">
       <Stack gap="md">
-        <Group gap="sm" wrap="wrap" align="center">
+        <Group gap="sm" wrap="nowrap" align="center">
           <TextInput
             placeholder="Search name"
             value={filters.search || ''}
             onChange={(event) => setFilter('search', event.currentTarget.value)}
-            w={{ base: '100%', sm: 280 }}
+            style={{ flex: 1 }}
           />
-          <Select
-            placeholder="Any employee type"
-            data={EMPLOYEE_TYPE_OPTIONS}
-            value={filters.employeeType || null}
-            onChange={(value) => setFilter('employeeType', value)}
-            clearable
-            w={{ base: '100%', sm: 190 }}
-          />
-          <Select
-            placeholder="Any category"
-            data={EMPLOYEE_CATEGORY_OPTIONS}
-            value={filters.employeeCategory || null}
-            onChange={(value) => setFilter('employeeCategory', value)}
-            clearable
-            w={{ base: '100%', sm: 160 }}
-          />
-          <Select
-            placeholder="Any state"
-            data={ACTIVE_FILTER_OPTIONS}
-            value={filters.active || null}
-            onChange={(value) => setFilter('active', value)}
-            clearable
-            w={{ base: '100%', sm: 150 }}
-          />
+          <Group gap="xs" wrap="nowrap" hiddenFrom="sm">
+            <MobileFilterDrawer
+              title="Filter employees"
+              activeCount={countActive(filters.employeeType, filters.employeeCategory, filters.active)}
+            >
+              {filterFields}
+            </MobileFilterDrawer>
+            <ActionIcon size="lg" radius="md" onClick={openNewEmployee} aria-label="New employee">
+              <NavIcon name="plus" size={18} />
+            </ActionIcon>
+          </Group>
           <Button
-            ml={{ base: 0, sm: 'auto' }}
-            w={{ base: '100%', sm: 'auto' }}
+            visibleFrom="sm"
             leftSection={<NavIcon name="plus" size={16} />}
             onClick={openNewEmployee}
+            style={{ flexShrink: 0 }}
           >
             New employee
           </Button>
+        </Group>
+
+        <Group gap="sm" wrap="wrap" visibleFrom="sm">
+          {filterFields}
         </Group>
 
         {loading ? (
@@ -374,34 +526,54 @@ const CrewTab = () => {
             <Loader />
           </Center>
         ) : (
-          <Table.ScrollContainer minWidth={720}>
-            <Table verticalSpacing="sm" highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
-                  <Table.Th>Phone</Table.Th>
-                  <Table.Th>Employee type</Table.Th>
-                  <Table.Th>Category</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                  <SortableTh field="createdAt" label="Added" sort={sort} order={order} onSort={toggleSort} />
-                  <Table.Th />
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {rows.length ? (
-                  rows
-                ) : (
+          <>
+            <Stack gap="xs" hiddenFrom="sm">
+              {result.data.length ? (
+                result.data.map((employee) => (
+                  <CrewCard
+                    key={employee.id}
+                    employee={employee}
+                    busy={busyId === employee.id}
+                    onEdit={() => setModal({ open: true, employee })}
+                    onToggleActive={() => handleToggleActive(employee)}
+                  />
+                ))
+              ) : (
+                <Text c="dimmed" ta="center" py="md" size="sm">
+                  No employees match the current filters
+                </Text>
+              )}
+            </Stack>
+
+            <Table.ScrollContainer minWidth={720} visibleFrom="sm">
+              <Table verticalSpacing="sm" highlightOnHover>
+                <Table.Thead>
                   <Table.Tr>
-                    <Table.Td colSpan={7}>
-                      <Text c="dimmed" ta="center" py="md">
-                        No employees match the current filters
-                      </Text>
-                    </Table.Td>
+                    <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
+                    <Table.Th>Phone</Table.Th>
+                    <Table.Th>Employee type</Table.Th>
+                    <Table.Th>Category</Table.Th>
+                    <Table.Th>Status</Table.Th>
+                    <SortableTh field="createdAt" label="Added" sort={sort} order={order} onSort={toggleSort} />
+                    <Table.Th />
                   </Table.Tr>
-                )}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+                </Table.Thead>
+                <Table.Tbody>
+                  {rows.length ? (
+                    rows
+                  ) : (
+                    <Table.Tr>
+                      <Table.Td colSpan={7}>
+                        <Text c="dimmed" ta="center" py="md">
+                          No employees match the current filters
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </>
         )}
 
         <ListPagination pagination={result.pagination} limit={limit} onPageChange={setPage} onLimitChange={setLimit} />

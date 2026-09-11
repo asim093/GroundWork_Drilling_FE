@@ -18,6 +18,7 @@ import {
 } from '@mantine/core';
 import { DatePickerInput, TimePicker } from '@mantine/dates';
 import { AppLayout } from '../../components/AppLayout.jsx';
+import { NavIcon } from '../../components/NavIcon.jsx';
 import { ADMIN_NAV, OPERATOR_NAV } from '../../constants/nav.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -33,9 +34,8 @@ import {
 } from '../../lib/timeLogForm.js';
 import {
   addClockHours,
+  buildSubmitIssues,
   clockDuration,
-  findActivityCoverageGap,
-  findActivityLineOverlap,
   totalLineHours,
   validateActivityLines
 } from '../../lib/timeLogMath.js';
@@ -53,14 +53,6 @@ import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
 const FIELD_SIZE = 'sm';
-
-const COMPUTED_INPUT_STYLES = {
-  input: {
-    backgroundColor: 'var(--mantine-color-brand-0)',
-    color: 'var(--mantine-color-brand-9)',
-    fontWeight: 600
-  }
-};
 
 const idOf = (value) => value?.id || value?._id || value || '';
 
@@ -152,17 +144,6 @@ const JobFact = ({ label, value }) => (
   </div>
 );
 
-const StatTile = ({ label, value }) => (
-  <Paper radius="md" p="sm" bg="var(--mantine-color-brand-0)">
-    <Text fw={700} fz="lg" lh={1.2}>
-      {value}
-    </Text>
-    <Text size="xs" c="dimmed" mt={2}>
-      {label}
-    </Text>
-  </Paper>
-);
-
 const filledValue = (value) => value !== '' && value !== null && value !== undefined;
 
 export const TimeLogFormPage = () => {
@@ -177,6 +158,7 @@ export const TimeLogFormPage = () => {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [lineErrors, setLineErrors] = useState({});
+  const [consumableErrors, setConsumableErrors] = useState({});
   const [activityGroups, setActivityGroups] = useState([]);
   const [consumableGroups, setConsumableGroups] = useState([]);
   const workTimeEdited = useRef({ timeStarted: false, timeFinished: false });
@@ -359,26 +341,15 @@ export const TimeLogFormPage = () => {
   };
 
   const handleSubmit = async () => {
-    if (form.timeIn && form.timeOut) {
-      const overlap = findActivityLineOverlap(form.activityLines, form.timeIn, form.timeOut);
-      if (overlap?.type === 'reversed') {
-        setGapModal(`Line ${overlap.index + 1}: Time To must be after Time From.`);
-        return;
-      }
-      if (overlap?.type === 'overlap') {
-        setGapModal(
-          `Lines ${overlap.indexA + 1} and ${overlap.indexB + 1} overlap — activity lines can't cover the same time twice.`
-        );
-        return;
-      }
-      const gap = findActivityCoverageGap(form.activityLines, form.timeIn, form.timeOut);
-      if (gap) {
-        setGapModal(
-          `You're missing an activity between ${gap.from} and ${gap.to} — please add it before submitting.`
-        );
-        return;
-      }
+    const { issues, lineErrors: issueLineErrors, consumableErrors: issueConsumableErrors } =
+      buildSubmitIssues(form);
+    if (issues.length) {
+      setLineErrors(issueLineErrors);
+      setConsumableErrors(issueConsumableErrors);
+      setGapModal(issues);
+      return;
     }
+    setConsumableErrors({});
 
     setSubmitting(true);
 
@@ -394,11 +365,11 @@ export const TimeLogFormPage = () => {
       if (serverLineErrors) {
         setLineErrors(serverLineErrors);
       }
-      const message = extractErrorMessage(error, 'Unable to submit time log');
-      if (/missing an activity between|overlap|Time To must be after/i.test(message)) {
-        setGapModal(message);
+      const serverIssues = error?.response?.data?.issues;
+      if (Array.isArray(serverIssues) && serverIssues.length) {
+        setGapModal(serverIssues);
       } else {
-        notifyError(message);
+        notifyError(extractErrorMessage(error, 'Unable to submit time log'));
       }
     } finally {
       setSubmitting(false);
@@ -523,40 +494,55 @@ export const TimeLogFormPage = () => {
             stretch
           >
             <Stack gap="lg">
-              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                <DatePickerInput
-                  label="Date"
-                  size={FIELD_SIZE}
-                  value={form.date}
-                  valueFormat="DD MMM YYYY"
-                  disabled={readOnly}
-                  onChange={(value) => setField('date', value)}
-                />
-                <Select
-                  label="Shift"
-                  size={FIELD_SIZE}
-                  placeholder="Select shift"
-                  data={shiftOptions}
-                  value={form.shift}
-                  disabled={shiftLocked}
-                  onChange={(value) => setField('shift', value)}
-                  allowDeselect={false}
-                />
-                <TextInput
-                  label="Hours on site"
-                  size={FIELD_SIZE}
-                  value={hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview}`}
-                  readOnly
-                  disabled
-                  styles={COMPUTED_INPUT_STYLES}
-                />
-              </SimpleGrid>
+              <Group wrap="wrap" gap="md" align="flex-end">
+                <Box style={{ flex: '1 1 180px' }}>
+                  <DatePickerInput
+                    label="Date"
+                    size={FIELD_SIZE}
+                    value={form.date}
+                    valueFormat="DD MMM YYYY"
+                    disabled={readOnly}
+                    onChange={(value) => setField('date', value)}
+                  />
+                </Box>
+                <Box style={{ flex: '1 1 180px' }}>
+                  <Select
+                    label="Shift"
+                    size={FIELD_SIZE}
+                    placeholder="Select shift"
+                    data={shiftOptions}
+                    value={form.shift}
+                    disabled={shiftLocked}
+                    onChange={(value) => setField('shift', value)}
+                    allowDeselect={false}
+                  />
+                </Box>
+                <Group
+                  gap={10}
+                  wrap="nowrap"
+                  py={6}
+                  px="md"
+                  style={{ borderRadius: 8, background: 'var(--mantine-color-brand-0)' }}
+                >
+                  <Box c="brand.7" style={{ display: 'flex' }}>
+                    <NavIcon name="calendar" size={16} />
+                  </Box>
+                  <Stack gap={0}>
+                    <Text size="xs" c="brand.8" fw={600}>
+                      Hours on site
+                    </Text>
+                    <Text size="md" fw={700} c="brand.9" lh={1.2}>
+                      {hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview} h`}
+                    </Text>
+                  </Stack>
+                </Group>
+              </Group>
 
               <SubGroup
                 title="Site &amp; work times"
                 caption="Time In / Out sets hours on site and bounds the activity lines. Time Started / Finished default to 2 hours inside Time In / Out — adjust if needed."
               >
-                <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
+                <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="md">
                   <TimePicker
                     label="Time In"
                     size={FIELD_SIZE}
@@ -621,9 +607,19 @@ export const TimeLogFormPage = () => {
             />
 
             <Box>
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                <StatTile label="Total Hours" value={`${totalHours} h`} />
-              </SimpleGrid>
+              <Group
+                justify="space-between"
+                wrap="nowrap"
+                p="sm"
+                style={{ borderRadius: 8, background: 'var(--mantine-color-brand-0)' }}
+              >
+                <Text size="sm" fw={600} c="brand.9">
+                  Total Hours
+                </Text>
+                <Text size="lg" fw={700} c="brand.9">
+                  {totalHours} h
+                </Text>
+              </Group>
               <Text size="xs" c="dimmed" mt="xs">
                 Activity lines must fully cover the shift's Time In to Time Out window before you can submit.
               </Text>
@@ -641,7 +637,11 @@ export const TimeLogFormPage = () => {
             items={form.consumables}
             disabled={readOnly}
             groupedOptions={consumableGroups}
-            onChange={(items) => setField('consumables', items)}
+            errors={consumableErrors}
+            onChange={(items) => {
+              setConsumableErrors({});
+              setField('consumables', items);
+            }}
           />
         </PanelCard>
 
@@ -698,13 +698,19 @@ export const TimeLogFormPage = () => {
       </Stack>
 
       <Modal
-        opened={Boolean(gapModal)}
+        opened={Boolean(gapModal?.length)}
         onClose={() => setGapModal(null)}
-        title="Activity lines don't cover the full shift"
+        title="Fix these before submitting"
         centered
       >
         <Stack gap="md">
-          <Text size="sm">{gapModal}</Text>
+          <Stack gap={6} component="ul" pl="md" style={{ margin: 0 }}>
+            {(gapModal || []).map((issue) => (
+              <Text key={issue} size="sm" component="li">
+                {issue}
+              </Text>
+            ))}
+          </Stack>
           <Group justify="flex-end">
             <Button size="sm" onClick={() => setGapModal(null)}>
               Got it

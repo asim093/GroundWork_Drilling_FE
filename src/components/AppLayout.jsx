@@ -115,20 +115,15 @@ export const AppLayout = ({ navItems = [], children }) => {
             )}
           </Group>
 
-          <Group gap="sm" wrap="nowrap" hiddenFrom="sm" style={{ flexShrink: 0 }}>
-            <BrandMark size={26} />
-            <Text fw={700} truncate visibleFrom="xs">
-              Groundwork Drilling
-            </Text>
-          </Group>
-
           <Text fw={600} fz="lg" px="md" truncate style={{ flex: 1, minWidth: 0 }}>
             {pageTitle}
           </Text>
 
           <Group gap="xs" wrap="nowrap" pr="md" style={{ flexShrink: 0 }}>
             <NotificationBell />
-            <HeaderCreateMenu actions={quickActions} />
+            <Box visibleFrom="sm">
+              <HeaderCreateMenu actions={quickActions} />
+            </Box>
           </Group>
         </Group>
       </AppShell.Header>

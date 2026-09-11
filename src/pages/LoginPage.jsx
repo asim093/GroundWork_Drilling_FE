@@ -11,6 +11,7 @@ import {
   Title
 } from '@mantine/core';
 import { useAuth } from '../context/AuthContext.jsx';
+import { DEFAULT_ROUTE } from '../constants/nav.js';
 import { extractErrorMessage } from '../services/api.js';
 import { notifyError, notifySuccess } from '../lib/toast.js';
 
@@ -29,7 +30,7 @@ export const LoginPage = () => {
     try {
       const user = await login(email.trim(), password);
       notifySuccess('Signed in successfully');
-      const fallback = user.role === 'admin' ? '/admin' : '/operator';
+      const fallback = DEFAULT_ROUTE[user.role] || DEFAULT_ROUTE.operator;
       navigate(location.state?.from?.pathname || fallback, { replace: true });
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to sign in. Please check your credentials.'));

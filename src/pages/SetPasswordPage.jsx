@@ -12,6 +12,7 @@ import {
   Title
 } from '@mantine/core';
 import { useAuth } from '../context/AuthContext.jsx';
+import { DEFAULT_ROUTE } from '../constants/nav.js';
 import { acceptInvite, fetchInvite } from '../services/authService.js';
 import { extractErrorMessage } from '../services/api.js';
 import { notifyError, notifySuccess } from '../lib/toast.js';
@@ -63,7 +64,7 @@ export const SetPasswordPage = () => {
       const { token: sessionToken, user } = await acceptInvite(token, password);
       applySession(sessionToken, user);
       notifySuccess('Your password has been set');
-      navigate(user.role === 'admin' ? '/admin' : '/operator', { replace: true });
+      navigate(DEFAULT_ROUTE[user.role] || DEFAULT_ROUTE.operator, { replace: true });
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to set your password'));
     } finally {

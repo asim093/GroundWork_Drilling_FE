@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { Center, Loader } from '@mantine/core';
 import { useAuth } from '../context/AuthContext.jsx';
+import { DEFAULT_ROUTE } from '../constants/nav.js';
 
 export const RoleLanding = () => {
   const { initializing, isAuthenticated, user } = useAuth();
@@ -17,5 +18,5 @@ export const RoleLanding = () => {
     return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to={user.role === 'admin' ? '/admin' : '/operator'} replace />;
+  return <Navigate to={DEFAULT_ROUTE[user.role] || DEFAULT_ROUTE.operator} replace />;
 };

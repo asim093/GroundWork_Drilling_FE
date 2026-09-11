@@ -9,3 +9,8 @@ export const OPERATOR_NAV = [
   { to: '/operator/jobs', label: 'Assigned Jobs', icon: 'jobs' },
   { to: '/operator/submissions', label: 'My Submissions', icon: 'clipboard' }
 ];
+
+export const DEFAULT_ROUTE = {
+  admin: ADMIN_NAV[0].to,
+  operator: OPERATOR_NAV[0].to
+};

@@ -28,6 +28,22 @@ export const formatClockHours = (value) => {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
+/** "18:00" -> "6:00 PM" */
+export const formatClock12h = (hhmm) => {
+  const match = /^(\d{1,2}):(\d{2})/.exec(hhmm || '');
+  if (!match) {
+    return hhmm || '';
+  }
+  const hours = Number(match[1]);
+  const minutes = match[2];
+  const period = hours >= 12 ? 'PM' : 'AM';
+  let hour12 = hours % 12;
+  if (hour12 === 0) {
+    hour12 = 12;
+  }
+  return `${hour12}:${minutes} ${period}`;
+};
+
 export const clockDuration = (from, to) => {
   const start = parseClockHours(from);
   const end = parseClockHours(to);
@@ -127,29 +143,34 @@ export const findActivityLineOverlap = (lines, timeIn, timeOut) => {
   return null;
 };
 
-/** Returns the first uncovered { from, to } range (HH:MM strings) between timeIn and timeOut, or null. */
-export const findActivityCoverageGap = (lines, timeIn, timeOut) => {
+/** Returns every uncovered { from, to } range (HH:MM strings) between timeIn and timeOut. */
+export const findActivityCoverageGaps = (lines, timeIn, timeOut) => {
   const normalized = normalizeLineRanges(lines, timeIn, timeOut);
   if (!normalized) {
-    return null;
+    return [];
   }
   const { start, end, ranges } = normalized;
   const sorted = [...ranges].sort((a, b) => a.from - b.from);
 
+  const gaps = [];
   let cursor = start;
   for (const range of sorted) {
     if (range.from > cursor) {
-      return { from: formatClockHours(cursor % 24), to: formatClockHours(range.from % 24) };
+      gaps.push({ from: formatClockHours(cursor % 24), to: formatClockHours(range.from % 24) });
     }
     if (range.to > cursor) {
       cursor = range.to;
     }
   }
   if (cursor < end) {
-    return { from: formatClockHours(cursor % 24), to: formatClockHours(end % 24) };
+    gaps.push({ from: formatClockHours(cursor % 24), to: formatClockHours(end % 24) });
   }
-  return null;
+  return gaps;
 };
+
+/** Back-compat: first gap only, or null. */
+export const findActivityCoverageGap = (lines, timeIn, timeOut) =>
+  findActivityCoverageGaps(lines, timeIn, timeOut)[0] || null;
 
 export const validateActivityLines = (lines, shift = {}) => {
   const errors = {};
@@ -193,4 +214,52 @@ export const validateActivityLines = (lines, shift = {}) => {
   }
 
   return Object.keys(errors).length ? errors : null;
+};
+
+/**
+ * Collects every blocking issue for Submit in one pass (missing activity, missing consumable
+ * item, reversed/overlapping lines, and every coverage gap) so the popup can list them all
+ * at once instead of stopping at the first one found.
+ */
+export const buildSubmitIssues = (form) => {
+  const issues = [];
+  const lineErrors = {};
+  const consumableErrors = {};
+
+  (form.activityLines || []).forEach((line, index) => {
+    if (!line.activityId && !line.description) {
+      lineErrors[index] = { ...lineErrors[index], activityId: 'Select an activity' };
+      issues.push(`Activity line ${index + 1}: select an activity.`);
+    }
+  });
+
+  (form.consumables || []).forEach((item, index) => {
+    const hasQty = item.qtyTaken !== '' || item.qtyReturned !== '' || item.qtyUsed !== '';
+    if (hasQty && !item.itemName) {
+      consumableErrors[index] = 'Select an item';
+      issues.push(`Consumable row ${index + 1}: select an item.`);
+    }
+  });
+
+  if (form.timeIn && form.timeOut) {
+    const overlap = findActivityLineOverlap(form.activityLines, form.timeIn, form.timeOut);
+    if (overlap?.type === 'reversed') {
+      lineErrors[overlap.index] = { ...lineErrors[overlap.index], timeTo: 'Time to must be after time from' };
+      issues.push(`Activity line ${overlap.index + 1}: Time To must be after Time From.`);
+    } else if (overlap?.type === 'overlap') {
+      lineErrors[overlap.indexA] = { ...lineErrors[overlap.indexA], timeTo: 'Overlaps another line' };
+      lineErrors[overlap.indexB] = { ...lineErrors[overlap.indexB], timeFrom: 'Overlaps another line' };
+      issues.push(
+        `Activity lines ${overlap.indexA + 1} and ${overlap.indexB + 1} overlap — they can't cover the same time twice.`
+      );
+    } else {
+      findActivityCoverageGaps(form.activityLines, form.timeIn, form.timeOut).forEach((gap) => {
+        issues.push(
+          `You're missing an activity between ${formatClock12h(gap.from)} and ${formatClock12h(gap.to)} — please add it before submitting.`
+        );
+      });
+    }
+  }
+
+  return { issues, lineErrors, consumableErrors };
 };
