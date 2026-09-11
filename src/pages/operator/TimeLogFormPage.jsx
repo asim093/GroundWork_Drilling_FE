@@ -550,7 +550,6 @@ export const TimeLogFormPage = () => {
 
               <SubGroup
                 title="Site &amp; work times"
-                caption="Time In / Out sets hours on site and bounds the activity lines. Time Started / Finished default to 2 hours inside Time In / Out — adjust if needed."
               >
                 <SimpleGrid cols={{ base: 2, xl: 4 }} spacing="md">
                   <TimePicker
