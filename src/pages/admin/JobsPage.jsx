@@ -146,6 +146,40 @@ export const JobsPage = () => {
     setFilter('search', debouncedSearch);
   }, [debouncedSearch, setFilter]);
 
+  const filterFieldsDesktop = (
+    <>
+      <Select
+        placeholder="All managers"
+        data={managers.map((manager) => ({ value: manager.id, label: manager.name }))}
+        value={filters.assignedUser || null}
+        onChange={(value) => setFilter('assignedUser', value)}
+        searchable
+        clearable
+        size="sm"
+        radius="sm"
+        miw={130}
+      />
+      <Select
+        placeholder="All rigs"
+        data={rigs.map((rig) => ({ value: rig.id, label: rig.name }))}
+        value={filters.rigNumber || null}
+        onChange={(value) => setFilter('rigNumber', value)}
+        searchable
+        clearable
+        size="sm"
+        radius="sm"
+        miw={110}
+      />
+      <DateRangePicker
+        value={{ from: filters.from || '', to: filters.to || '' }}
+        onChange={(range) => setFilters(range)}
+        clearable
+        size="sm"
+        radius="sm"
+      />
+    </>
+  );
+
   const filterFields = (
     <>
       <Select
@@ -228,7 +262,7 @@ export const JobsPage = () => {
 
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="sm" wrap="nowrap" align="center">
+          <Group gap="sm" wrap="nowrap" align="center" hiddenFrom="lg">
             <TextInput
               placeholder="Search job #, client, location or manager"
               value={search}
@@ -236,7 +270,7 @@ export const JobsPage = () => {
               leftSection={<NavIcon name="search" size={15} />}
               style={{ flex: 1, minWidth: 0 }}
             />
-            <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
+            <Group gap="xs" wrap="nowrap">
               <MobileFilterDrawer
                 title="Filter jobs"
                 activeCount={countActive(filters.assignedUser, filters.rigNumber, filters.from || filters.to)}
@@ -244,18 +278,27 @@ export const JobsPage = () => {
                 {filterFields}
               </MobileFilterDrawer>
             </Group>
+          </Group>
+
+          <Group gap="sm" wrap="nowrap" align="center" visibleFrom="lg" style={{ overflow: 'auto' }}>
+            <TextInput
+              placeholder="Search job #, client, location or manager"
+              value={search}
+              onChange={(event) => setSearch(event.currentTarget.value)}
+              leftSection={<NavIcon name="search" size={15} />}
+              style={{ flex: 1, minWidth: 0 }}
+              size="sm"
+              radius="sm"
+            />
+            {filterFieldsDesktop}
             <Button
-              visibleFrom="lg"
               leftSection={<NavIcon name="plus" size={16} />}
               onClick={openNewJob}
               style={{ flexShrink: 0 }}
+              size="sm"
             >
               New job
             </Button>
-          </Group>
-
-          <Group gap="sm" wrap="wrap" visibleFrom="lg">
-            {filterFields}
           </Group>
 
           {loading ? (

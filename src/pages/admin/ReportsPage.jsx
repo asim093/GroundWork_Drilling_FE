@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Center,
   Group,
@@ -11,6 +11,7 @@ import {
   Text,
   Tooltip
 } from '@mantine/core';
+import { ChevronRight } from 'tabler-icons-react';
 import { ReportExportButtons } from '../../components/reports/ReportExportButtons.jsx';
 import { ClientHoursTable } from '../../components/reports/ClientHoursTable.jsx';
 import { PersonHoursTable } from '../../components/reports/PersonHoursTable.jsx';
@@ -324,6 +325,55 @@ export const ReportsPage = () => {
   const [job, setJob] = useState(null);
   const [clientOptions, setClientOptions] = useState([]);
   const [jobOptions, setJobOptions] = useState([]);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const tabsListRef = useRef(null);
+  const scrollCheckTimeoutRef = useRef(null);
+
+  // Check and update scroll state
+  const updateScrollState = () => {
+    if (!tabsListRef.current) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = tabsListRef.current;
+    const tolerance = 5; // pixels
+
+    // Can scroll left if scrollLeft > 0
+    setCanScrollLeft(scrollLeft > tolerance);
+
+    // Can scroll right if there's more content beyond visible area
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - tolerance);
+  };
+
+  // Auto-scroll active tab into view and update scroll state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (tabsListRef.current) {
+        const activeTabElement = tabsListRef.current.querySelector('[role="tab"][aria-selected="true"]');
+        if (activeTabElement) {
+          activeTabElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        }
+        updateScrollState();
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [tab]);
+
+  // Handle scroll events
+  const handleTabsScroll = () => {
+    if (scrollCheckTimeoutRef.current) clearTimeout(scrollCheckTimeoutRef.current);
+    scrollCheckTimeoutRef.current = setTimeout(updateScrollState, 100);
+  };
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => updateScrollState();
+    window.addEventListener('resize', handleResize);
+    updateScrollState(); // Initial check
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (scrollCheckTimeoutRef.current) clearTimeout(scrollCheckTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     getHoursReport({ from: range.from, to: range.to, scope: 'client', client: client || undefined })
@@ -376,48 +426,70 @@ export const ReportsPage = () => {
     <Tabs value={tab} onChange={setTab} keepMounted={false}>
       <Stack gap="lg">
         <Paper withBorder radius="lg" p="md">
-          <Group justify="space-between" wrap="nowrap" align="center" gap="sm">
-            <Tabs.List style={{ flex: '1 1 auto', minWidth: 0 }}>
-              <Tabs.Tab value="hours">Hours</Tabs.Tab>
-              <Tabs.Tab value="consumables">Consumables</Tabs.Tab>
-              <Tabs.Tab value="fuel">Fuel</Tabs.Tab>
-            </Tabs.List>
-            <Group gap="xs" wrap="nowrap" hiddenFrom="sm" style={{ flexShrink: 0 }}>
+          <Stack gap="md">
+            <Group justify="space-between" wrap="nowrap" align="center" gap="sm" style={{ flex: 1 }}>
+              <Tabs.List
+                ref={tabsListRef}
+                onScroll={handleTabsScroll}
+                className={`${canScrollLeft ? 'has-scroll-left' : ''} ${canScrollRight ? 'has-scroll-right' : ''}`.trim()}
+                style={{ flex: '1 1 auto', minWidth: 0, overflow: 'auto' }}
+              >
+                <Tabs.Tab value="hours">Hours</Tabs.Tab>
+                <Tabs.Tab value="consumables">Consumables</Tabs.Tab>
+                <Tabs.Tab value="fuel">Fuel</Tabs.Tab>
+              </Tabs.List>
+
+            </Group>
+            {/* <Group gap="xs" wrap="nowrap" hiddenFrom="sm" style={{ flexShrink: 0 }}>
               <MobileFilterDrawer title="Filter reports" activeCount={[client, job].filter(Boolean).length}>
                 {filterFields}
               </MobileFilterDrawer>
+            </Group> */}
+
+            <Group gap="xs" wrap="nowrap" hiddenFrom="sm" style={{ width: '100%' }}>
+              
+              <div style={{ flexShrink: 0 }}>
+                <MobileFilterDrawer title="Filter reports" activeCount={[client, job].filter(Boolean).length}>
+                  {filterFields}
+                </MobileFilterDrawer>
+              </div>
+              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                <DateRangePicker
+                  value={range}
+                  onChange={setRange}
+                  size="sm"
+                  radius="sm"
+                  style={{ width: '100%' }}
+                />
+              </div>
             </Group>
-          </Group>
 
-          <Group gap="xs" wrap="nowrap" mt="sm" hiddenFrom="sm">
-            <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
-          </Group>
-
-          <Group gap="sm" wrap="wrap" mt="md" visibleFrom="sm">
-            <Select
-              placeholder="All clients"
-              data={clientOptions}
-              value={client}
-              onChange={setClient}
-              clearable
-              size="sm"
-              radius="sm"
-              searchable
-              w={200}
-            />
-            <Select
-              placeholder="All jobs"
-              data={jobOptions}
-              value={job}
-              onChange={setJob}
-              clearable
-              size="sm"
-              radius="sm"
-              searchable
-              w={220}
-            />
-            <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
-          </Group>
+            <Group gap="sm" wrap="nowrap" visibleFrom="sm" style={{ overflow: 'auto' }}>
+              <Select
+                placeholder="All clients"
+                data={clientOptions}
+                value={client}
+                onChange={setClient}
+                clearable
+                size="sm"
+                radius="sm"
+                searchable
+                miw={160}
+              />
+              <Select
+                placeholder="All jobs"
+                data={jobOptions}
+                value={job}
+                onChange={setJob}
+                clearable
+                size="sm"
+                radius="sm"
+                searchable
+                miw={180}
+              />
+              <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
+            </Group>
+          </Stack>
         </Paper>
 
         <Tabs.Panel value="hours">

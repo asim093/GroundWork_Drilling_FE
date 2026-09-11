@@ -15,6 +15,7 @@ import {
   Text,
   TextInput
 } from '@mantine/core';
+import { ChevronRight } from 'tabler-icons-react';
 import { useDebouncedValue } from '@mantine/hooks';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
@@ -64,8 +65,43 @@ export const OperatorJobsPage = () => {
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const [loading, setLoading] = useState(true);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const paramsRef = useRef(queryParams);
+  const tabsListRef = useRef(null);
+  const scrollCheckTimeoutRef = useRef(null);
   paramsRef.current = { ...queryParams, view };
+
+  // Check and update scroll state
+  const updateScrollState = () => {
+    if (!tabsListRef.current) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = tabsListRef.current;
+    const tolerance = 5; // pixels
+
+    // Can scroll left if scrollLeft > 0
+    setCanScrollLeft(scrollLeft > tolerance);
+
+    // Can scroll right if there's more content beyond visible area
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - tolerance);
+  };
+
+  // Handle scroll events
+  const handleTabsScroll = () => {
+    if (scrollCheckTimeoutRef.current) clearTimeout(scrollCheckTimeoutRef.current);
+    scrollCheckTimeoutRef.current = setTimeout(updateScrollState, 100);
+  };
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => updateScrollState();
+    window.addEventListener('resize', handleResize);
+    updateScrollState(); // Initial check
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (scrollCheckTimeoutRef.current) clearTimeout(scrollCheckTimeoutRef.current);
+    };
+  }, []);
 
   const load = useCallback(async ({ silent } = {}) => {
     if (!silent) {
@@ -129,6 +165,41 @@ export const OperatorJobsPage = () => {
       onClick: () => navigate(target)
     };
   };
+
+  const filterFieldsDesktop = (
+    <>
+      <Select
+        placeholder="All rigs"
+        data={result.filters?.rigs || []}
+        value={filters.rig || null}
+        onChange={(value) => setFilter('rig', value)}
+        searchable
+        clearable
+        size="sm"
+        radius="sm"
+        miw={120}
+      />
+      {isCompleted ? null : (
+        <Select
+          placeholder="Any day activity"
+          data={TODAY_FILTER_OPTIONS}
+          value={filters.today || null}
+          onChange={(value) => setFilter('today', value)}
+          clearable
+          size="sm"
+          radius="sm"
+          miw={140}
+        />
+      )}
+      <DateRangePicker
+        value={{ from: filters.from || '', to: filters.to || '' }}
+        onChange={(range) => setFilters({ from: range.from || undefined, to: range.to || undefined })}
+        clearable
+        size="sm"
+        radius="sm"
+      />
+    </>
+  );
 
   const filterFields = (
     <>
@@ -204,20 +275,32 @@ export const OperatorJobsPage = () => {
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
           <Tabs value={view} onChange={setView}>
-            <Tabs.List>
-              <Tabs.Tab value="active">Active</Tabs.Tab>
-              <Tabs.Tab value="completed">Completed</Tabs.Tab>
-            </Tabs.List>
+            <Group pos="relative" gap={0}>
+              <Tabs.List
+                ref={tabsListRef}
+                onScroll={handleTabsScroll}
+                className={`${canScrollLeft ? 'has-scroll-left' : ''} ${canScrollRight ? 'has-scroll-right' : ''}`.trim()}
+                style={{ flex: 1 }}
+              >
+                <Tabs.Tab value="active">Active</Tabs.Tab>
+                <Tabs.Tab value="completed">Completed</Tabs.Tab>
+              </Tabs.List>
+              {canScrollRight && (
+                <div className="tabs-scroll-hint visible">
+                  <ChevronRight size={18} />
+                </div>
+              )}
+            </Group>
           </Tabs>
 
-          <Group gap="sm" wrap="nowrap" align="center">
+          <Group gap="sm" wrap="nowrap" align="center" hiddenFrom="lg">
             <TextInput
               placeholder="Search job #, client or location"
               value={search}
               onChange={(event) => setSearch(event.currentTarget.value)}
               style={{ flex: 1, minWidth: 0 }}
             />
-            <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
+            <Group gap="xs" wrap="nowrap">
               <MobileFilterDrawer
                 title="Filter jobs"
                 activeCount={countActive(filters.rig, filters.today, filters.from || filters.to)}
@@ -227,8 +310,16 @@ export const OperatorJobsPage = () => {
             </Group>
           </Group>
 
-          <Group gap="sm" wrap="wrap" visibleFrom="lg">
-            {filterFields}
+          <Group gap="sm" wrap="nowrap" align="center" visibleFrom="lg" style={{ overflow: 'auto' }}>
+            <TextInput
+              placeholder="Search job #, client or location"
+              value={search}
+              onChange={(event) => setSearch(event.currentTarget.value)}
+              style={{ flex: 0.5, minWidth: 0 }}
+              size="sm"
+              radius="sm"
+            />
+            {filterFieldsDesktop}
           </Group>
 
           {loading ? (

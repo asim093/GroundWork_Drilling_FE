@@ -344,14 +344,14 @@ export const JobDetailsPage = () => {
             </MobileFilterDrawer>
           </Group>
 
-          <Group gap="sm" wrap="wrap" visibleFrom="lg">
+          <Group gap="sm" wrap="nowrap" visibleFrom="lg" style={{ overflow: 'auto' }}>
             <Select
               placeholder="All shifts"
               data={SHIFT_OPTIONS}
               value={logShift}
               onChange={setLogShift}
               clearable
-              w={130}
+              miw={100}
             />
             <Select
               placeholder="All statuses"
@@ -359,7 +359,7 @@ export const JobDetailsPage = () => {
               value={logStatus}
               onChange={setLogStatus}
               clearable
-              w={150}
+              miw={120}
             />
             <DateRangePicker value={logRange} onChange={setLogRange} clearable />
           </Group>

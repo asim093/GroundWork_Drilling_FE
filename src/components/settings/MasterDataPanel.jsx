@@ -157,6 +157,34 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
     </>
   );
 
+  const inlineFilterFields = (
+    <>
+      {extraColumn ? (
+        <Select
+          placeholder={extraColumn.filterPlaceholder}
+          data={filterOptions}
+          value={filters[extraColumn.filterParam] || null}
+          onChange={(value) => setFilter(extraColumn.filterParam, value)}
+          searchable
+          clearable
+          size="sm"
+          radius="sm"
+          miw={150}
+        />
+      ) : null}
+      <Select
+        placeholder="Any state"
+        data={ACTIVE_FILTER_OPTIONS}
+        value={filters.active || null}
+        onChange={(value) => setFilter('active', value)}
+        clearable
+        size="sm"
+        radius="sm"
+        miw={120}
+      />
+    </>
+  );
+
   const rows = result.data.map((record) => (
     <Table.Tr key={record.id}>
       <Table.Td>{record.name}</Table.Td>
@@ -189,14 +217,14 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
   return (
     <Card withBorder radius="md" p="md">
       <Stack gap="md">
-        <Group gap="sm" wrap="nowrap" align="center">
+        <Group gap="sm" wrap="nowrap" align="center" hiddenFrom="lg">
           <TextInput
             placeholder={`Search ${plural.toLowerCase()}`}
             value={filters.search || ''}
             onChange={(event) => setFilter('search', event.currentTarget.value)}
-            style={{ flex: 1 }}
+            style={{ flex: 1, minWidth: 0 }}
           />
-          <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
+          <Group gap="xs" wrap="nowrap">
             <MobileFilterDrawer
               title={`Filter ${plural.toLowerCase()}`}
               activeCount={countActive(extraColumn ? filters[extraColumn.filterParam] : null, filters.active)}
@@ -204,17 +232,27 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
               {filterFields}
             </MobileFilterDrawer>
           </Group>
+        </Group>
+
+        <Group gap="sm" wrap="nowrap" align="center" justify="space-between" visibleFrom="lg">
+          <Group gap="sm" wrap="nowrap" align="center" style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+            <TextInput
+              placeholder={`Search ${plural.toLowerCase()}`}
+              value={filters.search || ''}
+              onChange={(event) => setFilter('search', event.currentTarget.value)}
+              style={{ flex: 0.5, minWidth: 0 }}
+              size="sm"
+              radius="sm"
+            />
+            {inlineFilterFields}
+          </Group>
           <Button
-            visibleFrom="lg"
             onClick={openCreate}
             style={{ flexShrink: 0 }}
+            size="sm"
           >
             New {singular.toLowerCase()}
           </Button>
-        </Group>
-
-        <Group gap="sm" wrap="wrap" visibleFrom="lg">
-          {filterFields}
         </Group>
 
         {loading ? (

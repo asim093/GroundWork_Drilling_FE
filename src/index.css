@@ -29,20 +29,93 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Tabs scroll horizontally instead of wrapping onto a second row (Settings/Reports on mobile). */
+/* Tabs: horizontal scroll on all screen sizes, with conditional fade gradients. */
 .mantine-Tabs-list {
   flex-wrap: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
+  /* Hide scrollbar for webkit browsers */
+  -webkit-scrollbar-width: none;
+  scroll-behavior: smooth;
+  /* Default: no mask (will be applied conditionally based on scroll state) */
+  mask-image: none;
+  -webkit-mask-image: none;
+  transition: mask-image 200ms ease, -webkit-mask-image 200ms ease;
 }
 
-.mantine-Tabs-list::-webkit-scrollbar {
-  display: none;
+/* Show fade when user has scrolled right (content hidden on left) */
+.mantine-Tabs-list.has-scroll-left {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 100%
+  );
+}
+
+/* Show fade when more content available to scroll right */
+.mantine-Tabs-list.has-scroll-right {
+  mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black 85%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black 0%,
+    black 85%,
+    transparent 100%
+  );
+}
+
+/* Show both fades when user can scroll in both directions */
+.mantine-Tabs-list.has-scroll-left.has-scroll-right {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 85%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 85%,
+    transparent 100%
+  );
 }
 
 .mantine-Tabs-tab {
   flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Scroll hint arrow - positioned absolutely, overlaid on top of tabs */
+.tabs-scroll-hint {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--mantine-color-gray-4);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  z-index: 10;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.tabs-scroll-hint.visible {
+  opacity: 1;
 }
 
 /* Modal footer action rows never wrap onto a second line, even on narrow phones. */

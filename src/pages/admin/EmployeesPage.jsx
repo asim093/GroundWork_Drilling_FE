@@ -164,6 +164,41 @@ const ManagersTab = () => {
     }
   };
 
+  const filterFieldsDesktop = (
+    <>
+      <Select
+        placeholder="Any account"
+        data={STATUS_FILTER_OPTIONS}
+        value={filters.status || null}
+        onChange={(value) => setFilter('status', value)}
+        clearable
+        size="sm"
+        radius="sm"
+        miw={130}
+      />
+      <Select
+        placeholder="Any state"
+        data={ACTIVE_FILTER_OPTIONS}
+        value={filters.active || null}
+        onChange={(value) => setFilter('active', value)}
+        clearable
+        size="sm"
+        radius="sm"
+        miw={120}
+      />
+      <Select
+        placeholder="Any manager type"
+        data={MANAGER_TYPE_OPTIONS}
+        value={filters.employeeType || null}
+        onChange={(value) => setFilter('employeeType', value)}
+        clearable
+        size="sm"
+        radius="sm"
+        miw={130}
+      />
+    </>
+  );
+
   const filterFields = (
     <>
       <Select
@@ -242,14 +277,14 @@ const ManagersTab = () => {
   return (
     <Card withBorder radius="md" p="md">
       <Stack gap="md">
-        <Group gap="sm" wrap="nowrap" align="center">
+        <Group gap="sm" wrap="nowrap" align="center" hiddenFrom="lg">
           <TextInput
             placeholder="Search name or email"
             value={filters.search || ''}
             onChange={(event) => setFilter('search', event.currentTarget.value)}
-            style={{ flex: 1 }}
+            style={{ flex: 1, minWidth: 0 }}
           />
-          <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
+          <Group gap="xs" wrap="nowrap">
             <MobileFilterDrawer
               title="Filter managers"
               activeCount={countActive(filters.status, filters.active, filters.employeeType)}
@@ -257,18 +292,26 @@ const ManagersTab = () => {
               {filterFields}
             </MobileFilterDrawer>
           </Group>
+        </Group>
+
+        <Group gap="sm" wrap="nowrap" align="center" visibleFrom="lg" style={{ overflow: 'auto' }}>
+          <TextInput
+            placeholder="Search name or email"
+            value={filters.search || ''}
+            onChange={(event) => setFilter('search', event.currentTarget.value)}
+            style={{ flex: 1, minWidth: 0 }}
+            size="sm"
+            radius="sm"
+          />
+          {filterFieldsDesktop}
           <Button
-            visibleFrom="lg"
             leftSection={<NavIcon name="plus" size={16} />}
             onClick={openNewManager}
             style={{ flexShrink: 0 }}
+            size="sm"
           >
             New manager
           </Button>
-        </Group>
-
-        <Group gap="sm" wrap="wrap" visibleFrom="lg">
-          {filterFields}
         </Group>
 
         {loading ? (
@@ -425,6 +468,41 @@ const CrewTab = () => {
     }
   };
 
+  const filterFieldsDesktop = (
+    <>
+      <Select
+        placeholder="Any employee type"
+        data={EMPLOYEE_TYPE_OPTIONS}
+        value={filters.employeeType || null}
+        onChange={(value) => setFilter('employeeType', value)}
+        clearable
+        size="sm"
+        radius="sm"
+        miw={140}
+      />
+      <Select
+        placeholder="Any category"
+        data={EMPLOYEE_CATEGORY_OPTIONS}
+        value={filters.employeeCategory || null}
+        onChange={(value) => setFilter('employeeCategory', value)}
+        clearable
+        size="sm"
+        radius="sm"
+        miw={130}
+      />
+      <Select
+        placeholder="Any state"
+        data={ACTIVE_FILTER_OPTIONS}
+        value={filters.active || null}
+        onChange={(value) => setFilter('active', value)}
+        clearable
+        size="sm"
+        radius="sm"
+        miw={110}
+      />
+    </>
+  );
+
   const filterFields = (
     <>
       <Select
@@ -488,14 +566,14 @@ const CrewTab = () => {
   return (
     <Card withBorder radius="md" p="md">
       <Stack gap="md">
-        <Group gap="sm" wrap="nowrap" align="center">
+        <Group gap="sm" wrap="nowrap" align="center" hiddenFrom="lg">
           <TextInput
             placeholder="Search name"
             value={filters.search || ''}
             onChange={(event) => setFilter('search', event.currentTarget.value)}
-            style={{ flex: 1 }}
+            style={{ flex: 1, minWidth: 0 }}
           />
-          <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
+          <Group gap="xs" wrap="nowrap">
             <MobileFilterDrawer
               title="Filter employees"
               activeCount={countActive(filters.employeeType, filters.employeeCategory, filters.active)}
@@ -503,18 +581,26 @@ const CrewTab = () => {
               {filterFields}
             </MobileFilterDrawer>
           </Group>
+        </Group>
+
+        <Group gap="sm" wrap="nowrap" align="center" visibleFrom="lg" style={{ overflow: 'auto' }}>
+          <TextInput
+            placeholder="Search name"
+            value={filters.search || ''}
+            onChange={(event) => setFilter('search', event.currentTarget.value)}
+            style={{ flex: 1, minWidth: 0 }}
+            size="sm"
+            radius="sm"
+          />
+          {filterFieldsDesktop}
           <Button
-            visibleFrom="lg"
             leftSection={<NavIcon name="plus" size={16} />}
             onClick={openNewEmployee}
             style={{ flexShrink: 0 }}
+            size="sm"
           >
             New employee
           </Button>
-        </Group>
-
-        <Group gap="sm" wrap="wrap" visibleFrom="lg">
-          {filterFields}
         </Group>
 
         {loading ? (

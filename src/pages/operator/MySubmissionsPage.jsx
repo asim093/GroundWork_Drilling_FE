@@ -55,6 +55,39 @@ export const MySubmissionsPage = () => {
     loadJobs();
   }, [loadJobs]);
 
+  const filterFieldsDesktop = (
+    <>
+      <Select
+        placeholder="All statuses"
+        data={TIME_LOG_STATUS_OPTIONS}
+        value={filters.status || null}
+        onChange={(value) => setFilter('status', value)}
+        clearable
+        size="sm"
+        radius="sm"
+        miw={120}
+      />
+      <Select
+        placeholder="All jobs"
+        data={jobs.map((job) => ({ value: job.id, label: `${job.jobNumber} — ${job.clientName}` }))}
+        value={filters.job || null}
+        onChange={(value) => setFilter('job', value)}
+        searchable
+        clearable
+        size="sm"
+        radius="sm"
+        miw={180}
+      />
+      <DateRangePicker
+        value={{ from: filters.from || '', to: filters.to || '' }}
+        onChange={(range) => setFilters(range)}
+        clearable
+        size="sm"
+        radius="sm"
+      />
+    </>
+  );
+
   const filterFields = (
     <>
       <Select
@@ -120,8 +153,8 @@ export const MySubmissionsPage = () => {
             </MobileFilterDrawer>
           </Group>
 
-          <Group gap="sm" wrap="wrap" align="flex-end" visibleFrom="lg">
-            {filterFields}
+          <Group gap="sm" wrap="nowrap" align="center" visibleFrom="lg" style={{ overflow: 'auto' }}>
+            {filterFieldsDesktop}
           </Group>
 
           {loading ? (
