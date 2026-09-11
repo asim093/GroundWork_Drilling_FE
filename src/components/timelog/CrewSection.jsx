@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Checkbox, Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
+import { Checkbox, Group, Paper, SimpleGrid, Stack, Table, Text } from '@mantine/core';
 import { TimePicker } from '@mantine/dates';
 
 export const CrewSection = ({ crew = [], onChange, roster = [], disabled, shiftTimes }) => {
@@ -47,7 +47,8 @@ export const CrewSection = ({ crew = [], onChange, roster = [], disabled, shiftT
       <Text size="xs" c="dimmed">
         Tick each crew member who worked this shift and record their individual time in and out.
       </Text>
-      <Stack gap="xs">
+
+      <Stack gap="xs" hiddenFrom="lg">
         {orderedRoster.map((employee) => {
           const member = byId.get(employee.id);
           const active = Boolean(member);
@@ -101,6 +102,81 @@ export const CrewSection = ({ crew = [], onChange, roster = [], disabled, shiftT
           );
         })}
       </Stack>
+
+      <Table.ScrollContainer minWidth={480} visibleFrom="lg">
+        <Table verticalSpacing="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th style={{ width: 36 }} />
+              <Table.Th>Name</Table.Th>
+              <Table.Th>Type</Table.Th>
+              <Table.Th>Time in</Table.Th>
+              <Table.Th>Time out</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {orderedRoster.map((employee) => {
+              const member = byId.get(employee.id);
+              const active = Boolean(member);
+              return (
+                <Table.Tr key={employee.id} style={active ? undefined : { opacity: 0.55 }}>
+                  <Table.Td>
+                    <Checkbox
+                      checked={active}
+                      disabled={disabled}
+                      onChange={() => toggle(employee.id)}
+                      aria-label={`${employee.name} worked this shift`}
+                    />
+                  </Table.Td>
+                  <Table.Td>{employee.name}</Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c="dimmed">
+                      {employee.employeeType}
+                    </Text>
+                  </Table.Td>
+                  {active ? (
+                    <>
+                      <Table.Td>
+                        <TimePicker
+                          value={member?.timeIn || ''}
+                          format="12h"
+                          withDropdown
+                          clearable
+                          disabled={disabled}
+                          onChange={(value) => setTime(employee.id, 'timeIn', value)}
+                          aria-label={`${employee.name} time in`}
+                          w={130}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <TimePicker
+                          value={member?.timeOut || ''}
+                          format="12h"
+                          withDropdown
+                          clearable
+                          disabled={disabled}
+                          onChange={(value) => setTime(employee.id, 'timeOut', value)}
+                          aria-label={`${employee.name} time out`}
+                          w={130}
+                        />
+                      </Table.Td>
+                    </>
+                  ) : (
+                    <>
+                      <Table.Td>
+                        <Text c="dimmed">—</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text c="dimmed">—</Text>
+                      </Table.Td>
+                    </>
+                  )}
+                </Table.Tr>
+              );
+            })}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
     </Stack>
   );
 };

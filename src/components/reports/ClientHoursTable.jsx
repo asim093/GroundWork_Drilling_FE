@@ -106,14 +106,21 @@ export const ClientHoursTable = ({ jobs, totals }) => {
                     {isOpen ? (
                       <>
                         <Divider />
-                        <Stack gap={6}>
+                        <Stack gap={8}>
                           {client.jobs.map((job) => (
-                            <Group key={job.jobId} justify="space-between" wrap="wrap">
-                              <Text size="xs">{job.jobNumber || '—'}</Text>
+                            <Stack key={job.jobId} gap={2}>
+                              <Group justify="space-between" wrap="nowrap">
+                                <Text size="xs" fw={600}>
+                                  {job.jobNumber || '—'}
+                                </Text>
+                                <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
+                                  {job.entryCount} shift{job.entryCount === 1 ? '' : 's'}
+                                </Text>
+                              </Group>
                               <Text size="xs" c="dimmed">
-                                {job.entryCount} shift{job.entryCount === 1 ? '' : 's'} · {job.billableHours}h billable · {job.paidHours}h paid
+                                {job.billableHours}h billable · {job.paidHours}h paid
                               </Text>
-                            </Group>
+                            </Stack>
                           ))}
                         </Stack>
                       </>

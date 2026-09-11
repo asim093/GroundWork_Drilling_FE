@@ -552,7 +552,7 @@ export const TimeLogFormPage = () => {
                 title="Site &amp; work times"
                 caption="Time In / Out sets hours on site and bounds the activity lines. Time Started / Finished default to 2 hours inside Time In / Out — adjust if needed."
               >
-                <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="md">
+                <SimpleGrid cols={{ base: 2, xl: 4 }} spacing="md">
                   <TimePicker
                     label="Time In"
                     size={FIELD_SIZE}
@@ -610,6 +610,7 @@ export const TimeLogFormPage = () => {
               errors={shownLineErrors}
               activityGroups={activityGroups}
               shiftTimeIn={form.timeIn}
+              shiftTimeOut={form.timeOut}
               onChange={(lines) => {
                 setLineErrors({});
                 setField('activityLines', lines);

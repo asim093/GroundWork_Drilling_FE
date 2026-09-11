@@ -8,17 +8,17 @@ export const MobileFab = ({ onClick, label = 'Add', hiddenFrom = 'lg' }) => (
     onClick={onClick}
     aria-label={label}
     radius="xl"
-    size={54}
+    size={42}
     variant="filled"
     color="brand"
     style={{
       position: 'fixed',
-      right: 18,
-      bottom: 18,
+      right: 16,
+      bottom: 16,
       zIndex: 200,
       boxShadow: '0 4px 14px rgba(15, 23, 42, 0.28)'
     }}
   >
-    <NavIcon name="plus" size={22} />
+    <NavIcon name="plus" size={17} />
   </ActionIcon>
 );

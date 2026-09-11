@@ -85,14 +85,21 @@ export const PersonHoursTable = ({ people, title, personLabel = 'Employee', show
                     {isOpen ? (
                       <>
                         <Divider />
-                        <Stack gap={6}>
+                        <Stack gap={8}>
                           {person.days.map((day, index) => (
-                            <Group key={index} justify="space-between" wrap="wrap">
-                              <Text size="xs">{formatDate(day.date)}</Text>
+                            <Stack key={index} gap={2}>
+                              <Group justify="space-between" wrap="nowrap">
+                                <Text size="xs" fw={600}>
+                                  {formatDate(day.date)}
+                                </Text>
+                                <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
+                                  {day.hours}h
+                                </Text>
+                              </Group>
                               <Text size="xs" c="dimmed">
-                                {day.jobNumber || '—'} · {day.timeIn || '—'}–{day.timeOut || '—'} · {day.hours}h
+                                {day.jobNumber || '—'} · {day.timeIn || '—'}–{day.timeOut || '—'}
                               </Text>
-                            </Group>
+                            </Stack>
                           ))}
                         </Stack>
                       </>

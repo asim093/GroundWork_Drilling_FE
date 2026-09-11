@@ -50,10 +50,24 @@ body {
   flex-wrap: nowrap;
 }
 
+/* Mantine's mobile nav overlay defaults to 100% width; keep it a proper slide-in
+   panel (not a full-screen takeover) so the page stays visible behind the scrim. */
+@media (max-width: 48em) {
+  .mantine-AppShell-navbar {
+    --app-shell-navbar-width: min(260px, 82vw) !important;
+    width: min(260px, 82vw) !important;
+  }
+}
+
 @media (max-width: 480px) {
+  .mantine-Modal-content {
+    --modal-radius: 12px;
+  }
+
+  .mantine-Modal-header,
   .mantine-Modal-body {
-    padding-left: 4px;
-    padding-right: 4px;
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
 

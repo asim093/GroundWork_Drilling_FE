@@ -3,7 +3,22 @@ import { ActionIcon, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput } 
 import { TimePicker } from '@mantine/dates';
 import { NavIcon } from '../NavIcon.jsx';
 import { BLANK_ACTIVITY_LINE } from '../../constants/timeLogs.js';
-import { lineHours } from '../../lib/timeLogMath.js';
+import { lineHours, parseClockHours } from '../../lib/timeLogMath.js';
+
+/** True once a clock point reaches (or passes) the shift's end, accounting for overnight shifts. */
+const hasReachedShiftEnd = (point, timeIn, timeOut) => {
+  const start = parseClockHours(timeIn);
+  let end = parseClockHours(timeOut);
+  const value = parseClockHours(point);
+  if (start === null || end === null || value === null) {
+    return false;
+  }
+  if (end <= start) {
+    end += 24;
+  }
+  const normalized = value < start ? value + 24 : value;
+  return normalized >= end;
+};
 
 const ERROR_LABELS = {
   activityId: 'Select an activity',
@@ -19,7 +34,8 @@ export const ActivityLinesSection = ({
   disabled,
   errors,
   activityGroups = [],
-  shiftTimeIn = ''
+  shiftTimeIn = '',
+  shiftTimeOut = ''
 }) => {
   const prevShiftTimeIn = useRef(shiftTimeIn);
 
@@ -37,8 +53,23 @@ export const ActivityLinesSection = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shiftTimeIn]);
 
+  // Editing a line's Time From/To can trigger the "chain the next line" auto-add — done
+  // synchronously in the same update (not a separate effect) so it can't race the
+  // TimePicker's own onChange and get clobbered by it.
   const updateLine = (index, patch) => {
-    onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
+    let nextLines = lines.map((line, i) => (i === index ? { ...line, ...patch } : line));
+
+    if (
+      patch.timeTo &&
+      index === lines.length - 1 &&
+      shiftTimeIn &&
+      shiftTimeOut &&
+      !hasReachedShiftEnd(patch.timeTo, shiftTimeIn, shiftTimeOut)
+    ) {
+      nextLines = [...nextLines, { ...BLANK_ACTIVITY_LINE, timeFrom: patch.timeTo }];
+    }
+
+    onChange(nextLines);
   };
 
   const addLine = () => {

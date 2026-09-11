@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
+  ActionIcon,
   Anchor,
   Badge,
   Button,
   Center,
   Group,
   Loader,
+  Paper,
   Select,
   SimpleGrid,
   Stack,
@@ -21,6 +23,7 @@ import { PeopleAssignModal } from '../../components/admin/PeopleAssignModal.jsx'
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
+import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
 import { JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { TIME_LOG_STATUS_COLORS, TIME_LOG_STATUS_OPTIONS } from '../../constants/timeLogs.js';
 import { SHIFT_OPTIONS } from '../../constants/employees.js';
@@ -183,7 +186,21 @@ export const JobDetailsPage = () => {
   return (
     <Stack gap="lg">
       <Group justify="space-between" wrap="wrap" gap="sm">
-        <Button variant="subtle" leftSection={<NavIcon name="chevronLeft" size={16} />} onClick={() => navigate('/admin/jobs')}>
+        <ActionIcon
+          hiddenFrom="sm"
+          variant="subtle"
+          size="lg"
+          onClick={() => navigate('/admin/jobs')}
+          aria-label="Back to jobs"
+        >
+          <NavIcon name="chevronLeft" size={20} />
+        </ActionIcon>
+        <Button
+          visibleFrom="sm"
+          variant="subtle"
+          leftSection={<NavIcon name="chevronLeft" size={16} />}
+          onClick={() => navigate('/admin/jobs')}
+        >
           Back to jobs
         </Button>
         <Text fw={700} fz="lg">
@@ -296,79 +313,142 @@ export const JobDetailsPage = () => {
       />
 
       <SectionCard id="log-history" title="Log history" subtitle="Time logs submitted for this job">
-        <Group gap="sm" wrap="wrap">
-          <Select
-            placeholder="All shifts"
-            data={SHIFT_OPTIONS}
-            value={logShift}
-            onChange={setLogShift}
-            clearable
-            w={130}
-          />
-          <Select
-            placeholder="All statuses"
-            data={TIME_LOG_STATUS_OPTIONS}
-            value={logStatus}
-            onChange={setLogStatus}
-            clearable
-            w={150}
-          />
-          <DateRangePicker
-            value={logRange}
-            onChange={setLogRange}
-            clearable
-          />
-        </Group>
-        <Table.ScrollContainer minWidth={640}>
-          <Table verticalSpacing="sm" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                {th('date', 'Date')}
-                {th('shift', 'Shift')}
-                {th('crewCount', 'Crew')}
-                {th('billableHours', 'Billable hrs')}
-                {th('paidHours', 'Paid hrs')}
-                {th('status', 'Status')}
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {table.data.length ? (
-                table.data.map((row) => (
-                  <Table.Tr
-                    key={row.id}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => navigate(`/admin/time-logs/${row.id}`)}
-                  >
-                    <Table.Td>{formatDate(row.date)}</Table.Td>
-                    <Table.Td>{row.shift}</Table.Td>
-                    <Table.Td>{row.crewCount}</Table.Td>
-                    <Table.Td>{row.billableHours}</Table.Td>
-                    <Table.Td>{row.paidHours}</Table.Td>
-                    <Table.Td>
-                      <Badge variant="light" color={TIME_LOG_STATUS_COLORS[row.status] || 'gray'} tt="capitalize">
+        <Stack gap="md">
+          <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
+            <MobileFilterDrawer
+              title="Filter log history"
+              activeCount={[logShift, logStatus, logRange.from || logRange.to].filter(Boolean).length}
+            >
+              <Select
+                label="Shift"
+                placeholder="All shifts"
+                data={SHIFT_OPTIONS}
+                value={logShift}
+                onChange={setLogShift}
+                clearable
+              />
+              <Select
+                label="Status"
+                placeholder="All statuses"
+                data={TIME_LOG_STATUS_OPTIONS}
+                value={logStatus}
+                onChange={setLogStatus}
+                clearable
+              />
+              <div>
+                <Text size="sm" fw={500} mb={4}>
+                  Date range
+                </Text>
+                <DateRangePicker value={logRange} onChange={setLogRange} clearable />
+              </div>
+            </MobileFilterDrawer>
+          </Group>
+
+          <Group gap="sm" wrap="wrap" visibleFrom="lg">
+            <Select
+              placeholder="All shifts"
+              data={SHIFT_OPTIONS}
+              value={logShift}
+              onChange={setLogShift}
+              clearable
+              w={130}
+            />
+            <Select
+              placeholder="All statuses"
+              data={TIME_LOG_STATUS_OPTIONS}
+              value={logStatus}
+              onChange={setLogStatus}
+              clearable
+              w={150}
+            />
+            <DateRangePicker value={logRange} onChange={setLogRange} clearable />
+          </Group>
+
+          <Stack gap="xs" hiddenFrom="lg">
+            {table.data.length ? (
+              table.data.map((row) => (
+                <Paper
+                  key={row.id}
+                  withBorder
+                  radius="md"
+                  p="sm"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/admin/time-logs/${row.id}`)}
+                >
+                  <Stack gap={6}>
+                    <Group justify="space-between" wrap="nowrap">
+                      <Text fw={600} size="sm">
+                        {formatDate(row.date)} · {row.shift}
+                      </Text>
+                      <Badge variant="light" color={TIME_LOG_STATUS_COLORS[row.status] || 'gray'} tt="capitalize" size="sm">
                         {row.status}
                       </Badge>
+                    </Group>
+                    <Text size="xs" c="dimmed">
+                      {row.crewCount} crew · {row.billableHours}h billable · {row.paidHours}h paid
+                    </Text>
+                  </Stack>
+                </Paper>
+              ))
+            ) : (
+              <Text c="dimmed" ta="center" py="md" size="sm">
+                No time logs for this job yet.
+              </Text>
+            )}
+          </Stack>
+
+          <Table.ScrollContainer minWidth={640} visibleFrom="lg">
+            <Table verticalSpacing="sm" highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  {th('date', 'Date')}
+                  {th('shift', 'Shift')}
+                  {th('crewCount', 'Crew')}
+                  {th('billableHours', 'Billable hrs')}
+                  {th('paidHours', 'Paid hrs')}
+                  {th('status', 'Status')}
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {table.data.length ? (
+                  table.data.map((row) => (
+                    <Table.Tr
+                      key={row.id}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => navigate(`/admin/time-logs/${row.id}`)}
+                    >
+                      <Table.Td>{formatDate(row.date)}</Table.Td>
+                      <Table.Td>{row.shift}</Table.Td>
+                      <Table.Td>{row.crewCount}</Table.Td>
+                      <Table.Td>{row.billableHours}</Table.Td>
+                      <Table.Td>{row.paidHours}</Table.Td>
+                      <Table.Td>
+                        <Badge variant="light" color={TIME_LOG_STATUS_COLORS[row.status] || 'gray'} tt="capitalize">
+                          {row.status}
+                        </Badge>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))
+                ) : (
+                  <Table.Tr>
+                    <Table.Td colSpan={6}>
+                      <Text c="dimmed" ta="center" py="md">
+                        No time logs for this job yet.
+                      </Text>
                     </Table.Td>
                   </Table.Tr>
-                ))
-              ) : (
-                <Table.Tr>
-                  <Table.Td colSpan={6}>
-                    <Text c="dimmed" ta="center" py="md">
-                      No time logs for this job yet.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              )}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
-        <ListPagination
-          pagination={table.pagination}
-          limit={table.limit}
-          onPageChange={table.setPage}
-          onLimitChange={table.setLimit}
-        />
+                )}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+
+          <ListPagination
+            pagination={table.pagination}
+            limit={table.limit}
+            onPageChange={table.setPage}
+            onLimitChange={table.setLimit}
+          />
+        </Stack>
       </SectionCard>
     </Stack>
   );
