@@ -202,6 +202,18 @@ body {
   padding: 4px;
 }
 
+.tlgrid thead th.tlqty-used-head {
+  color: var(--mantine-color-brand-9);
+}
+
+.tlgrid td.tlqty-used-cell {
+  background: var(--mantine-color-brand-0);
+}
+
+.tlgrid td.tlqty-used-cell .mantine-Input-input {
+  color: var(--mantine-color-brand-9);
+}
+
 .tlgrid-empty {
   padding: 16px 12px;
   color: var(--mantine-color-gray-6);
@@ -227,6 +239,24 @@ body {
 
 .tlgrid-add button:hover {
   background: var(--mantine-color-brand-0);
+}
+
+.tl-add-line {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--mantine-color-brand-0);
+  border: 1px dashed var(--mantine-color-brand-4);
+  border-radius: var(--mantine-radius-md);
+  cursor: pointer;
+  color: var(--mantine-color-brand-7);
+  font-weight: 600;
+  font-size: 13px;
+  transition: background 120ms ease;
+}
+
+.tl-add-line:hover {
+  background: var(--mantine-color-brand-1);
 }
 
 .tl-footer-bar {

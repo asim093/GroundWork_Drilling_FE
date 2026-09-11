@@ -1,13 +1,5 @@
 const round2 = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 
-const toNumber = (value) => {
-  if (value === '' || value === null || value === undefined) {
-    return null;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
 export const parseClockHours = (value) => {
   if (typeof value !== 'string') {
     return null;
@@ -25,13 +17,15 @@ export const parseClockHours = (value) => {
   return hours + minutes / 60 + seconds / 3600;
 };
 
-export const lineDrilledMeters = (line) => {
-  const from = toNumber(line?.depthFrom);
-  const to = toNumber(line?.depthTo);
-  if (from === null || to === null) {
-    return null;
+export const formatClockHours = (value) => {
+  let hours = Math.floor(value);
+  let minutes = Math.round((value - hours) * 60);
+  if (minutes === 60) {
+    hours += 1;
+    minutes = 0;
   }
-  return round2(to - from);
+  hours %= 24;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
 export const clockDuration = (from, to) => {
@@ -84,37 +78,77 @@ export const isWithinShift = (lineTime, timeIn, timeOut) => {
   return normalized >= start && normalized <= end;
 };
 
-export const totalDrilledMeters = (lines) =>
-  round2((lines || []).reduce((sum, line) => sum + (lineDrilledMeters(line) ?? 0), 0));
-
-export const totalRecoveryMeters = (lines) => {
-  const list = lines || [];
-  const hasAny = list.some((line) => toNumber(line?.recoveryMeters) !== null);
-  if (!hasAny) {
-    return null;
-  }
-  return round2(list.reduce((sum, line) => sum + (toNumber(line?.recoveryMeters) || 0), 0));
-};
-
 export const totalLineHours = (lines) =>
   round2((lines || []).reduce((sum, line) => sum + (lineHours(line) ?? 0), 0));
 
-export const mileageTotal = (start, end) => {
-  const from = toNumber(start);
-  const to = toNumber(end);
-  if (from === null || to === null) {
+const normalizeLineRanges = (lines, timeIn, timeOut) => {
+  const start = parseClockHours(timeIn);
+  let end = parseClockHours(timeOut);
+  if (start === null || end === null) {
     return null;
   }
-  return round2(to - from);
+  if (end <= start) {
+    end += 24;
+  }
+
+  const ranges = [];
+  (lines || []).forEach((line, index) => {
+    const from = parseClockHours(line?.timeFrom);
+    const to = parseClockHours(line?.timeTo);
+    if (from === null || to === null) {
+      return;
+    }
+    const normFrom = from < start ? from + 24 : from;
+    const normTo = to <= normFrom ? to + 24 : to;
+    ranges.push({ index, from: normFrom, to: normTo });
+  });
+
+  return { start, end, ranges };
 };
 
-export const shiftRecoveryPercent = (lines) => {
-  const drilled = totalDrilledMeters(lines);
-  const recovered = totalRecoveryMeters(lines);
-  if (!drilled || drilled <= 0 || recovered === null) {
+/** Returns { type: 'reversed', index } | { type: 'overlap', indexA, indexB } | null */
+export const findActivityLineOverlap = (lines, timeIn, timeOut) => {
+  const normalized = normalizeLineRanges(lines, timeIn, timeOut);
+  if (!normalized) {
     return null;
   }
-  return round2((recovered / drilled) * 100);
+  const sorted = [...normalized.ranges].sort((a, b) => a.from - b.from);
+
+  for (const line of sorted) {
+    if (line.to <= line.from) {
+      return { type: 'reversed', index: line.index };
+    }
+  }
+  for (let i = 1; i < sorted.length; i += 1) {
+    if (sorted[i].from < sorted[i - 1].to) {
+      return { type: 'overlap', indexA: sorted[i - 1].index, indexB: sorted[i].index };
+    }
+  }
+  return null;
+};
+
+/** Returns the first uncovered { from, to } range (HH:MM strings) between timeIn and timeOut, or null. */
+export const findActivityCoverageGap = (lines, timeIn, timeOut) => {
+  const normalized = normalizeLineRanges(lines, timeIn, timeOut);
+  if (!normalized) {
+    return null;
+  }
+  const { start, end, ranges } = normalized;
+  const sorted = [...ranges].sort((a, b) => a.from - b.from);
+
+  let cursor = start;
+  for (const range of sorted) {
+    if (range.from > cursor) {
+      return { from: formatClockHours(cursor % 24), to: formatClockHours(range.from % 24) };
+    }
+    if (range.to > cursor) {
+      cursor = range.to;
+    }
+  }
+  if (cursor < end) {
+    return { from: formatClockHours(cursor % 24), to: formatClockHours(end % 24) };
+  }
+  return null;
 };
 
 export const validateActivityLines = (lines, shift = {}) => {
@@ -123,24 +157,6 @@ export const validateActivityLines = (lines, shift = {}) => {
   const windowEnd = shift.timeOut || shift.timeFinished;
 
   (lines || []).forEach((line, index) => {
-    const from = toNumber(line?.depthFrom);
-    const to = toNumber(line?.depthTo);
-    const recovered = toNumber(line?.recoveryMeters);
-
-    if (from !== null && to !== null && to < from) {
-      errors[index] = {
-        ...errors[index],
-        depthTo: 'Depth to cannot be less than depth from'
-      };
-    }
-
-    if (from !== null && to !== null && recovered !== null && recovered > to - from) {
-      errors[index] = {
-        ...errors[index],
-        recoveryMeters: 'Recovery m cannot exceed the drilled meters for this run'
-      };
-    }
-
     if (
       windowStart &&
       windowEnd &&
@@ -165,6 +181,16 @@ export const validateActivityLines = (lines, shift = {}) => {
       };
     }
   });
+
+  if (windowStart && windowEnd) {
+    const overlap = findActivityLineOverlap(lines, windowStart, windowEnd);
+    if (overlap?.type === 'reversed') {
+      errors[overlap.index] = { ...errors[overlap.index], timeTo: 'Time to must be after time from' };
+    } else if (overlap?.type === 'overlap') {
+      errors[overlap.indexA] = { ...errors[overlap.indexA], timeTo: 'This line overlaps another activity line' };
+      errors[overlap.indexB] = { ...errors[overlap.indexB], timeFrom: 'This line overlaps another activity line' };
+    }
+  }
 
   return Object.keys(errors).length ? errors : null;
 };

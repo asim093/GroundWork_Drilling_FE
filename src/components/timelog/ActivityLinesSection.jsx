@@ -1,35 +1,30 @@
-import { ActionIcon, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Box, Group, Paper, Select, Stack, Text, TextInput } from '@mantine/core';
 import { TimePicker } from '@mantine/dates';
 import { NavIcon } from '../NavIcon.jsx';
-import { lineDrilledMeters, lineHours } from '../../lib/timeLogMath.js';
 import { BLANK_ACTIVITY_LINE } from '../../constants/timeLogs.js';
-
-const formatCalc = (value, suffix) =>
-  value === null || value === undefined ? '—' : `${value}${suffix}`;
 
 const ERROR_LABELS = {
   activityId: 'Select an activity',
-  depthTo: 'Depth to cannot be less than depth from',
-  recoveryMeters: 'Recovery cannot exceed the drilled meters for this run',
-  timeFrom: 'Time from is outside your Time in and Time out',
-  timeTo: 'Time to is outside your Time in and Time out'
+  timeFrom: 'Time from is outside your Time in and Time out, or overlaps another line',
+  timeTo: 'Time to is outside your Time in and Time out, is before Time from, or overlaps another line'
 };
 
-export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activityGroups = [] }) => {
+export const ActivityLinesSection = ({
+  lines,
+  onChange,
+  disabled,
+  errors,
+  activityGroups = [],
+  shiftTimeIn = ''
+}) => {
   const updateLine = (index, patch) => {
     onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
   };
 
   const addLine = () => {
     const previous = lines[lines.length - 1];
-    onChange([
-      ...lines,
-      {
-        ...BLANK_ACTIVITY_LINE,
-        depthFrom: previous?.depthTo ?? '',
-        timeFrom: previous?.timeTo ?? ''
-      }
-    ]);
+    const timeFrom = previous ? previous.timeTo || '' : shiftTimeIn || '';
+    onChange([...lines, { ...BLANK_ACTIVITY_LINE, timeFrom }]);
   };
 
   const removeLine = (index) => onChange(lines.filter((_, i) => i !== index));
@@ -40,163 +35,92 @@ export const ActivityLinesSection = ({ lines, onChange, disabled, errors, activi
     )
   );
 
-  const cellInput = (index, key, extra = {}) => (
-    <NumberInput
-      variant="unstyled"
-      size="sm"
-      hideControls
-      min={0}
-      placeholder="0"
-      value={lines[index][key]}
-      disabled={disabled}
-      aria-label={extra.label}
-      error={extra.hasError || undefined}
-      onChange={(value) => updateLine(index, { [key]: value })}
-    />
-  );
-
-  const timeCell = (index, key, extra = {}) => (
-    <TimePicker
-      variant="unstyled"
-      size="sm"
-      format="12h"
-      withDropdown
-      value={lines[index][key]}
-      disabled={disabled}
-      aria-label={extra.label}
-      onChange={(value) => updateLine(index, { [key]: value })}
-    />
-  );
-
   return (
     <Stack gap="sm">
-      <div className="tlgrid-wrap">
-        <table className="tlgrid tlgrid-wide">
-          <colgroup>
-            <col style={{ width: 44 }} />
-            <col style={{ minWidth: 230 }} />
-            <col style={{ width: 92 }} />
-            <col style={{ width: 92 }} />
-            <col style={{ width: 116 }} />
-            <col style={{ width: 116 }} />
-            <col style={{ width: 92 }} />
-            <col style={{ width: 82 }} />
-            <col style={{ width: 74 }} />
-            <col style={{ minWidth: 160 }} />
-            <col style={{ width: 44 }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Activity</th>
-              <th className="tlnum">Depth from</th>
-              <th className="tlnum">Depth to</th>
-              <th>Time from</th>
-              <th>Time to</th>
-              <th className="tlnum">Recovery</th>
-              <th className="tlnum">Drilled</th>
-              <th className="tlnum">Hours</th>
-              <th>Comments</th>
-              <th aria-label="Remove" />
-            </tr>
-          </thead>
-          <tbody>
-            {lines.length === 0 ? (
-              <tr>
-                <td colSpan={11} className="tlgrid-empty">
-                  No activity lines yet.
-                </td>
-              </tr>
-            ) : null}
+      {lines.length === 0 ? (
+        <Text size="sm" c="dimmed">
+          No activity lines yet.
+        </Text>
+      ) : null}
 
-            {lines.map((line, index) => {
-              const drilled = lineDrilledMeters(line);
-              const hours = lineHours(line);
-              const lineError = errors?.[index] || {};
+      {lines.map((line, index) => {
+        const lineError = errors?.[index] || {};
 
-              return (
-                <tr key={index}>
-                  <td className="tlidx">{index + 1}</td>
-                  <td className={lineError.activityId ? 'tlcell-error' : undefined}>
-                    <Select
-                      variant="unstyled"
-                      size="sm"
-                      placeholder={line.description && !line.activityId ? line.description : 'Select activity'}
-                      data={activityGroups}
-                      value={line.activityId || null}
-                      disabled={disabled}
-                      searchable
-                      error={Boolean(lineError.activityId) || undefined}
-                      aria-label={`Line ${index + 1} activity`}
-                      comboboxProps={{ width: 320, position: 'bottom-start' }}
-                      onChange={(value) => updateLine(index, { activityId: value || '' })}
-                    />
-                  </td>
-                  <td className={`tlnum${lineError.depthFrom ? ' tlcell-error' : ''}`}>
-                    {cellInput(index, 'depthFrom', { label: `Line ${index + 1} depth from` })}
-                  </td>
-                  <td className={`tlnum${lineError.depthTo ? ' tlcell-error' : ''}`}>
-                    {cellInput(index, 'depthTo', {
-                      label: `Line ${index + 1} depth to`,
-                      hasError: Boolean(lineError.depthTo)
-                    })}
-                  </td>
-                  <td className={lineError.timeFrom ? 'tlcell-error' : undefined}>
-                    {timeCell(index, 'timeFrom', { label: `Line ${index + 1} time from` })}
-                  </td>
-                  <td className={lineError.timeTo ? 'tlcell-error' : undefined}>
-                    {timeCell(index, 'timeTo', { label: `Line ${index + 1} time to` })}
-                  </td>
-                  <td className={`tlnum${lineError.recoveryMeters ? ' tlcell-error' : ''}`}>
-                    {cellInput(index, 'recoveryMeters', {
-                      label: `Line ${index + 1} recovery`,
-                      hasError: Boolean(lineError.recoveryMeters)
-                    })}
-                  </td>
-                  <td className="tlnum tlcomputed">{formatCalc(drilled, ' m')}</td>
-                  <td className="tlnum tlcomputed">{formatCalc(hours, ' h')}</td>
-                  <td>
-                    <TextInput
-                      variant="unstyled"
-                      size="sm"
-                      placeholder="Optional note"
-                      value={line.comments}
-                      disabled={disabled}
-                      aria-label={`Line ${index + 1} comments`}
-                      onChange={(event) =>
-                        updateLine(index, { comments: event.currentTarget.value })
-                      }
-                    />
-                  </td>
-                  <td className="tldelcell">
-                    {disabled ? null : (
-                      <ActionIcon
-                        variant="subtle"
-                        color="gray"
-                        size="sm"
-                        aria-label={`Remove line ${index + 1}`}
-                        onClick={() => removeLine(index)}
-                      >
-                        <NavIcon name="trash" size={15} />
-                      </ActionIcon>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+        return (
+          <Paper key={index} withBorder radius="md" p="sm">
+            <Stack gap="xs">
+              <Group wrap="wrap" gap="sm" align="flex-end">
+                <Box style={{ flex: '1 1 220px', minWidth: 180 }}>
+                  <Select
+                    label={`Activity ${index + 1}`}
+                    size="sm"
+                    placeholder={
+                      line.description && !line.activityId ? line.description : 'Select activity'
+                    }
+                    data={activityGroups}
+                    value={line.activityId || null}
+                    disabled={disabled}
+                    searchable
+                    error={lineError.activityId ? ERROR_LABELS.activityId : undefined}
+                    comboboxProps={{ position: 'bottom-start' }}
+                    onChange={(value) => updateLine(index, { activityId: value || '' })}
+                  />
+                </Box>
+                <Box style={{ width: 132 }}>
+                  <TimePicker
+                    label="Time from"
+                    size="sm"
+                    format="12h"
+                    withDropdown
+                    value={line.timeFrom}
+                    disabled={disabled}
+                    error={Boolean(lineError.timeFrom)}
+                    onChange={(value) => updateLine(index, { timeFrom: value || '' })}
+                  />
+                </Box>
+                <Box style={{ width: 132 }}>
+                  <TimePicker
+                    label="Time to"
+                    size="sm"
+                    format="12h"
+                    withDropdown
+                    value={line.timeTo}
+                    disabled={disabled}
+                    error={Boolean(lineError.timeTo)}
+                    onChange={(value) => updateLine(index, { timeTo: value || '' })}
+                  />
+                </Box>
+                {disabled ? null : (
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="lg"
+                    aria-label={`Remove line ${index + 1}`}
+                    onClick={() => removeLine(index)}
+                  >
+                    <NavIcon name="trash" size={16} />
+                  </ActionIcon>
+                )}
+              </Group>
 
-            {disabled ? null : (
-              <tr className="tlgrid-add">
-                <td colSpan={11}>
-                  <button type="button" onClick={addLine}>
-                    + Add activity line
-                  </button>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              <TextInput
+                label="Comments"
+                size="sm"
+                placeholder="Optional note"
+                value={line.comments}
+                disabled={disabled}
+                onChange={(event) => updateLine(index, { comments: event.currentTarget.value })}
+              />
+            </Stack>
+          </Paper>
+        );
+      })}
+
+      {disabled ? null : (
+        <button type="button" className="tl-add-line" onClick={addLine}>
+          + Add activity line
+        </button>
+      )}
 
       {errorList.length ? (
         <Stack gap={2}>

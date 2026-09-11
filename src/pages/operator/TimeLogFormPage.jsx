@@ -7,9 +7,9 @@ import {
   Center,
   Group,
   Loader,
+  Modal,
   NumberInput,
   Paper,
-  Radio,
   Select,
   SimpleGrid,
   Stack,
@@ -18,7 +18,7 @@ import {
 } from '@mantine/core';
 import { DatePickerInput, TimePicker } from '@mantine/dates';
 import { AppLayout } from '../../components/AppLayout.jsx';
-import { OPERATOR_NAV } from '../../constants/nav.js';
+import { ADMIN_NAV, OPERATOR_NAV } from '../../constants/nav.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { ActivityLinesSection } from '../../components/timelog/ActivityLinesSection.jsx';
@@ -34,11 +34,9 @@ import {
 import {
   addClockHours,
   clockDuration,
-  mileageTotal,
-  shiftRecoveryPercent,
-  totalDrilledMeters,
+  findActivityCoverageGap,
+  findActivityLineOverlap,
   totalLineHours,
-  totalRecoveryMeters,
   validateActivityLines
 } from '../../lib/timeLogMath.js';
 import {
@@ -183,7 +181,9 @@ export const TimeLogFormPage = () => {
   const [consumableGroups, setConsumableGroups] = useState([]);
   const workTimeEdited = useRef({ timeStarted: false, timeFinished: false });
 
-  const readOnly = entry?.status === 'submitted';
+  const isAdminMode = user?.role === 'admin';
+  const navItems = isAdminMode ? ADMIN_NAV : OPERATOR_NAV;
+  const readOnly = entry?.status === 'submitted' && !isAdminMode;
 
   const roster = useMemo(() => rosterOf(job), [job]);
   const myShifts = useMemo(() => myShiftsFor(job, user?.id), [job, user?.id]);
@@ -192,12 +192,9 @@ export const TimeLogFormPage = () => {
     : SHIFT_OPTIONS;
   const shiftLocked = readOnly || Boolean(entry) || myShifts.length === 1;
 
-  const totalDrilled = totalDrilledMeters(form.activityLines);
-  const totalRecovered = totalRecoveryMeters(form.activityLines);
   const totalHours = totalLineHours(form.activityLines);
-  const recoveryPreview = shiftRecoveryPercent(form.activityLines);
-  const mileagePreview = mileageTotal(form.mileageStart, form.mileageEnd);
   const hoursOnSitePreview = clockDuration(form.timeIn, form.timeOut);
+  const [gapModal, setGapModal] = useState(null);
 
   const liveLineErrors = useMemo(
     () =>
@@ -291,19 +288,6 @@ export const TimeLogFormPage = () => {
       return updated;
     });
 
-  const setWellTagChoice = (value) =>
-    setForm((prev) => ({
-      ...prev,
-      wellTag: {
-        ...prev.wellTag,
-        installed: value === 'installed',
-        decommissioned: value === 'decommissioned'
-      }
-    }));
-
-  const setWellTag = (key, value) =>
-    setForm((prev) => ({ ...prev, wellTag: { ...prev.wellTag, [key]: value } }));
-
   const setFuel = (key, value) =>
     setForm((prev) => ({ ...prev, fuel: { ...prev.fuel, [key]: value } }));
 
@@ -359,19 +343,43 @@ export const TimeLogFormPage = () => {
 
     try {
       await persist();
-      notifySuccess('Draft saved');
+      notifySuccess(isAdminMode ? 'Changes saved' : 'Draft saved');
+      if (isAdminMode) {
+        navigate(-1);
+      }
     } catch (error) {
       const serverLineErrors = parseServerLineErrors(error);
       if (serverLineErrors) {
         setLineErrors(serverLineErrors);
       }
-      notifyError(extractErrorMessage(error, 'Unable to save draft'));
+      notifyError(extractErrorMessage(error, 'Unable to save changes'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleSubmit = async () => {
+    if (form.timeIn && form.timeOut) {
+      const overlap = findActivityLineOverlap(form.activityLines, form.timeIn, form.timeOut);
+      if (overlap?.type === 'reversed') {
+        setGapModal(`Line ${overlap.index + 1}: Time To must be after Time From.`);
+        return;
+      }
+      if (overlap?.type === 'overlap') {
+        setGapModal(
+          `Lines ${overlap.indexA + 1} and ${overlap.indexB + 1} overlap — activity lines can't cover the same time twice.`
+        );
+        return;
+      }
+      const gap = findActivityCoverageGap(form.activityLines, form.timeIn, form.timeOut);
+      if (gap) {
+        setGapModal(
+          `You're missing an activity between ${gap.from} and ${gap.to} — please add it before submitting.`
+        );
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     try {
@@ -386,7 +394,12 @@ export const TimeLogFormPage = () => {
       if (serverLineErrors) {
         setLineErrors(serverLineErrors);
       }
-      notifyError(extractErrorMessage(error, 'Unable to submit time log'));
+      const message = extractErrorMessage(error, 'Unable to submit time log');
+      if (/missing an activity between|overlap|Time To must be after/i.test(message)) {
+        setGapModal(message);
+      } else {
+        notifyError(message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -394,7 +407,7 @@ export const TimeLogFormPage = () => {
 
   if (loading) {
     return (
-      <AppLayout navItems={OPERATOR_NAV}>
+      <AppLayout navItems={navItems}>
         <Center py="xl">
           <Loader />
         </Center>
@@ -402,9 +415,9 @@ export const TimeLogFormPage = () => {
     );
   }
 
-  if (entry?.status === 'submitted') {
+  if (entry?.status === 'submitted' && !isAdminMode) {
     return (
-      <AppLayout navItems={OPERATOR_NAV}>
+      <AppLayout navItems={navItems}>
         <Stack gap="lg">
           <Group>
             <Button variant="subtle" onClick={() => navigate(-1)}>
@@ -416,16 +429,6 @@ export const TimeLogFormPage = () => {
       </AppLayout>
     );
   }
-
-  const numberField = (key, label) => (
-    <NumberInput
-      label={label}
-      size={FIELD_SIZE}
-      value={form[key]}
-      disabled={readOnly}
-      onChange={(value) => setField(key, value)}
-    />
-  );
 
   const timeField = (key, label) => (
     <TimePicker
@@ -449,21 +452,12 @@ export const TimeLogFormPage = () => {
       Boolean(form.timeOut) ||
       Boolean(form.timeStarted) ||
       Boolean(form.timeFinished) ||
-      hoursOnSitePreview !== null ||
-      filledValue(form.standbyHours) ||
-      filledValue(form.otherHours),
+      hoursOnSitePreview !== null,
     crew: form.crew.length > 0,
-    wellTag:
-      form.wellTag.installed ||
-      form.wellTag.decommissioned ||
-      Boolean(form.wellTag.locatesProvidedBy),
     activityLines: form.activityLines.some(
       (line) =>
         Boolean(line.activityId) ||
         Boolean(line.description) ||
-        filledValue(line.depthFrom) ||
-        filledValue(line.depthTo) ||
-        filledValue(line.recoveryMeters) ||
         Boolean(line.timeFrom) ||
         Boolean(line.timeTo) ||
         Boolean(line.comments)
@@ -478,12 +472,11 @@ export const TimeLogFormPage = () => {
         filledValue(item.qtyTaken) ||
         filledValue(item.qtyReturned) ||
         filledValue(item.qtyUsed)
-    ),
-    mileage: filledValue(form.mileageStart) || filledValue(form.mileageEnd)
+    )
   };
 
   return (
-    <AppLayout navItems={OPERATOR_NAV}>
+    <AppLayout navItems={navItems}>
       <Stack gap="lg">
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Button variant="subtle" onClick={() => navigate(-1)}>
@@ -501,6 +494,13 @@ export const TimeLogFormPage = () => {
         {readOnly ? (
           <Text c="dimmed" size="sm">
             This log has been submitted and is read-only.
+          </Text>
+        ) : null}
+
+        {isAdminMode && entry?.status === 'submitted' ? (
+          <Text c="dimmed" size="sm">
+            This log has already been submitted. You're editing it as an admin — changes save
+            immediately.
           </Text>
         ) : null}
 
@@ -581,11 +581,6 @@ export const TimeLogFormPage = () => {
                   {timeField('timeFinished', 'Time Finished')}
                 </SimpleGrid>
               </SubGroup>
-
-              <SimpleGrid cols={2} spacing="md">
-                {numberField('standbyHours', 'Standby hours')}
-                {numberField('otherHours', 'Other hours')}
-              </SimpleGrid>
             </Stack>
           </PanelCard>
 
@@ -618,6 +613,7 @@ export const TimeLogFormPage = () => {
               disabled={readOnly}
               errors={shownLineErrors}
               activityGroups={activityGroups}
+              shiftTimeIn={form.timeIn}
               onChange={(lines) => {
                 setLineErrors({});
                 setField('activityLines', lines);
@@ -625,23 +621,11 @@ export const TimeLogFormPage = () => {
             />
 
             <Box>
-              <Text fw={600} size="sm" mb="xs">
-                Shift totals (calculated)
-              </Text>
-              <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-                <StatTile label="Total Drilled" value={`${totalDrilled} m`} />
-                <StatTile
-                  label="Total Recovered"
-                  value={totalRecovered === null ? '—' : `${totalRecovered} m`}
-                />
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
                 <StatTile label="Total Hours" value={`${totalHours} h`} />
-                <StatTile
-                  label="Recovery %"
-                  value={recoveryPreview === null ? '—' : `${recoveryPreview}%`}
-                />
               </SimpleGrid>
               <Text size="xs" c="dimmed" mt="xs">
-                Calculated from the activity lines and cannot be edited directly.
+                Activity lines must fully cover the shift's Time In to Time Out window before you can submit.
               </Text>
             </Box>
           </Stack>
@@ -661,83 +645,28 @@ export const TimeLogFormPage = () => {
           />
         </PanelCard>
 
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" style={{ alignItems: 'start' }}>
-          <PanelCard id="sec-fuel" title="Fuel" hint="Litres used" done={filled.fuel}>
-            <SimpleGrid cols={3} spacing="md">
-              <NumberInput
-                label="Dyed (L)"
-                size={FIELD_SIZE}
-                value={form.fuel.dyedLt}
-                disabled={readOnly}
-                onChange={(value) => setFuel('dyedLt', value)}
-              />
-              <NumberInput
-                label="Diesel (L)"
-                size={FIELD_SIZE}
-                value={form.fuel.dieselLt}
-                disabled={readOnly}
-                onChange={(value) => setFuel('dieselLt', value)}
-              />
-              <NumberInput
-                label="Gasoline (L)"
-                size={FIELD_SIZE}
-                value={form.fuel.gasolineLt}
-                disabled={readOnly}
-                onChange={(value) => setFuel('gasolineLt', value)}
-              />
-            </SimpleGrid>
-          </PanelCard>
-
-          <PanelCard
-            id="sec-mileage"
-            title="Mileage"
-            hint="Blank if no vehicle driven"
-            done={filled.mileage}
-          >
-            <SimpleGrid cols={3} spacing="md" style={{ alignItems: 'end' }}>
-              {numberField('mileageStart', 'Start')}
-              {numberField('mileageEnd', 'End')}
-              <TextInput
-                label="Total"
-                size={FIELD_SIZE}
-                value={mileagePreview === null ? '—' : `${mileagePreview}`}
-                readOnly
-                disabled
-                styles={COMPUTED_INPUT_STYLES}
-              />
-            </SimpleGrid>
-          </PanelCard>
-        </SimpleGrid>
-
-        <PanelCard
-          id="sec-well-tag"
-          title="Well Tag"
-          hint="Only if a tag was installed or removed"
-          done={filled.wellTag}
-        >
-          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg" style={{ alignItems: 'center' }}>
-            <Radio.Group
-              value={
-                form.wellTag.installed
-                  ? 'installed'
-                  : form.wellTag.decommissioned
-                    ? 'decommissioned'
-                    : 'none'
-              }
-              onChange={setWellTagChoice}
-            >
-              <Group gap="lg">
-                <Radio value="none" label="Not applicable" disabled={readOnly} />
-                <Radio value="installed" label="Installed" disabled={readOnly} />
-                <Radio value="decommissioned" label="Decommissioned" disabled={readOnly} />
-              </Group>
-            </Radio.Group>
-            <TextInput
-              label="Locates provided by"
+        <PanelCard id="sec-fuel" title="Fuel" hint="Litres used" done={filled.fuel}>
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+            <NumberInput
+              label="Dyed (L)"
               size={FIELD_SIZE}
-              value={form.wellTag.locatesProvidedBy}
+              value={form.fuel.dyedLt}
               disabled={readOnly}
-              onChange={(event) => setWellTag('locatesProvidedBy', event.currentTarget.value)}
+              onChange={(value) => setFuel('dyedLt', value)}
+            />
+            <NumberInput
+              label="Diesel (L)"
+              size={FIELD_SIZE}
+              value={form.fuel.dieselLt}
+              disabled={readOnly}
+              onChange={(value) => setFuel('dieselLt', value)}
+            />
+            <NumberInput
+              label="Gasoline (L)"
+              size={FIELD_SIZE}
+              value={form.fuel.gasolineLt}
+              disabled={readOnly}
+              onChange={(value) => setFuel('gasolineLt', value)}
             />
           </SimpleGrid>
         </PanelCard>
@@ -750,21 +679,39 @@ export const TimeLogFormPage = () => {
               <Group justify="flex-end" gap="sm">
                 <Button
                   size="sm"
-                  variant="default"
+                  variant={isAdminMode ? 'filled' : 'default'}
                   onClick={handleSaveDraft}
                   loading={saving}
                   disabled={submitting}
                 >
-                  Save draft
+                  {isAdminMode ? 'Save changes' : 'Save draft'}
                 </Button>
-                <Button size="sm" onClick={handleSubmit} loading={submitting} disabled={saving}>
-                  Submit
-                </Button>
+                {isAdminMode ? null : (
+                  <Button size="sm" onClick={handleSubmit} loading={submitting} disabled={saving}>
+                    Submit
+                  </Button>
+                )}
               </Group>
             </div>
           </>
         )}
       </Stack>
+
+      <Modal
+        opened={Boolean(gapModal)}
+        onClose={() => setGapModal(null)}
+        title="Activity lines don't cover the full shift"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm">{gapModal}</Text>
+          <Group justify="flex-end">
+            <Button size="sm" onClick={() => setGapModal(null)}>
+              Got it
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </AppLayout>
   );
 };

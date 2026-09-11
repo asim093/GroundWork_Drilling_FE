@@ -16,7 +16,7 @@ export const ConsumablesSection = ({ items, onChange, disabled, groupedOptions }
 
   const removeItem = (index) => onChange(items.filter((_, i) => i !== index));
 
-  const qtyCell = (index, key, label) => (
+  const qtyCell = (index, key, label, emphasis) => (
     <NumberInput
       variant="unstyled"
       size="sm"
@@ -26,6 +26,7 @@ export const ConsumablesSection = ({ items, onChange, disabled, groupedOptions }
       value={items[index][key]}
       disabled={disabled}
       aria-label={label}
+      fw={emphasis ? 700 : undefined}
       onChange={(value) => updateItem(index, key, value)}
     />
   );
@@ -47,7 +48,7 @@ export const ConsumablesSection = ({ items, onChange, disabled, groupedOptions }
             <th>Item</th>
             <th className="tlnum">Qty taken</th>
             <th className="tlnum">Qty returned</th>
-            <th className="tlnum">Qty used</th>
+            <th className="tlnum tlqty-used-head">Qty used</th>
             <th aria-label="Remove" />
           </tr>
         </thead>
@@ -81,7 +82,9 @@ export const ConsumablesSection = ({ items, onChange, disabled, groupedOptions }
               <td className="tlnum">
                 {qtyCell(index, 'qtyReturned', `Item ${index + 1} qty returned`)}
               </td>
-              <td className="tlnum">{qtyCell(index, 'qtyUsed', `Item ${index + 1} qty used`)}</td>
+              <td className="tlnum tlqty-used-cell">
+                {qtyCell(index, 'qtyUsed', `Item ${index + 1} qty used`, true)}
+              </td>
               <td className="tldelcell">
                 {disabled ? null : (
                   <ActionIcon

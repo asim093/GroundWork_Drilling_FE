@@ -5,8 +5,6 @@ import { formatDate } from '../../lib/dateRange.js';
 const show = (value, suffix = '') =>
   value === null || value === undefined || value === '' ? '—' : `${value}${suffix}`;
 
-const yesNo = (value) => (value ? 'Yes' : 'No');
-
 const Field = ({ label, value }) => (
   <Box>
     <Text size="xs" c="dimmed">
@@ -42,11 +40,6 @@ export const TimeLogEntryView = ({ entry }) => {
   const consumables = entry.consumables || [];
   const crew = entry.crew || [];
   const fuel = entry.fuel || {};
-  const wellTag = entry.wellTag || {};
-  const hasMileage =
-    entry.mileageStart !== null && entry.mileageStart !== undefined
-      ? true
-      : entry.mileageEnd !== null && entry.mileageEnd !== undefined;
 
   return (
     <Stack gap="lg">
@@ -84,8 +77,6 @@ export const TimeLogEntryView = ({ entry }) => {
           <Field label="Time started" value={show(entry.timeStarted)} />
           <Field label="Time finished" value={show(entry.timeFinished)} />
           <Field label="Hours on site" value={show(entry.hoursOnSite)} />
-          <Field label="Standby hours" value={show(entry.standbyHours)} />
-          <Field label="Other hours" value={show(entry.otherHours)} />
         </SimpleGrid>
       </Section>
 
@@ -118,80 +109,56 @@ export const TimeLogEntryView = ({ entry }) => {
         )}
       </Section>
 
-      <Section title="Well Tag & shift totals">
-        <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="md">
-          <Field label="Installed" value={yesNo(wellTag.installed)} />
-          <Field label="Decommissioned" value={yesNo(wellTag.decommissioned)} />
-          <Field label="Locates provided by" value={show(wellTag.locatesProvidedBy)} />
-        </SimpleGrid>
-        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
-          <StatTile label="Total Drilled" value={show(entry.metersDrilled, ' m')} />
-          <StatTile label="Total Recovered" value={show(entry.metersRecovered, ' m')} />
-          <StatTile label="Activity hours" value={show(entry.totalHours, ' h')} />
-          <StatTile
-            label="Recovery %"
-            value={entry.recoveryPercent === null ? '—' : `${entry.recoveryPercent}%`}
-          />
-        </SimpleGrid>
-      </Section>
-
       <Section title="Activity Lines">
         {lines.length ? (
-          <Table.ScrollContainer minWidth={860}>
-            <Table verticalSpacing="sm" horizontalSpacing="md">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>#</Table.Th>
-                  <Table.Th>Activity</Table.Th>
-                  <Table.Th style={{ textAlign: 'right' }}>Depth from</Table.Th>
-                  <Table.Th style={{ textAlign: 'right' }}>Depth to</Table.Th>
-                  <Table.Th>Time from</Table.Th>
-                  <Table.Th>Time to</Table.Th>
-                  <Table.Th style={{ textAlign: 'right' }}>Recovery</Table.Th>
-                  <Table.Th style={{ textAlign: 'right' }}>Drilled</Table.Th>
-                  <Table.Th style={{ textAlign: 'right' }}>Hours</Table.Th>
-                  <Table.Th>Comments</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {lines.map((line, index) => (
-                  <Table.Tr key={index}>
-                    <Table.Td>{index + 1}</Table.Td>
-                    <Table.Td>
-                      {line.activityId?.name ? (
-                        <>
-                          {line.activityId.name}
-                          {line.activityId.categoryId?.name ? (
-                            <Text size="xs" c="dimmed">
-                              {line.activityId.categoryId.name}
-                            </Text>
-                          ) : null}
-                        </>
-                      ) : (
-                        show(line.description)
-                      )}
-                    </Table.Td>
-                    <Table.Td style={{ textAlign: 'right' }}>{show(line.depthFrom)}</Table.Td>
-                    <Table.Td style={{ textAlign: 'right' }}>{show(line.depthTo)}</Table.Td>
-                    <Table.Td>{show(line.timeFrom)}</Table.Td>
-                    <Table.Td>{show(line.timeTo)}</Table.Td>
-                    <Table.Td style={{ textAlign: 'right' }}>{show(line.recoveryMeters)}</Table.Td>
-                    <Table.Td
-                      style={{ textAlign: 'right', backgroundColor: 'var(--mantine-color-brand-0)' }}
-                    >
-                      {show(line.drilledMeters, ' m')}
-                    </Table.Td>
-                    <Table.Td
-                      style={{ textAlign: 'right', backgroundColor: 'var(--mantine-color-brand-0)' }}
-                    >
-                      {show(line.hours, ' h')}
-                    </Table.Td>
-                    <Table.Td>{show(line.comments)}</Table.Td>
+          <>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm" mb="sm">
+              <StatTile label="Total Hours" value={show(entry.totalHours, ' h')} />
+            </SimpleGrid>
+            <Table.ScrollContainer minWidth={640}>
+              <Table verticalSpacing="sm" horizontalSpacing="md">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>#</Table.Th>
+                    <Table.Th>Activity</Table.Th>
+                    <Table.Th>Time from</Table.Th>
+                    <Table.Th>Time to</Table.Th>
+                    <Table.Th style={{ textAlign: 'right' }}>Hours</Table.Th>
+                    <Table.Th>Comments</Table.Th>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+                </Table.Thead>
+                <Table.Tbody>
+                  {lines.map((line, index) => (
+                    <Table.Tr key={index}>
+                      <Table.Td>{index + 1}</Table.Td>
+                      <Table.Td>
+                        {line.activityId?.name ? (
+                          <>
+                            {line.activityId.name}
+                            {line.activityId.categoryId?.name ? (
+                              <Text size="xs" c="dimmed">
+                                {line.activityId.categoryId.name}
+                              </Text>
+                            ) : null}
+                          </>
+                        ) : (
+                          show(line.description)
+                        )}
+                      </Table.Td>
+                      <Table.Td>{show(line.timeFrom)}</Table.Td>
+                      <Table.Td>{show(line.timeTo)}</Table.Td>
+                      <Table.Td
+                        style={{ textAlign: 'right', backgroundColor: 'var(--mantine-color-brand-0)' }}
+                      >
+                        {show(line.hours, ' h')}
+                      </Table.Td>
+                      <Table.Td>{show(line.comments)}</Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </>
         ) : (
           <Text c="dimmed" size="sm">
             No activity lines recorded.
@@ -215,7 +182,9 @@ export const TimeLogEntryView = ({ entry }) => {
                 <Table.Th>Item</Table.Th>
                 <Table.Th style={{ textAlign: 'right' }}>Taken</Table.Th>
                 <Table.Th style={{ textAlign: 'right' }}>Returned</Table.Th>
-                <Table.Th style={{ textAlign: 'right' }}>Used</Table.Th>
+                <Table.Th style={{ textAlign: 'right', color: 'var(--mantine-color-brand-9)' }}>
+                  Used
+                </Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -224,7 +193,15 @@ export const TimeLogEntryView = ({ entry }) => {
                   <Table.Td>{show(item.itemName)}</Table.Td>
                   <Table.Td style={{ textAlign: 'right' }}>{show(item.qtyTaken)}</Table.Td>
                   <Table.Td style={{ textAlign: 'right' }}>{show(item.qtyReturned)}</Table.Td>
-                  <Table.Td style={{ textAlign: 'right' }}>{show(item.qtyUsed)}</Table.Td>
+                  <Table.Td
+                    style={{
+                      textAlign: 'right',
+                      fontWeight: 700,
+                      backgroundColor: 'var(--mantine-color-brand-0)'
+                    }}
+                  >
+                    {show(item.qtyUsed)}
+                  </Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
@@ -236,15 +213,6 @@ export const TimeLogEntryView = ({ entry }) => {
         )}
       </Section>
 
-      {hasMileage ? (
-        <Section title="Mileage">
-          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-            <Field label="Mileage start" value={show(entry.mileageStart)} />
-            <Field label="Mileage end" value={show(entry.mileageEnd)} />
-            <Field label="Mileage total" value={show(entry.mileageTotal)} />
-          </SimpleGrid>
-        </Section>
-      ) : null}
     </Stack>
   );
 };
