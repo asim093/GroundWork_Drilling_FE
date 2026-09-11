@@ -1,4 +1,4 @@
-import { ActionIcon, Box, Group, Paper, Select, Stack, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
 import { TimePicker } from '@mantine/dates';
 import { NavIcon } from '../NavIcon.jsx';
 import { BLANK_ACTIVITY_LINE } from '../../constants/timeLogs.js';
@@ -49,59 +49,59 @@ export const ActivityLinesSection = ({
         return (
           <Paper key={index} withBorder radius="md" p="sm">
             <Stack gap="xs">
-              <Group wrap="wrap" gap="sm" align="flex-end">
-                <Box style={{ flex: '1 1 220px', minWidth: 180 }}>
-                  <Select
-                    label={`Activity ${index + 1}`}
-                    size="sm"
-                    placeholder={
-                      line.description && !line.activityId ? line.description : 'Select activity'
-                    }
-                    data={activityGroups}
-                    value={line.activityId || null}
-                    disabled={disabled}
-                    searchable
-                    error={lineError.activityId ? ERROR_LABELS.activityId : undefined}
-                    comboboxProps={{ position: 'bottom-start' }}
-                    onChange={(value) => updateLine(index, { activityId: value || '' })}
-                  />
-                </Box>
-                <Box style={{ width: 132 }}>
-                  <TimePicker
-                    label="Time from"
-                    size="sm"
-                    format="12h"
-                    withDropdown
-                    value={line.timeFrom}
-                    disabled={disabled}
-                    error={Boolean(lineError.timeFrom)}
-                    onChange={(value) => updateLine(index, { timeFrom: value || '' })}
-                  />
-                </Box>
-                <Box style={{ width: 132 }}>
-                  <TimePicker
-                    label="Time to"
-                    size="sm"
-                    format="12h"
-                    withDropdown
-                    value={line.timeTo}
-                    disabled={disabled}
-                    error={Boolean(lineError.timeTo)}
-                    onChange={(value) => updateLine(index, { timeTo: value || '' })}
-                  />
-                </Box>
+              <Group justify="space-between" align="center" wrap="nowrap">
+                <Text fw={600} size="sm">
+                  Activity {index + 1}
+                </Text>
                 {disabled ? null : (
                   <ActionIcon
                     variant="subtle"
                     color="gray"
-                    size="lg"
+                    size="sm"
                     aria-label={`Remove line ${index + 1}`}
                     onClick={() => removeLine(index)}
                   >
-                    <NavIcon name="trash" size={16} />
+                    <NavIcon name="trash" size={15} />
                   </ActionIcon>
                 )}
               </Group>
+
+              <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="sm">
+                <Select
+                  label="Activity"
+                  size="sm"
+                  placeholder={
+                    line.description && !line.activityId ? line.description : 'Select activity'
+                  }
+                  data={activityGroups}
+                  value={line.activityId || null}
+                  disabled={disabled}
+                  searchable
+                  error={lineError.activityId ? ERROR_LABELS.activityId : undefined}
+                  comboboxProps={{ position: 'bottom-start' }}
+                  onChange={(value) => updateLine(index, { activityId: value || '' })}
+                />
+                <TimePicker
+                  label="Time from"
+                  size="sm"
+                  format="12h"
+                  withDropdown
+                  value={line.timeFrom}
+                  disabled={disabled}
+                  error={Boolean(lineError.timeFrom)}
+                  onChange={(value) => updateLine(index, { timeFrom: value || '' })}
+                />
+                <TimePicker
+                  label="Time to"
+                  size="sm"
+                  format="12h"
+                  withDropdown
+                  value={line.timeTo}
+                  disabled={disabled}
+                  error={Boolean(lineError.timeTo)}
+                  onChange={(value) => updateLine(index, { timeTo: value || '' })}
+                />
+              </SimpleGrid>
 
               <TextInput
                 label="Comments"
