@@ -29,6 +29,34 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Tabs scroll horizontally instead of wrapping onto a second row (Settings/Reports on mobile). */
+.mantine-Tabs-list {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.mantine-Tabs-list::-webkit-scrollbar {
+  display: none;
+}
+
+.mantine-Tabs-tab {
+  flex-shrink: 0;
+}
+
+/* Modal footer action rows never wrap onto a second line, even on narrow phones. */
+.tl-modal-actions {
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 480px) {
+  .mantine-Modal-body {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}
+
 *:focus-visible {
   outline: 2px solid var(--mantine-color-brand-4);
   outline-offset: 1px;

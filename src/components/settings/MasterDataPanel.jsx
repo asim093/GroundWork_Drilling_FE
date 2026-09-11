@@ -8,6 +8,7 @@ import {
   Group,
   Loader,
   Modal,
+  Paper,
   Select,
   Stack,
   Table,
@@ -16,8 +17,9 @@ import {
 } from '@mantine/core';
 import { SortableTh } from '../list/SortableTh.jsx';
 import { ListPagination } from '../list/ListPagination.jsx';
+import { MobileFilterDrawer } from '../list/MobileFilterDrawer.jsx';
+import { MobileFab } from '../list/MobileFab.jsx';
 import { useListParams } from '../../hooks/useListParams.js';
-import { NavIcon } from '../NavIcon.jsx';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
 
@@ -25,6 +27,8 @@ const ACTIVE_FILTER_OPTIONS = [
   { value: 'true', label: 'Active' },
   { value: 'false', label: 'Inactive' }
 ];
+
+const countActive = (...values) => values.filter(Boolean).length;
 
 export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
   const { queryParams, filters, sort, order, limit, setPage, setLimit, toggleSort, setFilter } =
@@ -129,6 +133,30 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
 
   const colSpan = extraColumn ? 5 : 4;
 
+  const filterFields = (
+    <>
+      {extraColumn ? (
+        <Select
+          label={extraColumn.label}
+          placeholder={extraColumn.filterPlaceholder}
+          data={filterOptions}
+          value={filters[extraColumn.filterParam] || null}
+          onChange={(value) => setFilter(extraColumn.filterParam, value)}
+          searchable
+          clearable
+        />
+      ) : null}
+      <Select
+        label="State"
+        placeholder="Any state"
+        data={ACTIVE_FILTER_OPTIONS}
+        value={filters.active || null}
+        onChange={(value) => setFilter('active', value)}
+        clearable
+      />
+    </>
+  );
+
   const rows = result.data.map((record) => (
     <Table.Tr key={record.id}>
       <Table.Td>{record.name}</Table.Td>
@@ -161,35 +189,32 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
   return (
     <Card withBorder radius="md" p="md">
       <Stack gap="md">
-        <Group gap="sm" wrap="wrap" align="center">
+        <Group gap="sm" wrap="nowrap" align="center">
           <TextInput
             placeholder={`Search ${plural.toLowerCase()}`}
             value={filters.search || ''}
             onChange={(event) => setFilter('search', event.currentTarget.value)}
-            w={300}
+            style={{ flex: 1 }}
           />
-          {extraColumn ? (
-            <Select
-              placeholder={extraColumn.filterPlaceholder}
-              data={filterOptions}
-              value={filters[extraColumn.filterParam] || null}
-              onChange={(value) => setFilter(extraColumn.filterParam, value)}
-              searchable
-              clearable
-              w={200}
-            />
-          ) : null}
-          <Select
-            placeholder="Any state"
-            data={ACTIVE_FILTER_OPTIONS}
-            value={filters.active || null}
-            onChange={(value) => setFilter('active', value)}
-            clearable
-            w={150}
-          />
-          <Button ml="auto" leftSection={<NavIcon name="plus" size={16} />} onClick={openCreate}>
+          <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
+            <MobileFilterDrawer
+              title={`Filter ${plural.toLowerCase()}`}
+              activeCount={countActive(extraColumn ? filters[extraColumn.filterParam] : null, filters.active)}
+            >
+              {filterFields}
+            </MobileFilterDrawer>
+          </Group>
+          <Button
+            visibleFrom="lg"
+            onClick={openCreate}
+            style={{ flexShrink: 0 }}
+          >
             New {singular.toLowerCase()}
           </Button>
+        </Group>
+
+        <Group gap="sm" wrap="wrap" visibleFrom="lg">
+          {filterFields}
         </Group>
 
         {loading ? (
@@ -197,38 +222,82 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
             <Loader />
           </Center>
         ) : (
-          <Table.ScrollContainer minWidth={extraColumn ? 680 : 560}>
-            <Table verticalSpacing="sm" highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
-                  {extraColumn ? <Table.Th>{extraColumn.label}</Table.Th> : null}
-                  <Table.Th>Status</Table.Th>
-                  <SortableTh
-                    field="createdAt"
-                    label="Added"
-                    sort={sort}
-                    order={order}
-                    onSort={toggleSort}
-                  />
-                  <Table.Th />
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {rows.length ? (
-                  rows
-                ) : (
+          <>
+            <Stack gap="xs" hiddenFrom="lg">
+              {result.data.length ? (
+                result.data.map((record) => (
+                  <Paper key={record.id} withBorder radius="md" p="sm">
+                    <Stack gap={6}>
+                      <Group justify="space-between" wrap="nowrap" align="flex-start">
+                        <Text fw={600} size="sm" truncate>
+                          {record.name}
+                        </Text>
+                        <Badge variant="light" color={record.active ? 'green' : 'gray'} size="sm">
+                          {record.active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </Group>
+                      {extraColumn ? (
+                        <Text size="xs" c="dimmed">
+                          {extraColumn.render(record)}
+                        </Text>
+                      ) : null}
+                      <Group gap="xs" wrap="wrap">
+                        <Button size="xs" variant="default" onClick={() => openEdit(record)}>
+                          Edit
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="light"
+                          color={record.active ? 'red' : 'green'}
+                          loading={busyId === record.id}
+                          onClick={() => handleToggleActive(record)}
+                        >
+                          {record.active ? 'Deactivate' : 'Reactivate'}
+                        </Button>
+                      </Group>
+                    </Stack>
+                  </Paper>
+                ))
+              ) : (
+                <Text c="dimmed" ta="center" py="md" size="sm">
+                  No {plural.toLowerCase()} match the current filters
+                </Text>
+              )}
+            </Stack>
+
+            <Table.ScrollContainer minWidth={extraColumn ? 680 : 560} visibleFrom="lg">
+              <Table verticalSpacing="sm" highlightOnHover>
+                <Table.Thead>
                   <Table.Tr>
-                    <Table.Td colSpan={colSpan}>
-                      <Text c="dimmed" ta="center" py="md">
-                        No {plural.toLowerCase()} match the current filters
-                      </Text>
-                    </Table.Td>
+                    <SortableTh field="name" label="Name" sort={sort} order={order} onSort={toggleSort} />
+                    {extraColumn ? <Table.Th>{extraColumn.label}</Table.Th> : null}
+                    <Table.Th>Status</Table.Th>
+                    <SortableTh
+                      field="createdAt"
+                      label="Added"
+                      sort={sort}
+                      order={order}
+                      onSort={toggleSort}
+                    />
+                    <Table.Th />
                   </Table.Tr>
-                )}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+                </Table.Thead>
+                <Table.Tbody>
+                  {rows.length ? (
+                    rows
+                  ) : (
+                    <Table.Tr>
+                      <Table.Td colSpan={colSpan}>
+                        <Text c="dimmed" ta="center" py="md">
+                          No {plural.toLowerCase()} match the current filters
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </>
         )}
 
         <ListPagination
@@ -238,6 +307,8 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
           onLimitChange={setLimit}
         />
       </Stack>
+
+      <MobileFab onClick={openCreate} label={`New ${singular.toLowerCase()}`} />
 
       <Modal
         opened={modal.open}
@@ -272,13 +343,14 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
                 onChange={setExtraValue}
               />
             ) : null}
-            <Group justify="flex-end" gap="sm">
-              <Button variant="default" type="button" onClick={closeModal}>
+            <Group justify="flex-end" gap="sm" wrap="nowrap">
+              <Button variant="default" type="button" onClick={closeModal} size="sm">
                 Cancel
               </Button>
               <Button
                 type="submit"
                 loading={submitting}
+                size="sm"
                 disabled={
                   !name.trim() || (extraColumn?.required && extraColumn.kind === 'select' && !extraValue)
                 }

@@ -225,11 +225,11 @@ export const JobFormModal = ({ opened, onClose, job, onSaved }) => {
             </>
           )}
 
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={onClose} type="button">
+          <Group justify="flex-end" gap="sm" wrap="nowrap">
+            <Button variant="default" onClick={onClose} type="button" size="sm">
               Cancel
             </Button>
-            <Button type="submit" loading={submitting}>
+            <Button type="submit" loading={submitting} size="sm">
               {isEdit ? 'Save changes' : 'Create job'}
             </Button>
           </Group>

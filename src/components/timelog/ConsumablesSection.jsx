@@ -59,7 +59,7 @@ export const ConsumablesSection = ({ items, onChange, disabled, groupedOptions, 
                 onChange={(value) => updateItem(index, 'itemName', value)}
               />
 
-              <SimpleGrid cols={{ base: 3 }} spacing="sm">
+              <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="sm">
                 <NumberInput
                   label="Qty taken"
                   size="sm"

@@ -1,4 +1,5 @@
-import { Group, Pagination, Select, Text } from '@mantine/core';
+import { ActionIcon, Group, Pagination, Select, Text } from '@mantine/core';
+import { NavIcon } from '../NavIcon.jsx';
 
 const PAGE_SIZE_OPTIONS = ['10', '20', '50'];
 
@@ -15,27 +16,47 @@ export const ListPagination = ({ pagination, limit, onPageChange, onLimitChange 
 
   return (
     <Group justify="space-between" wrap="wrap" gap="sm">
-      <Text size="sm" c="dimmed">
-        {start}–{end} of {total}
-      </Text>
       <Group gap="sm" wrap="nowrap">
+        <Text size="sm" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+          {start}–{end} of {total}
+        </Text>
         <Select
           data={PAGE_SIZE_OPTIONS}
           value={String(limit)}
           onChange={(value) => onLimitChange(Number(value))}
-          w={92}
+          w={80}
           size="sm"
           allowDeselect={false}
           aria-label="Rows per page"
-        />
-        <Pagination
-          value={page}
-          total={totalPages}
-          onChange={onPageChange}
-          size="sm"
-          withEdges
+          visibleFrom="xs"
         />
       </Group>
+
+      <Group gap={6} wrap="nowrap" hiddenFrom="xs">
+        <ActionIcon
+          variant="default"
+          size="md"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          aria-label="Previous page"
+        >
+          <NavIcon name="chevronLeft" size={15} />
+        </ActionIcon>
+        <Text size="sm" style={{ whiteSpace: 'nowrap' }}>
+          Page {page} of {totalPages}
+        </Text>
+        <ActionIcon
+          variant="default"
+          size="md"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+          aria-label="Next page"
+        >
+          <NavIcon name="chevronRight" size={15} />
+        </ActionIcon>
+      </Group>
+
+      <Pagination value={page} total={totalPages} onChange={onPageChange} size="sm" withEdges visibleFrom="xs" />
     </Group>
   );
 };

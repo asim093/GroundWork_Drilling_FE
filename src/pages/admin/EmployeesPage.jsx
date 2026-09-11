@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  ActionIcon,
   Badge,
   Button,
   Card,
@@ -19,6 +18,7 @@ import {
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
+import { MobileFab } from '../../components/list/MobileFab.jsx';
 import { UserFormModal } from '../../components/admin/UserFormModal.jsx';
 import { EmployeeFormModal } from '../../components/admin/EmployeeFormModal.jsx';
 import { useListParams } from '../../hooks/useListParams.js';
@@ -249,19 +249,16 @@ const ManagersTab = () => {
             onChange={(event) => setFilter('search', event.currentTarget.value)}
             style={{ flex: 1 }}
           />
-          <Group gap="xs" wrap="nowrap" hiddenFrom="sm">
+          <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
             <MobileFilterDrawer
               title="Filter managers"
               activeCount={countActive(filters.status, filters.active, filters.employeeType)}
             >
               {filterFields}
             </MobileFilterDrawer>
-            <ActionIcon size="lg" radius="md" onClick={openNewManager} aria-label="New manager">
-              <NavIcon name="plus" size={18} />
-            </ActionIcon>
           </Group>
           <Button
-            visibleFrom="sm"
+            visibleFrom="lg"
             leftSection={<NavIcon name="plus" size={16} />}
             onClick={openNewManager}
             style={{ flexShrink: 0 }}
@@ -270,7 +267,7 @@ const ManagersTab = () => {
           </Button>
         </Group>
 
-        <Group gap="sm" wrap="wrap" visibleFrom="sm">
+        <Group gap="sm" wrap="wrap" visibleFrom="lg">
           {filterFields}
         </Group>
 
@@ -280,7 +277,7 @@ const ManagersTab = () => {
           </Center>
         ) : (
           <>
-            <Stack gap="xs" hiddenFrom="sm">
+            <Stack gap="xs" hiddenFrom="lg">
               {result.data.length ? (
                 result.data.map((user) => (
                   <ManagerCard
@@ -299,7 +296,7 @@ const ManagersTab = () => {
               )}
             </Stack>
 
-            <Table.ScrollContainer minWidth={940} visibleFrom="sm">
+            <Table.ScrollContainer minWidth={940} visibleFrom="lg">
               <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
@@ -332,6 +329,8 @@ const ManagersTab = () => {
 
         <ListPagination pagination={result.pagination} limit={limit} onPageChange={setPage} onLimitChange={setLimit} />
       </Stack>
+
+      <MobileFab onClick={openNewManager} label="New manager" />
 
       <UserFormModal
         opened={modal.open}
@@ -496,19 +495,16 @@ const CrewTab = () => {
             onChange={(event) => setFilter('search', event.currentTarget.value)}
             style={{ flex: 1 }}
           />
-          <Group gap="xs" wrap="nowrap" hiddenFrom="sm">
+          <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
             <MobileFilterDrawer
               title="Filter employees"
               activeCount={countActive(filters.employeeType, filters.employeeCategory, filters.active)}
             >
               {filterFields}
             </MobileFilterDrawer>
-            <ActionIcon size="lg" radius="md" onClick={openNewEmployee} aria-label="New employee">
-              <NavIcon name="plus" size={18} />
-            </ActionIcon>
           </Group>
           <Button
-            visibleFrom="sm"
+            visibleFrom="lg"
             leftSection={<NavIcon name="plus" size={16} />}
             onClick={openNewEmployee}
             style={{ flexShrink: 0 }}
@@ -517,7 +513,7 @@ const CrewTab = () => {
           </Button>
         </Group>
 
-        <Group gap="sm" wrap="wrap" visibleFrom="sm">
+        <Group gap="sm" wrap="wrap" visibleFrom="lg">
           {filterFields}
         </Group>
 
@@ -527,7 +523,7 @@ const CrewTab = () => {
           </Center>
         ) : (
           <>
-            <Stack gap="xs" hiddenFrom="sm">
+            <Stack gap="xs" hiddenFrom="lg">
               {result.data.length ? (
                 result.data.map((employee) => (
                   <CrewCard
@@ -545,7 +541,7 @@ const CrewTab = () => {
               )}
             </Stack>
 
-            <Table.ScrollContainer minWidth={720} visibleFrom="sm">
+            <Table.ScrollContainer minWidth={720} visibleFrom="lg">
               <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
@@ -578,6 +574,8 @@ const CrewTab = () => {
 
         <ListPagination pagination={result.pagination} limit={limit} onPageChange={setPage} onLimitChange={setLimit} />
       </Stack>
+
+      <MobileFab onClick={openNewEmployee} label="New employee" />
 
       <EmployeeFormModal
         opened={modal.open}

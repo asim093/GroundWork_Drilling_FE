@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Card, Group, Stack, Table, Text, TextInput } from '@mantine/core';
+import { Card, Divider, Group, Paper, Stack, Table, Text, TextInput } from '@mantine/core';
 import { NavIcon } from '../NavIcon.jsx';
 import { SortableTh } from '../list/SortableTh.jsx';
 import { useClientTable } from '../../hooks/useClientTable.js';
@@ -43,7 +43,62 @@ export const LedgerReportTable = ({ items, title, itemColumnLabel, totalColumnLa
           />
         </Group>
 
-        <Table.ScrollContainer minWidth={480}>
+        <Stack gap="xs" hiddenFrom="lg">
+          {table.data.length ? (
+            table.data.map((row) => {
+              const isOpen = expanded.has(row.key);
+              return (
+                <Paper key={row.key} withBorder radius="md" p="sm">
+                  <Stack gap={8}>
+                    <Group
+                      justify="space-between"
+                      wrap="nowrap"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => toggle(row.key)}
+                    >
+                      <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+                        <NavIcon name={isOpen ? 'chevronDown' : 'chevronRight'} size={14} />
+                        <Text fw={600} size="sm" truncate>
+                          {row.label}
+                        </Text>
+                      </Group>
+                      <Text fw={700} size="sm" c="brand.7" style={{ flexShrink: 0 }}>
+                        {row.total}
+                      </Text>
+                    </Group>
+                    {isOpen ? (
+                      <>
+                        <Divider />
+                        {row.jobs?.length ? (
+                          <Stack gap={6}>
+                            {row.jobs.map((job) => (
+                              <Group key={job.jobId} justify="space-between" wrap="wrap">
+                                <Text size="xs">{job.label}</Text>
+                                <Text size="xs" c="dimmed">
+                                  {job.qty}
+                                </Text>
+                              </Group>
+                            ))}
+                          </Stack>
+                        ) : (
+                          <Text size="xs" c="dimmed">
+                            No job breakdown available.
+                          </Text>
+                        )}
+                      </>
+                    ) : null}
+                  </Stack>
+                </Paper>
+              );
+            })
+          ) : (
+            <Text c="dimmed" ta="center" py="md" size="sm">
+              {emptyLabel}
+            </Text>
+          )}
+        </Stack>
+
+        <Table.ScrollContainer minWidth={480} visibleFrom="lg">
           <Table verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>

@@ -115,11 +115,11 @@ export const EmployeeFormModal = ({ opened, onClose, employee, onSaved }) => {
               onChange={(event) => setField('active')(event.currentTarget.checked)}
             />
           ) : null}
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={onClose} type="button">
+          <Group justify="flex-end" gap="sm" wrap="nowrap">
+            <Button variant="default" onClick={onClose} type="button" size="sm">
               Cancel
             </Button>
-            <Button type="submit" loading={submitting} disabled={!form.name.trim() || !form.employeeType}>
+            <Button type="submit" loading={submitting} disabled={!form.name.trim() || !form.employeeType} size="sm">
               {isEdit ? 'Save changes' : 'Add employee'}
             </Button>
           </Group>

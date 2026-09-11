@@ -63,7 +63,7 @@ const BrandMark = ({ size = 30 }) => (
   </Box>
 );
 
-export const AppLayout = ({ navItems = [], children }) => {
+export const AppLayout = ({ navItems = [], children, hideQuickActions = false }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -78,7 +78,7 @@ export const AppLayout = ({ navItems = [], children }) => {
   };
 
   const railMode = !expanded;
-  const quickActions = QUICK_ACTIONS[user?.role] || [];
+  const quickActions = hideQuickActions ? [] : QUICK_ACTIONS[user?.role] || [];
 
   return (
     <AppShell

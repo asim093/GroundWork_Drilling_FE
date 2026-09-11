@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  ActionIcon,
   Badge,
   Box,
   Button,
@@ -145,6 +146,17 @@ const JobFact = ({ label, value }) => (
 );
 
 const filledValue = (value) => value !== '' && value !== null && value !== undefined;
+
+const BackButton = ({ onClick }) => (
+  <>
+    <ActionIcon hiddenFrom="sm" variant="subtle" size="lg" onClick={onClick} aria-label="Back">
+      <NavIcon name="chevronLeft" size={20} />
+    </ActionIcon>
+    <Button visibleFrom="sm" variant="subtle" onClick={onClick}>
+      Back
+    </Button>
+  </>
+);
 
 export const TimeLogFormPage = () => {
   usePageTitle('Time & material log');
@@ -378,7 +390,7 @@ export const TimeLogFormPage = () => {
 
   if (loading) {
     return (
-      <AppLayout navItems={navItems}>
+      <AppLayout navItems={navItems} hideQuickActions>
         <Center py="xl">
           <Loader />
         </Center>
@@ -388,12 +400,10 @@ export const TimeLogFormPage = () => {
 
   if (entry?.status === 'submitted' && !isAdminMode) {
     return (
-      <AppLayout navItems={navItems}>
+      <AppLayout navItems={navItems} hideQuickActions>
         <Stack gap="lg">
           <Group>
-            <Button variant="subtle" onClick={() => navigate(-1)}>
-              Back
-            </Button>
+            <BackButton onClick={() => navigate(-1)} />
           </Group>
           <TimeLogEntryView entry={entry} />
         </Stack>
@@ -447,12 +457,10 @@ export const TimeLogFormPage = () => {
   };
 
   return (
-    <AppLayout navItems={navItems}>
+    <AppLayout navItems={navItems} hideQuickActions>
       <Stack gap="lg">
         <Group justify="space-between" wrap="wrap" gap="sm">
-          <Button variant="subtle" onClick={() => navigate(-1)}>
-            Back
-          </Button>
+          <BackButton onClick={() => navigate(-1)} />
           <Badge
             variant="light"
             color={entry ? TIME_LOG_STATUS_COLORS[entry.status] : 'gray'}
@@ -517,25 +525,27 @@ export const TimeLogFormPage = () => {
                     allowDeselect={false}
                   />
                 </Box>
-                <Group
-                  gap={10}
-                  wrap="nowrap"
-                  py={6}
-                  px="md"
-                  style={{ borderRadius: 8, background: 'var(--mantine-color-brand-0)' }}
-                >
-                  <Box c="brand.7" style={{ display: 'flex' }}>
-                    <NavIcon name="calendar" size={16} />
-                  </Box>
-                  <Stack gap={0}>
-                    <Text size="xs" c="brand.8" fw={600}>
-                      Hours on site
-                    </Text>
-                    <Text size="md" fw={700} c="brand.9" lh={1.2}>
-                      {hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview} h`}
-                    </Text>
-                  </Stack>
-                </Group>
+                <Box w={{ base: '100%', sm: 'auto' }} maw={{ sm: 220 }}>
+                  <Group
+                    gap={10}
+                    wrap="nowrap"
+                    py={6}
+                    px="md"
+                    style={{ borderRadius: 8, background: 'var(--mantine-color-brand-0)' }}
+                  >
+                    <Box c="brand.7" style={{ display: 'flex' }}>
+                      <NavIcon name="calendar" size={16} />
+                    </Box>
+                    <Stack gap={0}>
+                      <Text size="xs" c="brand.8" fw={600}>
+                        Hours on site
+                      </Text>
+                      <Text size="md" fw={700} c="brand.9" lh={1.2}>
+                        {hoursOnSitePreview === null ? '—' : `${hoursOnSitePreview} h`}
+                      </Text>
+                    </Stack>
+                  </Group>
+                </Box>
               </Group>
 
               <SubGroup

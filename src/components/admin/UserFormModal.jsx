@@ -104,7 +104,7 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
               : 'Email delivery is not configured. Share this one-time link with the manager so they can set their password.'}
           </Alert>
           <TextInput label="Invite link" value={inviteResult.link} readOnly />
-          <Group justify="space-between">
+          <Group justify="space-between" wrap="nowrap">
             <CopyButton value={inviteResult.link}>
               {({ copied, copy }) => (
                 <Button variant="light" onClick={copy}>
@@ -156,11 +156,11 @@ export const UserFormModal = ({ opened, onClose, user, onSaved }) => {
                 onChange={(event) => setField('active')(event.currentTarget.checked)}
               />
             ) : null}
-            <Group justify="flex-end" gap="sm">
-              <Button variant="default" onClick={onClose} type="button">
+            <Group justify="flex-end" gap="sm" wrap="nowrap">
+              <Button variant="default" onClick={onClose} type="button" size="sm">
                 Cancel
               </Button>
-              <Button type="submit" loading={submitting}>
+              <Button type="submit" loading={submitting} size="sm">
                 {isEdit ? 'Save changes' : 'Create and invite'}
               </Button>
             </Group>

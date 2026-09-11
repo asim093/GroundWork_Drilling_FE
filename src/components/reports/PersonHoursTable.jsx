@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Card, Group, Stack, Table, Text, TextInput } from '@mantine/core';
+import { Card, Divider, Group, Paper, Stack, Table, Text, TextInput } from '@mantine/core';
 import { NavIcon } from '../NavIcon.jsx';
 import { SortableTh } from '../list/SortableTh.jsx';
 import { ListPagination } from '../list/ListPagination.jsx';
@@ -45,7 +45,70 @@ export const PersonHoursTable = ({ people, title, personLabel = 'Employee', show
           />
         </Group>
 
-        <Table.ScrollContainer minWidth={560}>
+        <Stack gap="xs" hiddenFrom="lg">
+          {table.data.length ? (
+            table.data.map((person) => {
+              const id = person[key];
+              const isOpen = expanded.has(id);
+              return (
+                <Paper key={id} withBorder radius="md" p="sm">
+                  <Stack gap={8}>
+                    <Group
+                      justify="space-between"
+                      wrap="nowrap"
+                      align="flex-start"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => toggle(id)}
+                    >
+                      <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+                        <NavIcon name={isOpen ? 'chevronDown' : 'chevronRight'} size={14} />
+                        <Stack gap={0} style={{ minWidth: 0 }}>
+                          <Text fw={600} size="sm" truncate>
+                            {person.name}
+                          </Text>
+                          {showType && person.employeeType ? (
+                            <Text size="xs" c="dimmed">
+                              {person.employeeType}
+                            </Text>
+                          ) : null}
+                        </Stack>
+                      </Group>
+                      <Stack gap={0} align="flex-end" style={{ flexShrink: 0 }}>
+                        <Text size="sm" fw={700} c="brand.7">
+                          {person.totalHours}h
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {person.days.length} day{person.days.length === 1 ? '' : 's'}
+                        </Text>
+                      </Stack>
+                    </Group>
+                    {isOpen ? (
+                      <>
+                        <Divider />
+                        <Stack gap={6}>
+                          {person.days.map((day, index) => (
+                            <Group key={index} justify="space-between" wrap="wrap">
+                              <Text size="xs">{formatDate(day.date)}</Text>
+                              <Text size="xs" c="dimmed">
+                                {day.jobNumber || '—'} · {day.timeIn || '—'}–{day.timeOut || '—'} · {day.hours}h
+                              </Text>
+                            </Group>
+                          ))}
+                        </Stack>
+                      </>
+                    ) : null}
+                  </Stack>
+                </Paper>
+              );
+            })
+          ) : (
+            <Text c="dimmed" ta="center" py="md" size="sm">
+              No submitted entries in this period
+            </Text>
+          )}
+        </Stack>
+
+        <Table.ScrollContainer minWidth={560} visibleFrom="lg">
           <Table verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>

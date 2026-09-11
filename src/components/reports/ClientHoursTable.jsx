@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Card, Group, Stack, Table, Text, TextInput } from '@mantine/core';
+import { Card, Divider, Group, Paper, Stack, Table, Text, TextInput } from '@mantine/core';
 import { NavIcon } from '../NavIcon.jsx';
 import { SortableTh } from '../list/SortableTh.jsx';
 import { ListPagination } from '../list/ListPagination.jsx';
@@ -61,7 +61,87 @@ export const ClientHoursTable = ({ jobs, totals }) => {
           />
         </Group>
 
-        <Table.ScrollContainer minWidth={620}>
+        <Stack gap="xs" hiddenFrom="lg">
+          {table.data.length ? (
+            table.data.map((client) => {
+              const isOpen = expanded.has(client.clientName);
+              return (
+                <Paper key={client.clientName} withBorder radius="md" p="sm">
+                  <Stack gap={8}>
+                    <Group
+                      justify="space-between"
+                      wrap="nowrap"
+                      align="flex-start"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => toggle(client.clientName)}
+                    >
+                      <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+                        <NavIcon name={isOpen ? 'chevronDown' : 'chevronRight'} size={14} />
+                        <Text fw={600} size="sm" truncate>
+                          {client.clientName}
+                        </Text>
+                      </Group>
+                      <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
+                        {client.jobs.length} job{client.jobs.length === 1 ? '' : 's'}
+                      </Text>
+                    </Group>
+                    <Group gap="lg">
+                      <Stack gap={0}>
+                        <Text size="xs" c="dimmed">
+                          Billable
+                        </Text>
+                        <Text size="sm" fw={600}>
+                          {client.billableHours}
+                        </Text>
+                      </Stack>
+                      <Stack gap={0}>
+                        <Text size="xs" c="dimmed">
+                          Paid
+                        </Text>
+                        <Text size="sm" fw={700} c="brand.7">
+                          {client.paidHours}
+                        </Text>
+                      </Stack>
+                    </Group>
+                    {isOpen ? (
+                      <>
+                        <Divider />
+                        <Stack gap={6}>
+                          {client.jobs.map((job) => (
+                            <Group key={job.jobId} justify="space-between" wrap="wrap">
+                              <Text size="xs">{job.jobNumber || '—'}</Text>
+                              <Text size="xs" c="dimmed">
+                                {job.entryCount} shift{job.entryCount === 1 ? '' : 's'} · {job.billableHours}h billable · {job.paidHours}h paid
+                              </Text>
+                            </Group>
+                          ))}
+                        </Stack>
+                      </>
+                    ) : null}
+                  </Stack>
+                </Paper>
+              );
+            })
+          ) : (
+            <Text c="dimmed" ta="center" py="md" size="sm">
+              No submitted entries in this period
+            </Text>
+          )}
+          {totals ? (
+            <Paper withBorder radius="md" p="sm" bg="var(--mantine-color-brand-0)">
+              <Group justify="space-between">
+                <Text fw={700} size="sm">
+                  Total
+                </Text>
+                <Text fw={700} size="sm">
+                  {totals.billableHours}h billable · {totals.paidHours}h paid
+                </Text>
+              </Group>
+            </Paper>
+          ) : null}
+        </Stack>
+
+        <Table.ScrollContainer minWidth={620} visibleFrom="lg">
           <Table verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>

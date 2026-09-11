@@ -8,6 +8,7 @@ import {
   Center,
   Group,
   Loader,
+  Paper,
   Select,
   Stack,
   Table,
@@ -19,6 +20,8 @@ import {
 import { useDebouncedValue } from '@mantine/hooks';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
+import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
+import { MobileFab } from '../../components/list/MobileFab.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { JobFormModal } from '../../components/admin/JobFormModal.jsx';
 import { JOB_STATUS_COLORS } from '../../constants/jobs.js';
@@ -69,6 +72,13 @@ const logStatus = (job) => {
   }
   return { variant: 'light', color: 'red', label: `${late} days past schedule with no log` };
 };
+
+const managersLabel = (job) =>
+  job.siteManagers?.length
+    ? job.siteManagers.map((entry) => `${entry.userId?.name || 'Unknown'} (${entry.shift})`).join(', ')
+    : '—';
+
+const countActive = (...values) => values.filter(Boolean).length;
 
 export const JobsPage = () => {
   usePageTitle('Jobs');
@@ -136,6 +146,34 @@ export const JobsPage = () => {
     setFilter('search', debouncedSearch);
   }, [debouncedSearch, setFilter]);
 
+  const filterFields = (
+    <>
+      <Select
+        label="Manager"
+        placeholder="All managers"
+        data={managers.map((manager) => ({ value: manager.id, label: manager.name }))}
+        value={filters.assignedUser || null}
+        onChange={(value) => setFilter('assignedUser', value)}
+        searchable
+        clearable
+      />
+      <Select
+        label="Rig"
+        placeholder="All rigs"
+        data={rigs.map((rig) => ({ value: rig.id, label: rig.name }))}
+        value={filters.rigNumber || null}
+        onChange={(value) => setFilter('rigNumber', value)}
+        searchable
+        clearable
+      />
+      <DateRangePicker
+        value={{ from: filters.from || '', to: filters.to || '' }}
+        onChange={(range) => setFilters(range)}
+        clearable
+      />
+    </>
+  );
+
   const rows = result.data.map((job) => {
     const status = logStatus(job);
     return (
@@ -151,13 +189,7 @@ export const JobsPage = () => {
             {job.status}
           </Badge>
         </Table.Td>
-        <Table.Td>
-          {job.siteManagers?.length
-            ? job.siteManagers
-                .map((entry) => `${entry.userId?.name || 'Unknown'} (${entry.shift})`)
-                .join(', ')
-            : '—'}
-        </Table.Td>
+        <Table.Td>{managersLabel(job)}</Table.Td>
         <Table.Td onClick={(event) => event.stopPropagation()}>
           <Group justify="flex-end">
             <Tooltip label={status.label} withArrow>
@@ -202,32 +234,18 @@ export const JobsPage = () => {
               value={search}
               onChange={(event) => setSearch(event.currentTarget.value)}
               leftSection={<NavIcon name="search" size={15} />}
-              style={{ flex: 1, minWidth: 180 }}
+              style={{ flex: 1, minWidth: 0 }}
             />
-            <Select
-              placeholder="All managers"
-              data={managers.map((manager) => ({ value: manager.id, label: manager.name }))}
-              value={filters.assignedUser || null}
-              onChange={(value) => setFilter('assignedUser', value)}
-              searchable
-              clearable
-              w={170}
-            />
-            <Select
-              placeholder="All rigs"
-              data={rigs.map((rig) => ({ value: rig.id, label: rig.name }))}
-              value={filters.rigNumber || null}
-              onChange={(value) => setFilter('rigNumber', value)}
-              searchable
-              clearable
-              w={130}
-            />
-            <DateRangePicker
-              value={{ from: filters.from || '', to: filters.to || '' }}
-              onChange={(range) => setFilters(range)}
-              clearable
-            />
+            <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
+              <MobileFilterDrawer
+                title="Filter jobs"
+                activeCount={countActive(filters.assignedUser, filters.rigNumber, filters.from || filters.to)}
+              >
+                {filterFields}
+              </MobileFilterDrawer>
+            </Group>
             <Button
+              visibleFrom="lg"
               leftSection={<NavIcon name="plus" size={16} />}
               onClick={openNewJob}
               style={{ flexShrink: 0 }}
@@ -236,59 +254,133 @@ export const JobsPage = () => {
             </Button>
           </Group>
 
+          <Group gap="sm" wrap="wrap" visibleFrom="lg">
+            {filterFields}
+          </Group>
+
           {loading ? (
             <Center py="xl">
               <Loader />
             </Center>
           ) : (
-            <Table.ScrollContainer minWidth={1040}>
-              <Table verticalSpacing="sm" highlightOnHover>
-                <Table.Thead>
-                  <Table.Tr>
-                    <SortableTh
-                      field="jobNumber"
-                      label="Job #"
-                      sort={sort}
-                      order={order}
-                      onSort={toggleSort}
-                    />
-                    <SortableTh
-                      field="clientName"
-                      label="Client"
-                      sort={sort}
-                      order={order}
-                      onSort={toggleSort}
-                    />
-                    <Table.Th>Location</Table.Th>
-                    <Table.Th>Rig</Table.Th>
-                    <Table.Th>Drill #</Table.Th>
-                    <SortableTh
-                      field="scheduledDate"
-                      label="Scheduled"
-                      sort={sort}
-                      order={order}
-                      onSort={toggleSort}
-                    />
-                    <Table.Th>Status</Table.Th>
-                    <Table.Th>Managers</Table.Th>
-                    <Table.Th>Log</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {rows.length ? (
-                    rows
-                  ) : (
+            <>
+              <Stack gap="xs" hiddenFrom="lg">
+                {result.data.length ? (
+                  result.data.map((job) => {
+                    const status = logStatus(job);
+                    return (
+                      <Paper
+                        key={job.id}
+                        withBorder
+                        radius="md"
+                        p="sm"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => navigate(`/admin/jobs/${job.id}`)}
+                      >
+                        <Stack gap={6}>
+                          <Group justify="space-between" wrap="nowrap" align="flex-start">
+                            <Stack gap={0} style={{ minWidth: 0 }}>
+                              <Text fw={600} size="sm" truncate>
+                                {job.jobNumber} — {job.clientName}
+                              </Text>
+                              <Text size="xs" c="dimmed" truncate>
+                                {job.jobLocation || 'No location'}
+                              </Text>
+                            </Stack>
+                            <Badge variant="light" color={JOB_STATUS_COLORS[job.status] || 'brand'} size="sm">
+                              {job.status}
+                            </Badge>
+                          </Group>
+                          <Group gap={6} wrap="wrap">
+                            <Text size="xs" c="dimmed">
+                              Rig {job.rigNumber?.name || '—'}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              · Drill {job.drillNumber || '—'}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              · Scheduled {formatDate(job.scheduledDate)}
+                            </Text>
+                          </Group>
+                          <Text size="xs" c="dimmed" truncate>
+                            {managersLabel(job)}
+                          </Text>
+                          <Group justify="space-between" align="center">
+                            <Text size="xs" c={status.color}>
+                              {status.label}
+                            </Text>
+                            <ActionIcon
+                              variant={status.variant}
+                              color={status.color}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                navigate(`/admin/jobs/${job.id}#log-history`);
+                              }}
+                              aria-label="Open log history"
+                            >
+                              <NavIcon name="clipboard" size={17} />
+                            </ActionIcon>
+                          </Group>
+                        </Stack>
+                      </Paper>
+                    );
+                  })
+                ) : (
+                  <Text c="dimmed" ta="center" py="md" size="sm">
+                    No jobs match the current filters
+                  </Text>
+                )}
+              </Stack>
+
+              <Table.ScrollContainer minWidth={1040} visibleFrom="lg">
+                <Table verticalSpacing="sm" highlightOnHover>
+                  <Table.Thead>
                     <Table.Tr>
-                      <Table.Td colSpan={9}>
-                        <Text c="dimmed" ta="center" py="md">
-                          No jobs match the current filters
-                        </Text>
-                      </Table.Td>
+                      <SortableTh
+                        field="jobNumber"
+                        label="Job #"
+                        sort={sort}
+                        order={order}
+                        onSort={toggleSort}
+                      />
+                      <SortableTh
+                        field="clientName"
+                        label="Client"
+                        sort={sort}
+                        order={order}
+                        onSort={toggleSort}
+                      />
+                      <Table.Th>Location</Table.Th>
+                      <Table.Th>Rig</Table.Th>
+                      <Table.Th>Drill #</Table.Th>
+                      <SortableTh
+                        field="scheduledDate"
+                        label="Scheduled"
+                        sort={sort}
+                        order={order}
+                        onSort={toggleSort}
+                      />
+                      <Table.Th>Status</Table.Th>
+                      <Table.Th>Managers</Table.Th>
+                      <Table.Th>Log</Table.Th>
                     </Table.Tr>
-                  )}
-                </Table.Tbody>
-              </Table>
-            </Table.ScrollContainer>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {rows.length ? (
+                      rows
+                    ) : (
+                      <Table.Tr>
+                        <Table.Td colSpan={9}>
+                          <Text c="dimmed" ta="center" py="md">
+                            No jobs match the current filters
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    )}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            </>
           )}
 
           <ListPagination
@@ -299,6 +391,8 @@ export const JobsPage = () => {
           />
         </Stack>
       </Card>
+
+      <MobileFab onClick={openNewJob} label="New job" />
 
       <JobFormModal opened={formOpen} onClose={() => setFormOpen(false)} onSaved={load} />
     </Stack>
