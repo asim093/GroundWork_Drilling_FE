@@ -27,6 +27,7 @@ import { SHIFT_OPTIONS } from '../../constants/employees.js';
 import { useClientTable } from '../../hooks/useClientTable.js';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { formatDate } from '../../lib/dateRange.js';
+import { clockDuration } from '../../lib/timeLogMath.js';
 import { getJob, updateJob } from '../../services/jobService.js';
 import { listUsers } from '../../services/userService.js';
 import { listTimeLogs } from '../../services/timeLogService.js';
@@ -152,8 +153,8 @@ export const JobDetailsPage = () => {
           date: entry.date,
           shift: entry.shift || '—',
           crewCount: entry.crew?.length || 0,
-          drilled: entry.metersDrilled ?? 0,
-          recovered: entry.metersRecovered ?? 0,
+          billableHours: clockDuration(entry.timeStarted, entry.timeFinished) ?? 0,
+          paidHours: entry.hoursOnSite ?? clockDuration(entry.timeIn, entry.timeOut) ?? 0,
           status: entry.status
         })),
     [logs, logShift, logStatus, logRange]
@@ -325,8 +326,8 @@ export const JobDetailsPage = () => {
                 {th('date', 'Date')}
                 {th('shift', 'Shift')}
                 {th('crewCount', 'Crew')}
-                {th('drilled', 'Drilled (m)')}
-                {th('recovered', 'Recovered (m)')}
+                {th('billableHours', 'Billable hrs')}
+                {th('paidHours', 'Paid hrs')}
                 {th('status', 'Status')}
               </Table.Tr>
             </Table.Thead>
@@ -341,8 +342,8 @@ export const JobDetailsPage = () => {
                     <Table.Td>{formatDate(row.date)}</Table.Td>
                     <Table.Td>{row.shift}</Table.Td>
                     <Table.Td>{row.crewCount}</Table.Td>
-                    <Table.Td>{row.drilled}</Table.Td>
-                    <Table.Td>{row.recovered}</Table.Td>
+                    <Table.Td>{row.billableHours}</Table.Td>
+                    <Table.Td>{row.paidHours}</Table.Td>
                     <Table.Td>
                       <Badge variant="light" color={TIME_LOG_STATUS_COLORS[row.status] || 'gray'} tt="capitalize">
                         {row.status}

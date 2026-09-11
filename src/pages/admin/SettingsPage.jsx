@@ -1,7 +1,6 @@
 import { Stack, Tabs } from '@mantine/core';
 import { MasterDataPanel } from '../../components/settings/MasterDataPanel.jsx';
 import { ActivitiesPanel } from '../../components/settings/ActivitiesPanel.jsx';
-import { BonusConfigPanel } from '../../components/settings/BonusConfigPanel.jsx';
 import {
   activityCategoriesService,
   consumablesService,
@@ -34,7 +33,6 @@ export const SettingsPage = () => {
           <Tabs.Tab value="consumables">Consumables</Tabs.Tab>
           <Tabs.Tab value="activity-categories">Activity categories</Tabs.Tab>
           <Tabs.Tab value="activities">Activities</Tabs.Tab>
-          <Tabs.Tab value="bonus">Bonus config</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="locations" pt="md">
@@ -60,9 +58,6 @@ export const SettingsPage = () => {
         </Tabs.Panel>
         <Tabs.Panel value="activities" pt="md">
           <ActivitiesPanel />
-        </Tabs.Panel>
-        <Tabs.Panel value="bonus" pt="md">
-          <BonusConfigPanel />
         </Tabs.Panel>
       </Tabs>
     </Stack>

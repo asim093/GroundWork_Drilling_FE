@@ -1,464 +1,285 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import {
-  Badge,
-  Card,
-  Center,
-  CloseButton,
-  Divider,
-  Grid,
-  Group,
-  Loader,
-  Paper,
-  SegmentedControl,
-  SimpleGrid,
-  Stack,
-  Table,
-  Text
-} from '@mantine/core';
+import { useCallback, useEffect, useState } from 'react';
+import { Center, Group, Loader, Paper, SegmentedControl, Stack, Tabs, Text } from '@mantine/core';
 import { ReportExportButtons } from '../../components/reports/ReportExportButtons.jsx';
-import { ReportGroupsTable } from '../../components/reports/ReportGroupsTable.jsx';
-import { GroupReportDrawer } from '../../components/reports/GroupReportDrawer.jsx';
-import { ConsumablesReportTable } from '../../components/reports/ConsumablesReportTable.jsx';
-import { ReportEntriesTable } from '../../components/reports/ReportEntriesTable.jsx';
-import { ReportCharts } from '../../components/reports/ReportCharts.jsx';
+import { ClientHoursTable } from '../../components/reports/ClientHoursTable.jsx';
+import { PersonHoursTable } from '../../components/reports/PersonHoursTable.jsx';
+import { LedgerReportTable } from '../../components/reports/LedgerReportTable.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange } from '../../lib/dateRange.js';
 import {
   downloadReport,
-  getMonthlyComparison,
-  getReportSummary
+  getConsumablesReport,
+  getFuelReport,
+  getHoursReport
 } from '../../services/reportService.js';
 import { extractErrorMessage } from '../../services/api.js';
-import { notifyError, notifyInfo } from '../../lib/toast.js';
+import { notifyError } from '../../lib/toast.js';
 
-const GROUP_BY_OPTIONS = [
-  { value: 'none', label: 'No grouping' },
+const HOURS_SCOPE_OPTIONS = [
+  { value: 'client', label: 'By client' },
   { value: 'employee', label: 'By employee' },
-  { value: 'job', label: 'By job' }
+  { value: 'manager', label: 'By manager' }
 ];
 
-const COMPARISON_METRICS = [
-  { key: 'totalLoggedHours', label: 'Hours' },
-  { key: 'metersDrilled', label: 'Drilled (m)' },
-  { key: 'metersRecovered', label: 'Recovered (m)' }
-];
+const toConsumablesRows = (items) =>
+  (items || []).map((item) => ({
+    key: item.itemName,
+    label: item.itemName,
+    total: item.totalQtyUsed,
+    jobs: (item.jobs || []).map((job) => ({ jobId: job.jobId, label: job.label, qty: job.qtyUsed }))
+  }));
 
-const fmt = (value) => {
-  if (value === null || value === undefined) {
-    return '—';
-  }
-  if (typeof value !== 'number') {
-    return value;
-  }
-  return Number.isInteger(value)
-    ? value.toLocaleString('en-US')
-    : value.toLocaleString('en-US', { maximumFractionDigits: 2 });
-};
+const toFuelRows = (byType) =>
+  (byType || []).map((type) => ({
+    key: type.type,
+    label: type.type,
+    total: `${type.totalLt} L`,
+    jobs: (type.jobs || []).map((job) => ({ jobId: job.jobId, label: job.label, qty: `${job.qtyLt} L` }))
+  }));
 
-const recoveryColor = (value, threshold) => {
-  if (value === null || value === undefined) {
-    return undefined;
-  }
-  return value >= threshold ? 'green.7' : 'red.7';
-};
-
-const CompactStat = ({ label, value, hint }) => (
-  <Group justify="space-between" wrap="nowrap" gap="md" py="sm">
-    <Text fz="sm" c="dimmed">
-      {label}
-    </Text>
-    <Group gap="sm" wrap="nowrap" align="baseline">
-      {hint ? (
-        <Text fz="xs" c="dimmed" visibleFrom="sm">
-          {hint}
-        </Text>
-      ) : null}
-      <Text fz="sm" fw={700}>
-        {value}
-      </Text>
-    </Group>
-  </Group>
-);
-
-const SummaryStats = ({ report }) => {
-  const recovery = report.recoveryPercentOverall;
-
-  return (
-    <Grid gutter="lg">
-      <Grid.Col span={{ base: 12, md: 4 }}>
-        <Paper radius="lg" p="xl" h="100%" bg="var(--mantine-color-brand-6)" c="white">
-          <Stack gap={4} h="100%" justify="center">
-            <Text fz="sm" fw={600} style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-              Total bonus amount
-            </Text>
-            <Text fz={40} fw={800} lh={1.1}>
-              ${fmt(report.bonusTotalAmount)}
-            </Text>
-            <Text fz="xs" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-              Across {fmt(report.entryCount)} submitted{' '}
-              {report.entryCount === 1 ? 'entry' : 'entries'}
-            </Text>
-          </Stack>
-        </Paper>
-      </Grid.Col>
-
-      <Grid.Col span={{ base: 12, md: 8 }}>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" h="100%">
-          <Paper withBorder radius="lg" p="lg" h="100%">
-            <Stack gap={6}>
-              <Text fz="sm" c="dimmed" fw={600}>
-                Overall recovery
-              </Text>
-              <Text
-                fz={30}
-                fw={700}
-                lh={1.1}
-                c={recoveryColor(recovery, report.recoveryThreshold)}
-              >
-                {recovery === null || recovery === undefined ? '—' : `${fmt(recovery)}%`}
-              </Text>
-              <Text fz="xs" c="dimmed">
-                Bonus threshold {fmt(report.recoveryThreshold)}%
-              </Text>
-            </Stack>
-          </Paper>
-
-          <Paper withBorder radius="lg" p="lg" h="100%">
-            <Stack gap={6}>
-              <Text fz="sm" c="dimmed" fw={600}>
-                Total hours logged
-              </Text>
-              <Text fz={30} fw={700} lh={1.1}>
-                {fmt(report.totals.totalLoggedHours)}
-              </Text>
-              <Text fz="xs" c="dimmed">
-                On-site, standby &amp; other
-              </Text>
-            </Stack>
-          </Paper>
-        </SimpleGrid>
-      </Grid.Col>
-
-      <Grid.Col span={12}>
-        <Paper withBorder radius="lg" px="lg" py={4}>
-          <CompactStat label="Total drilled" value={`${fmt(report.totals.metersDrilled)} m`} />
-          <Divider />
-          <CompactStat
-            label="Total recovered"
-            value={`${fmt(report.totals.metersRecovered)} m`}
-          />
-          <Divider />
-          <CompactStat
-            label="Bonus-eligible shifts"
-            value={fmt(report.bonusEligibility.eligible)}
-            hint={`${fmt(report.bonusEligibility['not-eligible'])} not eligible · ${fmt(
-              report.bonusEligibility['not-available']
-            )} not available`}
-          />
-        </Paper>
-      </Grid.Col>
-    </Grid>
-  );
-};
-
-const TrendArrow = ({ direction }) => (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    style={{ display: 'block', transform: direction === 'down' ? 'rotate(180deg)' : 'none' }}
-  >
-    <polyline points="6 14 12 8 18 14" />
-  </svg>
-);
-
-const ComparisonChange = ({ current, previous }) => {
-  const comparable = typeof previous === 'number' && previous !== 0 && typeof current === 'number';
-
-  if (!comparable) {
-    return (
-      <Text fz="sm" c="dimmed">
-        —
-      </Text>
-    );
-  }
-
-  const pct = ((current - previous) / previous) * 100;
-
-  if (Math.abs(pct) < 0.05) {
-    return (
-      <Text fz="sm" c="dimmed">
-        No change
-      </Text>
-    );
-  }
-
-  const up = pct > 0;
-
-  return (
-    <Group gap={4} wrap="nowrap" justify="flex-end" c={up ? 'green.7' : 'red.7'}>
-      <TrendArrow direction={up ? 'up' : 'down'} />
-      <Text fz="sm" fw={600} c="inherit">
-        {Math.abs(pct).toFixed(1)}%
-      </Text>
-    </Group>
-  );
-};
-
-const MonthlyComparison = ({ comparison, loading, failed }) => {
-  const current = comparison?.current;
-  const previous = comparison?.previous;
-  const ready = Boolean(current?.totals && previous?.totals);
-
-  return (
-    <Card withBorder radius="lg" p="lg">
+const MonthlyConsumables = ({ monthly }) =>
+  monthly?.length ? (
+    <Paper withBorder radius="lg" p="lg">
       <Stack gap="md">
-        <Stack gap={2}>
-          <Text fw={700}>Monthly comparison</Text>
-          <Text fz="xs" c="dimmed">
-            {ready ? `${previous.label} vs ${current.label}` : 'Current month vs previous month'}
-          </Text>
-        </Stack>
-
-        {loading ? (
-          <Center py="lg">
-            <Loader size="sm" />
-          </Center>
-        ) : !ready ? (
-          <Text c="dimmed" size="sm" py="xs">
-            {failed
-              ? 'Comparison data could not be loaded right now.'
-              : 'Not enough history yet to compare months.'}
-          </Text>
-        ) : (
-          <Table.ScrollContainer minWidth={460}>
-            <Table verticalSpacing="sm" horizontalSpacing="md">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Metric</Table.Th>
-                  <Table.Th style={{ textAlign: 'right' }}>{current.label}</Table.Th>
-                  <Table.Th style={{ textAlign: 'right' }}>{previous.label}</Table.Th>
-                  <Table.Th style={{ textAlign: 'right' }}>Change</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {COMPARISON_METRICS.map((metric) => {
-                  const cur = current.totals[metric.key];
-                  const prev = previous.totals[metric.key];
-
-                  return (
-                    <Table.Tr key={metric.key}>
-                      <Table.Td>{metric.label}</Table.Td>
-                      <Table.Td style={{ textAlign: 'right' }} fw={600}>
-                        {fmt(cur)}
-                      </Table.Td>
-                      <Table.Td style={{ textAlign: 'right' }} c="dimmed">
-                        {fmt(prev)}
-                      </Table.Td>
-                      <Table.Td style={{ textAlign: 'right' }}>
-                        <ComparisonChange current={cur} previous={prev} />
-                      </Table.Td>
-                    </Table.Tr>
-                  );
-                })}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
-        )}
+        <Text fw={700}>Monthly breakdown</Text>
+        {monthly.map((month) => (
+          <Stack key={month.key} gap={4}>
+            <Text fw={600} size="sm">
+              {month.label}
+            </Text>
+            {month.items.length ? (
+              month.items.map((item) => (
+                <Group key={item.itemName} justify="space-between" py={2}>
+                  <Text size="sm" c="dimmed">
+                    {item.itemName}
+                  </Text>
+                  <Text size="sm" fw={600}>
+                    {item.qtyUsed}
+                  </Text>
+                </Group>
+              ))
+            ) : (
+              <Text size="sm" c="dimmed">
+                No consumables recorded.
+              </Text>
+            )}
+          </Stack>
+        ))}
       </Stack>
-    </Card>
+    </Paper>
+  ) : null;
+
+const MonthlyFuel = ({ monthly }) =>
+  monthly?.length ? (
+    <Paper withBorder radius="lg" p="lg">
+      <Stack gap="md">
+        <Text fw={700}>Monthly breakdown</Text>
+        {monthly.map((month) => (
+          <Stack key={month.key} gap={4}>
+            <Group justify="space-between">
+              <Text fw={600} size="sm">
+                {month.label}
+              </Text>
+              <Text fw={700} size="sm">
+                {month.totalLt} L
+              </Text>
+            </Group>
+            {month.byType.map((type) => (
+              <Group key={type.type} justify="space-between" py={2} pl="md">
+                <Text size="sm" c="dimmed">
+                  {type.type}
+                </Text>
+                <Text size="sm">{type.totalLt} L</Text>
+              </Group>
+            ))}
+          </Stack>
+        ))}
+      </Stack>
+    </Paper>
+  ) : null;
+
+const HoursTab = ({ range }) => {
+  const [scope, setScope] = useState('client');
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      setReport(await getHoursReport({ from: range.from, to: range.to, scope }));
+    } catch (error) {
+      notifyError(extractErrorMessage(error, 'Unable to load the hours report'));
+    } finally {
+      setLoading(false);
+    }
+  }, [range, scope]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleExport = (format) => downloadReport({ report: 'hours', format, params: { from: range.from, to: range.to, scope } });
+
+  return (
+    <Stack gap="lg">
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <SegmentedControl
+          data={HOURS_SCOPE_OPTIONS}
+          value={scope}
+          onChange={setScope}
+          size="sm"
+          radius="sm"
+          style={{ border: '1px solid var(--mantine-color-gray-3)' }}
+        />
+        <ReportExportButtons onExport={handleExport} disabled={loading || !report} size="sm" radius="sm" />
+      </Group>
+
+      <Text size="xs" c="dimmed">
+        Billable hours = actual work time (Time Started/Finished), billed to the client. Paid hours
+        = full on-site time (Time In/Out), what employees are paid for — paid hours is always ≥
+        billable hours.
+      </Text>
+
+      {loading || !report ? (
+        <Center py="xl">
+          <Loader />
+        </Center>
+      ) : scope === 'client' ? (
+        <ClientHoursTable jobs={report.jobs} totals={report.totals} />
+      ) : scope === 'employee' ? (
+        <PersonHoursTable people={report.employees} title="Hours by employee" personLabel="Employee" showType />
+      ) : (
+        <PersonHoursTable people={report.managers} title="Hours by manager" personLabel="Manager" showType={false} />
+      )}
+    </Stack>
   );
 };
 
-export const ReportsPage = () => {
-  usePageTitle('Reports');
-  const [searchParams, setSearchParams] = useSearchParams();
-  const jobFilter = searchParams.get('job') || null;
-  const [range, setRange] = useState(currentMonthRange);
-  const [groupBy, setGroupBy] = useState('none');
-  const [summary, setSummary] = useState(null);
-  const [comparison, setComparison] = useState(null);
-  const [loadingSummary, setLoadingSummary] = useState(true);
-  const [loadingComparison, setLoadingComparison] = useState(true);
-  const [comparisonFailed, setComparisonFailed] = useState(false);
-  const [drawerGroup, setDrawerGroup] = useState(null);
-  const [drawerVariant, setDrawerVariant] = useState('employee');
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const chartsRef = useRef(null);
+const ConsumablesTab = ({ range }) => {
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const summaryParams = useCallback(() => {
-    const params = { from: range.from, to: range.to };
-    if (groupBy !== 'none') {
-      params.groupBy = groupBy;
-    }
-    if (jobFilter) {
-      params.job = jobFilter;
-    }
-    return params;
-  }, [range, groupBy, jobFilter]);
-
-  const clearJobFilter = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('job');
-    setSearchParams(next, { replace: true });
-  };
-
-  const loadSummary = useCallback(async () => {
-    setLoadingSummary(true);
+  const load = useCallback(async () => {
+    setLoading(true);
 
     try {
-      setSummary(await getReportSummary(summaryParams()));
+      setReport(await getConsumablesReport({ from: range.from, to: range.to }));
     } catch (error) {
-      notifyError(extractErrorMessage(error, 'Unable to load the report summary'));
+      notifyError(extractErrorMessage(error, 'Unable to load the consumables report'));
     } finally {
-      setLoadingSummary(false);
+      setLoading(false);
     }
-  }, [summaryParams]);
-
-  const loadComparison = useCallback(async () => {
-    setLoadingComparison(true);
-    setComparisonFailed(false);
-
-    try {
-      setComparison(await getMonthlyComparison({}));
-    } catch (error) {
-      setComparisonFailed(true);
-      notifyError(extractErrorMessage(error, 'Unable to load the monthly comparison'));
-    } finally {
-      setLoadingComparison(false);
-    }
-  }, []);
+  }, [range]);
 
   useEffect(() => {
-    loadSummary();
-  }, [loadSummary]);
+    load();
+  }, [load]);
 
-  useEffect(() => {
-    loadComparison();
-  }, [loadComparison]);
-
-  const handleExport = async (format) => {
-    let charts;
-    if (format === 'pdf' && chartsRef.current) {
-      try {
-        charts = await chartsRef.current.capture();
-      } catch {
-        notifyInfo('Charts could not be added to the PDF; exporting without them');
-      }
-    }
-    return downloadReport({ scope: 'summary', format, params: summaryParams(), charts });
-  };
-
-  const openGroupDrawer = (group, variant) => {
-    setDrawerGroup(group);
-    setDrawerVariant(variant);
-    setDrawerOpen(true);
-  };
+  const handleExport = (format) => downloadReport({ report: 'consumables', format, params: { from: range.from, to: range.to } });
 
   return (
-    <Stack gap="xl">
-      <Paper withBorder radius="lg" p="lg">
-        <Stack gap="sm">
-          <Group gap="sm" wrap="wrap" align="center" justify="space-between">
-            <Group gap="sm" wrap="wrap" align="center">
-              <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
-              <SegmentedControl
-                data={GROUP_BY_OPTIONS}
-                value={groupBy}
-                onChange={setGroupBy}
-                size="sm"
-                radius="sm"
-                style={{ border: '1px solid var(--mantine-color-gray-3)' }}
-              />
-            </Group>
-            <ReportExportButtons
-              onExport={handleExport}
-              disabled={loadingSummary || !summary}
-              size="sm"
-              radius="sm"
-            />
-          </Group>
-          {jobFilter ? (
-            <Group gap={6}>
-              <Badge
-                variant="light"
-                size="lg"
-                rightSection={<CloseButton size="xs" onClick={clearJobFilter} aria-label="Clear job filter" />}
-              >
-                {summary?.scope || 'Filtered to one job'}
-              </Badge>
-            </Group>
-          ) : null}
-        </Stack>
-      </Paper>
+    <Stack gap="lg">
+      <Group justify="flex-end">
+        <ReportExportButtons onExport={handleExport} disabled={loading || !report} size="sm" radius="sm" />
+      </Group>
 
-      {loadingSummary || !summary ? (
+      {loading || !report ? (
         <Center py="xl">
           <Loader />
         </Center>
       ) : (
         <Stack gap="lg">
-          <SummaryStats report={summary} />
-
-          <ReportCharts
-            ref={chartsRef}
-            visible={false}
-            mode={summary.groupBy === 'job' ? 'job' : 'none'}
-            entries={summary.entries}
-            eligibility={summary.bonusEligibility}
-            recoveryPercent={summary.recoveryPercentOverall}
+          <LedgerReportTable
+            items={toConsumablesRows(report.items)}
+            title="Consumables used"
+            itemColumnLabel="Item"
+            totalColumnLabel="Total qty used"
+            emptyLabel="No consumables recorded in this period"
           />
-
-          {summary.groupBy === 'employee' ? (
-            <>
-              <ReportGroupsTable
-                groups={summary.groups}
-                variant="employee"
-                onSelectGroup={(group) => openGroupDrawer(group, 'employee')}
-              />
-              <ReportGroupsTable
-                groups={summary.managerGroups}
-                variant="manager"
-                onSelectGroup={(group) => openGroupDrawer(group, 'manager')}
-              />
-            </>
-          ) : null}
-
-          {summary.groupBy === 'job' && summary.groups?.length ? (
-            <ReportGroupsTable groups={summary.groups} variant="job" />
-          ) : null}
-
-          <ConsumablesReportTable consumables={summary.consumables} />
-
-          <ReportEntriesTable
-            entries={summary.entries}
-            showOperator
-            entryHref={(entryId) => `/admin/time-logs/${entryId}`}
-          />
-
-          <MonthlyComparison
-            comparison={comparison}
-            loading={loadingComparison}
-            failed={comparisonFailed}
-          />
+          <MonthlyConsumables monthly={report.monthly} />
         </Stack>
       )}
+    </Stack>
+  );
+};
 
-      <GroupReportDrawer
-        opened={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        group={drawerGroup}
-        variant={drawerVariant}
-        range={range}
-      />
+const FuelTab = ({ range }) => {
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      setReport(await getFuelReport({ from: range.from, to: range.to }));
+    } catch (error) {
+      notifyError(extractErrorMessage(error, 'Unable to load the fuel report'));
+    } finally {
+      setLoading(false);
+    }
+  }, [range]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleExport = (format) => downloadReport({ report: 'fuel', format, params: { from: range.from, to: range.to } });
+
+  return (
+    <Stack gap="lg">
+      <Group justify="flex-end">
+        <ReportExportButtons onExport={handleExport} disabled={loading || !report} size="sm" radius="sm" />
+      </Group>
+
+      {loading || !report ? (
+        <Center py="xl">
+          <Loader />
+        </Center>
+      ) : (
+        <Stack gap="lg">
+          <LedgerReportTable
+            items={toFuelRows(report.byType)}
+            title="Fuel used"
+            itemColumnLabel="Fuel type"
+            totalColumnLabel="Total litres"
+            emptyLabel="No fuel recorded in this period"
+          />
+          <MonthlyFuel monthly={report.monthly} />
+        </Stack>
+      )}
+    </Stack>
+  );
+};
+
+export const ReportsPage = () => {
+  usePageTitle('Reports');
+  const [range, setRange] = useState(currentMonthRange);
+
+  return (
+    <Stack gap="xl">
+      <Paper withBorder radius="lg" p="lg">
+        <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
+      </Paper>
+
+      <Tabs defaultValue="hours" keepMounted={false}>
+        <Tabs.List>
+          <Tabs.Tab value="hours">Hours</Tabs.Tab>
+          <Tabs.Tab value="consumables">Consumables</Tabs.Tab>
+          <Tabs.Tab value="fuel">Fuel</Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value="hours" pt="md">
+          <HoursTab range={range} />
+        </Tabs.Panel>
+        <Tabs.Panel value="consumables" pt="md">
+          <ConsumablesTab range={range} />
+        </Tabs.Panel>
+        <Tabs.Panel value="fuel" pt="md">
+          <FuelTab range={range} />
+        </Tabs.Panel>
+      </Tabs>
     </Stack>
   );
 };

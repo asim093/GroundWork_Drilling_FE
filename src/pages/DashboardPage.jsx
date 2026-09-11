@@ -17,7 +17,6 @@ import { StatCard } from '../components/dashboard/StatCard.jsx';
 import { SectionCard } from '../components/SectionCard.jsx';
 import { NavIcon } from '../components/NavIcon.jsx';
 import { TIME_LOG_STATUS_COLORS } from '../constants/timeLogs.js';
-import { BONUS_ELIGIBILITY, BONUS_ELIGIBILITY_ORDER } from '../constants/bonus.js';
 import { usePageTitle } from '../context/PageTitleContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { formatDate } from '../lib/dateRange.js';
@@ -118,38 +117,6 @@ const ActivityChart = ({ data }) => {
   );
 };
 
-const BonusEligibility = ({ counts }) => (
-  <Stack gap="md">
-    <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="md">
-      {BONUS_ELIGIBILITY_ORDER.map((key) => (
-        <Box key={key}>
-          <Group gap={7} wrap="nowrap">
-            <Box
-              w={8}
-              h={8}
-              style={{
-                borderRadius: '50%',
-                backgroundColor: `var(--mantine-color-${BONUS_ELIGIBILITY[key].color}-6)`,
-                flexShrink: 0
-              }}
-            />
-            <Text size="sm" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
-              {BONUS_ELIGIBILITY[key].label}
-            </Text>
-          </Group>
-          <Text fw={700} fz={26} mt={4}>
-            {counts[key] || 0}
-          </Text>
-        </Box>
-      ))}
-    </SimpleGrid>
-    <Text size="xs" c="dimmed">
-      Computed from meters recovered ÷ meters drilled per shift. &quot;Not available&quot; means a
-      shift had no meters drilled recorded, not that it is ineligible.
-    </Text>
-  </Stack>
-);
-
 const RecentTable = ({ rows, linkBase, showOperator, emptyText }) => {
   if (!rows.length) {
     return (
@@ -234,30 +201,24 @@ const AdminDashboard = ({ data, user }) => (
         to="/admin/jobs"
       />
       <StatCard
-        label="Meters drilled"
-        value={fmt(data.thisMonth.totals.metersDrilled)}
-        hint={`${fmt(data.thisMonth.totals.metersRecovered)} m recovered this month`}
+        label="Billable hours"
+        value={fmt(data.thisMonth.totals.billableHours)}
+        hint="Actual work time this month"
         icon="reports"
         to="/admin/reports"
       />
       <StatCard
-        label="Hours logged"
-        value={fmt(data.thisMonth.totals.totalLoggedHours)}
-        hint={`${fmt(data.thisMonth.totals.standbyHours)} standby hours this month`}
+        label="Paid hours"
+        value={fmt(data.thisMonth.totals.paidHours)}
+        hint="Full on-site time this month"
         icon="calendar"
         to="/admin/reports"
       />
     </SimpleGrid>
 
-    <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
-      <SectionCard title="Submission activity" subtitle="Submissions in the last 7 days">
-        <ActivityChart data={data.submissionActivity} />
-      </SectionCard>
-
-      <SectionCard title="Bonus eligibility" subtitle={data.thisMonth.label}>
-        <BonusEligibility counts={data.thisMonth.bonusEligibility} />
-      </SectionCard>
-    </SimpleGrid>
+    <SectionCard title="Submission activity" subtitle="Submissions in the last 7 days">
+      <ActivityChart data={data.submissionActivity} />
+    </SectionCard>
 
     <SectionCard
       title="Recent submissions"
@@ -302,9 +263,9 @@ const OperatorDashboard = ({ data, user }) => (
         to="/operator/submissions"
       />
       <StatCard
-        label="Hours logged"
-        value={fmt(data.thisMonth.totals.totalLoggedHours)}
-        hint={`${fmt(data.thisMonth.totals.standbyHours)} standby hours this month`}
+        label="Paid hours"
+        value={fmt(data.thisMonth.totals.paidHours)}
+        hint="Full on-site time this month"
         icon="calendar"
         to="/operator/my-reports"
       />

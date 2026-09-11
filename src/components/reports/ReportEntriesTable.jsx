@@ -3,34 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { Card, Group, Stack, Table, Text, TextInput } from '@mantine/core';
 import { SortableTh } from '../list/SortableTh.jsx';
 import { ListPagination } from '../list/ListPagination.jsx';
-import { BonusBadge } from './BonusBadge.jsx';
 import { useClientTable } from '../../hooks/useClientTable.js';
 import { formatDate } from '../../lib/dateRange.js';
 
 export const ReportEntriesTable = ({
   entries,
-  showOperator = true,
+  showManager = true,
   title = 'Submitted entries',
   entryHref
 }) => {
   const searchFields = useMemo(
-    () => (showOperator ? ['jobNumber', 'operator'] : ['jobNumber']),
-    [showOperator]
+    () => (showManager ? ['jobNumber', 'manager'] : ['jobNumber']),
+    [showManager]
   );
   const navigate = useNavigate();
   const rows = useMemo(
     () =>
       (entries || []).map((entry) => ({
         entryId: entry.entryId,
-        userId: entry.userId,
         date: entry.date,
         jobNumber: entry.jobNumber || '—',
-        operator: entry.operator || '—',
-        hours: entry.totalLoggedHours,
-        drilled: entry.metersDrilled,
-        recovered: entry.metersRecovered,
-        recoveryPercent: entry.recoveryPercent,
-        eligibility: entry.eligibility
+        clientName: entry.clientName || '—',
+        manager: entry.manager || '—',
+        timeIn: entry.timeIn || '—',
+        timeOut: entry.timeOut || '—',
+        billableHours: entry.billableHours,
+        paidHours: entry.paidHours
       })),
     [entries]
   );
@@ -41,7 +39,7 @@ export const ReportEntriesTable = ({
     defaultOrder: 'desc'
   });
 
-  const colSpan = showOperator ? 8 : 7;
+  const colSpan = showManager ? 8 : 7;
 
   return (
     <Card withBorder radius="lg" p="lg">
@@ -49,27 +47,26 @@ export const ReportEntriesTable = ({
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Text fw={700}>{title}</Text>
           <TextInput
-            placeholder={showOperator ? 'Search job # or manager' : 'Search job #'}
+            placeholder={showManager ? 'Search job # or manager' : 'Search job #'}
             value={table.search}
             onChange={(event) => table.setSearch(event.currentTarget.value)}
-            w={260}
+            w={{ base: '100%', sm: 260 }}
           />
         </Group>
 
-        <Table.ScrollContainer minWidth={showOperator ? 820 : 700}>
+        <Table.ScrollContainer minWidth={showManager ? 760 : 640}>
           <Table verticalSpacing="sm" highlightOnHover>
             <Table.Thead>
               <Table.Tr>
                 <SortableTh field="date" label="Date" sort={table.sort} order={table.order} onSort={table.toggleSort} />
                 <SortableTh field="jobNumber" label="Job #" sort={table.sort} order={table.order} onSort={table.toggleSort} />
-                {showOperator ? (
-                  <SortableTh field="operator" label="Manager" sort={table.sort} order={table.order} onSort={table.toggleSort} />
+                <Table.Th>Client</Table.Th>
+                {showManager ? (
+                  <SortableTh field="manager" label="Manager" sort={table.sort} order={table.order} onSort={table.toggleSort} />
                 ) : null}
-                <SortableTh field="hours" label="Hours" sort={table.sort} order={table.order} onSort={table.toggleSort} />
-                <SortableTh field="drilled" label="Drilled (m)" sort={table.sort} order={table.order} onSort={table.toggleSort} />
-                <SortableTh field="recovered" label="Recovered (m)" sort={table.sort} order={table.order} onSort={table.toggleSort} />
-                <SortableTh field="recoveryPercent" label="Recovery %" sort={table.sort} order={table.order} onSort={table.toggleSort} />
-                <SortableTh field="eligibility" label="Eligible" sort={table.sort} order={table.order} onSort={table.toggleSort} />
+                <Table.Th>Time in / out</Table.Th>
+                <SortableTh field="billableHours" label="Billable hrs" sort={table.sort} order={table.order} onSort={table.toggleSort} />
+                <SortableTh field="paidHours" label="Paid hrs" sort={table.sort} order={table.order} onSort={table.toggleSort} />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -84,22 +81,13 @@ export const ReportEntriesTable = ({
                   >
                     <Table.Td>{formatDate(row.date)}</Table.Td>
                     <Table.Td>{row.jobNumber}</Table.Td>
-                    {showOperator ? <Table.Td>{row.operator}</Table.Td> : null}
-                    <Table.Td>{row.hours ?? '—'}</Table.Td>
-                    <Table.Td>{row.drilled ?? '—'}</Table.Td>
-                    <Table.Td>{row.recovered ?? '—'}</Table.Td>
+                    <Table.Td>{row.clientName}</Table.Td>
+                    {showManager ? <Table.Td>{row.manager}</Table.Td> : null}
                     <Table.Td>
-                      {row.recoveryPercent === null ? (
-                        <Text c="dimmed" size="sm">
-                          —
-                        </Text>
-                      ) : (
-                        `${row.recoveryPercent}%`
-                      )}
+                      {row.timeIn} – {row.timeOut}
                     </Table.Td>
-                    <Table.Td>
-                      <BonusBadge eligibility={row.eligibility} size="sm" />
-                    </Table.Td>
+                    <Table.Td>{row.billableHours ?? '—'}</Table.Td>
+                    <Table.Td>{row.paidHours ?? '—'}</Table.Td>
                   </Table.Tr>
                 ))
               ) : (

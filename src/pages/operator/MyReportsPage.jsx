@@ -1,43 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Center, Group, Loader, Paper, Stack } from '@mantine/core';
 import { KpiGrid } from '../../components/reports/KpiCard.jsx';
-import { ReportExportButtons } from '../../components/reports/ReportExportButtons.jsx';
 import { ConsumablesReportTable } from '../../components/reports/ConsumablesReportTable.jsx';
 import { ReportEntriesTable } from '../../components/reports/ReportEntriesTable.jsx';
-import { ReportGroupsTable } from '../../components/reports/ReportGroupsTable.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange } from '../../lib/dateRange.js';
-import { downloadReport, getMyReport } from '../../services/reportService.js';
+import { getMyReport } from '../../services/reportService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError } from '../../lib/toast.js';
 
-const bonusValue = (bonus) =>
-  bonus && typeof bonus.amount === 'number' ? `$${bonus.amount}` : '—';
-
-const bonusHint = (bonus) => {
-  if (!bonus || typeof bonus.amount !== 'number' || !bonus.band) {
-    return bonus?.note || 'No bonus for this period';
-  }
-  const band = `band ${bonus.band.fromMeters}–${bonus.band.toMeters} m`;
-  const rate = bonus.rateType === 'flat' ? 'flat' : `$${bonus.rate}/m`;
-  return `${rate} · ${band} · ${bonus.eligibleMeters} eligible m`;
-};
-
 const kpiItems = (report) => [
-  { label: 'My Total Hours', value: report.totals.totalLoggedHours },
-  { label: 'My Drilled (m)', value: report.totals.metersDrilled },
-  { label: 'My Recovered (m)', value: report.totals.metersRecovered },
-  {
-    label: 'My Recovery %',
-    value: report.recoveryPercentOverall === null ? '—' : `${report.recoveryPercentOverall}%`
-  },
-  {
-    label: 'My Bonus Eligibility',
-    value: report.bonusEligibility.eligible,
-    hint: `${report.bonusEligibility['not-eligible']} not eligible · ${report.bonusEligibility['not-available']} not available`
-  },
-  { label: 'My Bonus Amount', value: bonusValue(report.bonus), hint: bonusHint(report.bonus) }
+  { label: 'Billable hours', value: report.totals.billableHours, hint: 'Actual work time — billed to the client' },
+  { label: 'Paid hours', value: report.totals.paidHours, hint: 'Full on-site time — what you get paid for' },
+  { label: 'Submitted shifts', value: report.entryCount }
 ];
 
 export const MyReportsPage = () => {
@@ -62,15 +38,11 @@ export const MyReportsPage = () => {
     load();
   }, [load]);
 
-  const handleExport = (format) =>
-    downloadReport({ scope: 'mine', format, params: { from: range.from, to: range.to } });
-
   return (
     <Stack gap="xl">
       <Paper withBorder radius="lg" p="lg">
         <Group gap="lg" wrap="wrap" align="center" justify="space-between">
           <DateRangePicker value={range} onChange={setRange} />
-          <ReportExportButtons onExport={handleExport} disabled={loading || !report} />
         </Group>
       </Paper>
 
@@ -80,18 +52,11 @@ export const MyReportsPage = () => {
         </Center>
       ) : (
         <Stack gap="lg">
-          <KpiGrid items={kpiItems(report)} />
-          {report.groups?.length ? (
-            <ReportGroupsTable
-              groups={report.groups}
-              variant="employee"
-              title="Crew on my shifts"
-            />
-          ) : null}
+          <KpiGrid items={kpiItems(report)} cols={{ base: 1, sm: 3 }} />
           <ConsumablesReportTable consumables={report.consumables} />
           <ReportEntriesTable
             entries={report.entries}
-            showOperator={false}
+            showManager={false}
             title="My submitted entries"
             entryHref={(entryId) => `/operator/log/${entryId}`}
           />
