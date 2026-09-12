@@ -20,6 +20,7 @@ export const MobileFilterDrawer = ({ activeCount = 0, children, title = 'Filters
         position="bottom"
         padding="md"
         trapFocus={false}
+        closeOnClickOutside={false}
         styles={{
           content: { maxHeight: '70dvh', height: 'auto' },
           body: { maxHeight: 'calc(70dvh - 60px)', overflowY: 'auto', overscrollBehavior: 'contain' }
