@@ -209,7 +209,6 @@ export const OperatorJobsPage = () => {
         data={result.filters?.rigs || []}
         value={filters.rig || null}
         onChange={(value) => setFilter('rig', value)}
-        searchable
         clearable
       />
       {isCompleted ? null : (

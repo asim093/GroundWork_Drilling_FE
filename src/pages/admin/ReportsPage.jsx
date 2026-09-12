@@ -494,7 +494,6 @@ export const ReportsPage = () => {
         value={manager}
         onChange={setManager}
         clearable
-        searchable
       />
     </>
   );

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Paper, PasswordInput, Stack, Text } from '@mantine/core';
+import { Button, Center, Paper, PasswordInput, Stack, Text } from '@mantine/core';
 import { changePassword } from '../../services/authService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError, notifySuccess } from '../../lib/toast.js';
@@ -39,7 +39,8 @@ export const AccountPanel = () => {
   };
 
   return (
-    <Paper withBorder radius="lg" p="lg" maw={420}>
+    <Center pt={{ base: 0, sm: '10vh' }}>
+    <Paper withBorder radius="lg" p="lg" maw={420} w="100%">
       <Stack gap="md">
         <div>
           <Text fw={700}>Change password</Text>
@@ -78,5 +79,6 @@ export const AccountPanel = () => {
         </form>
       </Stack>
     </Paper>
+    </Center>
   );
 };

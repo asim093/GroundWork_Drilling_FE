@@ -188,7 +188,6 @@ export const JobsPage = () => {
         data={managers.map((manager) => ({ value: manager.id, label: manager.name }))}
         value={filters.assignedUser || null}
         onChange={(value) => setFilter('assignedUser', value)}
-        searchable
         clearable
       />
       <Select
@@ -197,7 +196,6 @@ export const JobsPage = () => {
         data={rigs.map((rig) => ({ value: rig.id, label: rig.name }))}
         value={filters.rigNumber || null}
         onChange={(value) => setFilter('rigNumber', value)}
-        searchable
         clearable
       />
       <DateRangePicker
