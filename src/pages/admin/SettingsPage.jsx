@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Group, Stack, Tabs } from '@mantine/core';
-import { ChevronRight } from 'tabler-icons-react';
+import { Box, Group, Stack, Tabs } from '@mantine/core';
+import { ChevronLeft, ChevronRight } from 'tabler-icons-react';
 import { MasterDataPanel } from '../../components/settings/MasterDataPanel.jsx';
 import { ActivitiesPanel } from '../../components/settings/ActivitiesPanel.jsx';
+import { AccountPanel } from '../../components/settings/AccountPanel.jsx';
 import {
   activityCategoriesService,
   consumablesService,
@@ -77,7 +78,7 @@ export const SettingsPage = () => {
   return (
     <Stack gap="md">
       <Tabs value={activeTab} onChange={setActiveTab} keepMounted={false}>
-        <Group pos="relative" gap={0}>
+        <Group pos="relative" gap={0} wrap="nowrap">
           <Tabs.List
             ref={tabsListRef}
             onScroll={handleTabsScroll}
@@ -89,8 +90,42 @@ export const SettingsPage = () => {
             <Tabs.Tab value="consumables">Consumables</Tabs.Tab>
             <Tabs.Tab value="activity-categories">Activity categories</Tabs.Tab>
             <Tabs.Tab value="activities">Activities</Tabs.Tab>
+            <Tabs.Tab value="account">Account</Tabs.Tab>
           </Tabs.List>
-          
+          {canScrollLeft ? (
+            <Box
+              hiddenFrom="sm"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                pointerEvents: 'none',
+                color: 'var(--mantine-color-gray-6)'
+              }}
+            >
+              <ChevronLeft size={16} />
+            </Box>
+          ) : null}
+          {canScrollRight ? (
+            <Box
+              hiddenFrom="sm"
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                bottom: 0,
+                display: 'flex',
+                alignItems: 'center',
+                pointerEvents: 'none',
+                color: 'var(--mantine-color-gray-6)'
+              }}
+            >
+              <ChevronRight size={16} />
+            </Box>
+          ) : null}
         </Group>
 
         <Tabs.Panel value="locations" pt="md">
@@ -117,6 +152,9 @@ export const SettingsPage = () => {
         </Tabs.Panel>
         <Tabs.Panel value="activities" pt="md">
           <ActivitiesPanel />
+        </Tabs.Panel>
+        <Tabs.Panel value="account" pt="md">
+          <AccountPanel />
         </Tabs.Panel>
       </Tabs>
     </Stack>

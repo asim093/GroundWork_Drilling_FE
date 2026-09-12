@@ -44,28 +44,41 @@ export const TimeLogEntryView = ({ entry }) => {
   return (
     <Stack gap="lg">
       <Paper withBorder radius="lg" p="lg">
-        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
-          <Stack gap={2}>
-            <Text fw={700} fz="lg">
+        <Stack gap="sm">
+          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
+            <Text fw={700} fz="lg" style={{ minWidth: 0 }}>
               Job {job.jobNumber || '—'} · {job.clientName || '—'}
             </Text>
-            <Text size="sm" c="dimmed">
-              {job.jobLocation || 'No location'}
-              {job.rigNumber?.name ? ` · Rig ${job.rigNumber.name}` : ''} ·{' '}
-              {entry.userId?.name || 'Manager'} · {formatDate(entry.date)}
-            </Text>
-          </Stack>
-          <Stack gap={4} align="flex-end">
-            <Badge variant="light" color={TIME_LOG_STATUS_COLORS[entry.status]} size="lg">
-              {entry.status}
+            <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
+              <Badge variant="light" color={TIME_LOG_STATUS_COLORS[entry.status]} size="lg">
+                {entry.status}
+              </Badge>
+              {entry.status === 'submitted' ? (
+                <Text size="xs" c="dimmed">
+                  Submitted {formatDate(entry.updatedAt)}
+                </Text>
+              ) : null}
+            </Stack>
+          </Group>
+          <Group gap={6} wrap="wrap">
+            <Badge variant="outline" color="gray" size="sm">
+              {formatDate(entry.date)}
             </Badge>
-            {entry.status === 'submitted' ? (
-              <Text size="xs" c="dimmed">
-                Submitted {formatDate(entry.updatedAt)}
-              </Text>
+            {job.jobLocation ? (
+              <Badge variant="outline" color="gray" size="sm">
+                {job.jobLocation}
+              </Badge>
             ) : null}
-          </Stack>
-        </Group>
+            {job.rigNumber?.name ? (
+              <Badge variant="outline" color="gray" size="sm">
+                Rig {job.rigNumber.name}
+              </Badge>
+            ) : null}
+            <Badge variant="outline" color="gray" size="sm">
+              {entry.userId?.name || 'Manager'}
+            </Badge>
+          </Group>
+        </Stack>
       </Paper>
 
       <Section title="Shift & Time">
@@ -115,7 +128,36 @@ export const TimeLogEntryView = ({ entry }) => {
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm" mb="sm">
               <StatTile label="Total Hours" value={show(entry.totalHours, ' h')} />
             </SimpleGrid>
-            <Table.ScrollContainer minWidth={640}>
+            <Stack gap="xs" hiddenFrom="sm">
+              {lines.map((line, index) => (
+                <Paper key={index} withBorder radius="md" p="sm">
+                  <Stack gap={4}>
+                    <Group justify="space-between" wrap="nowrap" align="flex-start">
+                      <Text size="sm" fw={600} style={{ minWidth: 0 }}>
+                        {line.activityId?.name || show(line.description)}
+                      </Text>
+                      <Badge variant="light" color="brand" size="sm" style={{ flexShrink: 0 }}>
+                        {show(line.hours, ' h')}
+                      </Badge>
+                    </Group>
+                    {line.activityId?.categoryId?.name ? (
+                      <Text size="xs" c="dimmed">
+                        {line.activityId.categoryId.name}
+                      </Text>
+                    ) : null}
+                    <Text size="xs" c="dimmed">
+                      {show(line.timeFrom)} – {show(line.timeTo)}
+                    </Text>
+                    {line.comments ? (
+                      <Text size="xs" c="dimmed">
+                        {line.comments}
+                      </Text>
+                    ) : null}
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+            <Table.ScrollContainer minWidth={640} visibleFrom="sm">
               <Table verticalSpacing="sm" horizontalSpacing="md">
                 <Table.Thead>
                   <Table.Tr>

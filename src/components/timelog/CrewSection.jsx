@@ -72,7 +72,7 @@ export const CrewSection = ({ crew = [], onChange, roster = [], disabled, shiftT
                   </Stack>
                 </Group>
                 {active ? (
-                  <SimpleGrid cols={2} spacing="xs">
+                  <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="xs">
                     <TimePicker
                       label="Time in"
                       size="sm"

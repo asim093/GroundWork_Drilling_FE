@@ -202,6 +202,7 @@ const ManagersTab = () => {
   const filterFields = (
     <>
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="Account"
         placeholder="Any account"
         data={STATUS_FILTER_OPTIONS}
@@ -210,6 +211,7 @@ const ManagersTab = () => {
         clearable
       />
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="State"
         placeholder="Any state"
         data={ACTIVE_FILTER_OPTIONS}
@@ -218,6 +220,7 @@ const ManagersTab = () => {
         clearable
       />
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="Manager type"
         placeholder="Any manager type"
         data={MANAGER_TYPE_OPTIONS}
@@ -506,6 +509,7 @@ const CrewTab = () => {
   const filterFields = (
     <>
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="Employee type"
         placeholder="Any employee type"
         data={EMPLOYEE_TYPE_OPTIONS}
@@ -514,6 +518,7 @@ const CrewTab = () => {
         clearable
       />
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="Category"
         placeholder="Any category"
         data={EMPLOYEE_CATEGORY_OPTIONS}
@@ -522,6 +527,7 @@ const CrewTab = () => {
         clearable
       />
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="State"
         placeholder="Any state"
         data={ACTIVE_FILTER_OPTIONS}

@@ -11,7 +11,6 @@ import {
   Text,
   Tooltip
 } from '@mantine/core';
-import { ChevronRight } from 'tabler-icons-react';
 import { ReportExportButtons } from '../../components/reports/ReportExportButtons.jsx';
 import { ClientHoursTable } from '../../components/reports/ClientHoursTable.jsx';
 import { PersonHoursTable } from '../../components/reports/PersonHoursTable.jsx';
@@ -27,6 +26,8 @@ import {
   getFuelReport,
   getHoursReport
 } from '../../services/reportService.js';
+import { employeesService } from '../../services/masterDataService.js';
+import { listUsers } from '../../services/userService.js';
 import { extractErrorMessage } from '../../services/api.js';
 import { notifyError } from '../../lib/toast.js';
 
@@ -126,7 +127,7 @@ const BillableVsPaidHint = () => (
   </Tooltip>
 );
 
-const HoursTab = ({ range, client, job }) => {
+const HoursTab = ({ range, client, job, employee, manager }) => {
   const [scope, setScope] = useState('client');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -141,7 +142,9 @@ const HoursTab = ({ range, client, job }) => {
           to: range.to,
           scope,
           client: client || undefined,
-          job: job || undefined
+          job: job || undefined,
+          employee: employee || undefined,
+          user: manager || undefined
         })
       );
     } catch (error) {
@@ -149,7 +152,7 @@ const HoursTab = ({ range, client, job }) => {
     } finally {
       setLoading(false);
     }
-  }, [range, scope, client, job]);
+  }, [range, scope, client, job, employee, manager]);
 
   useEffect(() => {
     load();
@@ -159,7 +162,15 @@ const HoursTab = ({ range, client, job }) => {
     downloadReport({
       report: 'hours',
       format,
-      params: { from: range.from, to: range.to, scope, client: client || undefined, job: job || undefined }
+      params: {
+        from: range.from,
+        to: range.to,
+        scope,
+        client: client || undefined,
+        job: job || undefined,
+        employee: employee || undefined,
+        user: manager || undefined
+      }
     });
 
   return (
@@ -209,7 +220,7 @@ const HoursTab = ({ range, client, job }) => {
   );
 };
 
-const ConsumablesTab = ({ range, client, job }) => {
+const ConsumablesTab = ({ range, client, job, employee, manager }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -218,14 +229,21 @@ const ConsumablesTab = ({ range, client, job }) => {
 
     try {
       setReport(
-        await getConsumablesReport({ from: range.from, to: range.to, client: client || undefined, job: job || undefined })
+        await getConsumablesReport({
+          from: range.from,
+          to: range.to,
+          client: client || undefined,
+          job: job || undefined,
+          employee: employee || undefined,
+          user: manager || undefined
+        })
       );
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load the consumables report'));
     } finally {
       setLoading(false);
     }
-  }, [range, client, job]);
+  }, [range, client, job, employee, manager]);
 
   useEffect(() => {
     load();
@@ -235,7 +253,14 @@ const ConsumablesTab = ({ range, client, job }) => {
     downloadReport({
       report: 'consumables',
       format,
-      params: { from: range.from, to: range.to, client: client || undefined, job: job || undefined }
+      params: {
+        from: range.from,
+        to: range.to,
+        client: client || undefined,
+        job: job || undefined,
+        employee: employee || undefined,
+        user: manager || undefined
+      }
     });
 
   return (
@@ -264,7 +289,7 @@ const ConsumablesTab = ({ range, client, job }) => {
   );
 };
 
-const FuelTab = ({ range, client, job }) => {
+const FuelTab = ({ range, client, job, employee, manager }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -272,13 +297,22 @@ const FuelTab = ({ range, client, job }) => {
     setLoading(true);
 
     try {
-      setReport(await getFuelReport({ from: range.from, to: range.to, client: client || undefined, job: job || undefined }));
+      setReport(
+        await getFuelReport({
+          from: range.from,
+          to: range.to,
+          client: client || undefined,
+          job: job || undefined,
+          employee: employee || undefined,
+          user: manager || undefined
+        })
+      );
     } catch (error) {
       notifyError(extractErrorMessage(error, 'Unable to load the fuel report'));
     } finally {
       setLoading(false);
     }
-  }, [range, client, job]);
+  }, [range, client, job, employee, manager]);
 
   useEffect(() => {
     load();
@@ -288,7 +322,14 @@ const FuelTab = ({ range, client, job }) => {
     downloadReport({
       report: 'fuel',
       format,
-      params: { from: range.from, to: range.to, client: client || undefined, job: job || undefined }
+      params: {
+        from: range.from,
+        to: range.to,
+        client: client || undefined,
+        job: job || undefined,
+        employee: employee || undefined,
+        user: manager || undefined
+      }
     });
 
   return (
@@ -323,8 +364,12 @@ export const ReportsPage = () => {
   const [range, setRange] = useState(currentMonthRange);
   const [client, setClient] = useState(null);
   const [job, setJob] = useState(null);
+  const [employee, setEmployee] = useState(null);
+  const [manager, setManager] = useState(null);
   const [clientOptions, setClientOptions] = useState([]);
   const [jobOptions, setJobOptions] = useState([]);
+  const [employeeOptions, setEmployeeOptions] = useState([]);
+  const [managerOptions, setManagerOptions] = useState([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const tabsListRef = useRef(null);
@@ -399,9 +444,24 @@ export const ReportsPage = () => {
     setJob(null);
   }, [client]);
 
+  useEffect(() => {
+    employeesService
+      .list({ active: 'true', limit: 200, sort: 'name', order: 'asc' })
+      .then((response) =>
+        setEmployeeOptions((response.data || []).map((e) => ({ value: e.id, label: e.name })))
+      )
+      .catch(() => setEmployeeOptions([]));
+    listUsers({ role: 'operator', active: 'true', limit: 200, sort: 'name', order: 'asc' })
+      .then((response) =>
+        setManagerOptions((response.data || []).map((u) => ({ value: u.id, label: u.name })))
+      )
+      .catch(() => setManagerOptions([]));
+  }, []);
+
   const filterFields = (
     <>
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="Client"
         placeholder="All clients"
         data={clientOptions}
@@ -411,11 +471,32 @@ export const ReportsPage = () => {
         searchable
       />
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="Job"
         placeholder="All jobs"
         data={jobOptions}
         value={job}
         onChange={setJob}
+        clearable
+        searchable
+      />
+      <Select
+        comboboxProps={{ withinPortal: false }}
+        label="Employee"
+        placeholder="All employees"
+        data={employeeOptions}
+        value={employee}
+        onChange={setEmployee}
+        clearable
+        searchable
+      />
+      <Select
+        comboboxProps={{ withinPortal: false }}
+        label="Manager"
+        placeholder="All managers"
+        data={managerOptions}
+        value={manager}
+        onChange={setManager}
         clearable
         searchable
       />
@@ -449,7 +530,10 @@ export const ReportsPage = () => {
             <Group gap="xs" wrap="nowrap" hiddenFrom="sm" style={{ width: '100%' }}>
               
               <div style={{ flexShrink: 0 }}>
-                <MobileFilterDrawer title="Filter reports" activeCount={[client, job].filter(Boolean).length}>
+                <MobileFilterDrawer
+                  title="Filter reports"
+                  activeCount={[client, job, employee, manager].filter(Boolean).length}
+                >
                   {filterFields}
                 </MobileFilterDrawer>
               </div>
@@ -487,19 +571,41 @@ export const ReportsPage = () => {
                 searchable
                 miw={180}
               />
+              <Select
+                placeholder="All employees"
+                data={employeeOptions}
+                value={employee}
+                onChange={setEmployee}
+                clearable
+                size="sm"
+                radius="sm"
+                searchable
+                miw={170}
+              />
+              <Select
+                placeholder="All managers"
+                data={managerOptions}
+                value={manager}
+                onChange={setManager}
+                clearable
+                size="sm"
+                radius="sm"
+                searchable
+                miw={170}
+              />
               <DateRangePicker value={range} onChange={setRange} size="sm" radius="sm" />
             </Group>
           </Stack>
         </Paper>
 
         <Tabs.Panel value="hours">
-          <HoursTab range={range} client={client} job={job} />
+          <HoursTab range={range} client={client} job={job} employee={employee} manager={manager} />
         </Tabs.Panel>
         <Tabs.Panel value="consumables">
-          <ConsumablesTab range={range} client={client} job={job} />
+          <ConsumablesTab range={range} client={client} job={job} employee={employee} manager={manager} />
         </Tabs.Panel>
         <Tabs.Panel value="fuel">
-          <FuelTab range={range} client={client} job={job} />
+          <FuelTab range={range} client={client} job={job} employee={employee} manager={manager} />
         </Tabs.Panel>
       </Stack>
     </Tabs>

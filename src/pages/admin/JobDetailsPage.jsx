@@ -216,7 +216,7 @@ export const JobDetailsPage = () => {
           </Anchor>
         }
       >
-        <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="lg">
+        <SimpleGrid cols={{ base: 2, md: 4 }} spacing="lg">
           <DetailRow label="Job number">
             <InlineEditField
               label="job number"
@@ -312,14 +312,18 @@ export const JobDetailsPage = () => {
         }
       />
 
-      <SectionCard id="log-history" title="Log history" subtitle="Time logs submitted for this job">
-        <Stack gap="md">
-          <Group gap="xs" wrap="nowrap" hiddenFrom="lg">
+      <SectionCard
+        id="log-history"
+        title="Log history"
+        subtitle="Time logs submitted for this job"
+        action={
+          <Group hiddenFrom="lg">
             <MobileFilterDrawer
               title="Filter log history"
               activeCount={[logShift, logStatus, logRange.from || logRange.to].filter(Boolean).length}
             >
               <Select
+                comboboxProps={{ withinPortal: false }}
                 label="Shift"
                 placeholder="All shifts"
                 data={SHIFT_OPTIONS}
@@ -328,6 +332,7 @@ export const JobDetailsPage = () => {
                 clearable
               />
               <Select
+                comboboxProps={{ withinPortal: false }}
                 label="Status"
                 placeholder="All statuses"
                 data={TIME_LOG_STATUS_OPTIONS}
@@ -339,11 +344,13 @@ export const JobDetailsPage = () => {
                 <Text size="sm" fw={500} mb={4}>
                   Date range
                 </Text>
-                <DateRangePicker value={logRange} onChange={setLogRange} clearable />
+                <DateRangePicker withinPortal={false} value={logRange} onChange={setLogRange} clearable />
               </div>
             </MobileFilterDrawer>
           </Group>
-
+        }
+      >
+        <Stack gap="md">
           <Group gap="sm" wrap="nowrap" visibleFrom="lg" style={{ overflow: 'auto' }}>
             <Select
               placeholder="All shifts"

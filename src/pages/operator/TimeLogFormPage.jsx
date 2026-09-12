@@ -14,8 +14,7 @@ import {
   Select,
   SimpleGrid,
   Stack,
-  Text,
-  TextInput
+  Text
 } from '@mantine/core';
 import { DatePickerInput, TimePicker } from '@mantine/dates';
 import { AppLayout } from '../../components/AppLayout.jsx';
@@ -551,7 +550,7 @@ export const TimeLogFormPage = () => {
               <SubGroup
                 title="Site &amp; work times"
               >
-                <SimpleGrid cols={{ base: 2, xl: 4 }} spacing="md">
+                <SimpleGrid cols={{ base: 1, xs: 2, xl: 4 }} spacing="md">
                   <TimePicker
                     label="Time In"
                     size={FIELD_SIZE}

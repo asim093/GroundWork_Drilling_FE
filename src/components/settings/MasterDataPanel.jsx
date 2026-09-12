@@ -137,6 +137,7 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
     <>
       {extraColumn ? (
         <Select
+        comboboxProps={{ withinPortal: false }}
           label={extraColumn.label}
           placeholder={extraColumn.filterPlaceholder}
           data={filterOptions}
@@ -147,6 +148,7 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
         />
       ) : null}
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="State"
         placeholder="Any state"
         data={ACTIVE_FILTER_OPTIONS}

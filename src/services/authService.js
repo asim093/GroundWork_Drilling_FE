@@ -19,3 +19,8 @@ export const acceptInvite = async (token, password) => {
   const { data } = await api.post('/auth/accept-invite', { token, password });
   return data;
 };
+
+export const changePassword = async (currentPassword, newPassword) => {
+  const { data } = await api.post('/auth/change-password', { currentPassword, newPassword });
+  return data;
+};

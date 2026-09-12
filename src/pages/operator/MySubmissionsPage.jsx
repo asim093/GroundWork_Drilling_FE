@@ -91,6 +91,7 @@ export const MySubmissionsPage = () => {
   const filterFields = (
     <>
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="Status"
         placeholder="All statuses"
         data={TIME_LOG_STATUS_OPTIONS}
@@ -99,6 +100,7 @@ export const MySubmissionsPage = () => {
         clearable
       />
       <Select
+        comboboxProps={{ withinPortal: false }}
         label="Job"
         placeholder="All jobs"
         data={jobs.map((job) => ({ value: job.id, label: `${job.jobNumber} — ${job.clientName}` }))}
@@ -112,6 +114,7 @@ export const MySubmissionsPage = () => {
           Date range
         </Text>
         <DateRangePicker
+          withinPortal={false}
           value={{ from: filters.from || '', to: filters.to || '' }}
           onChange={(range) => setFilters(range)}
           clearable
@@ -144,7 +147,10 @@ export const MySubmissionsPage = () => {
     <Stack gap="md">
       <Card withBorder radius="md" p="md">
         <Stack gap="md">
-          <Group gap="xs" hiddenFrom="lg">
+          <Group justify="space-between" gap="xs" hiddenFrom="lg">
+            <Text size="sm" c="dimmed">
+              {result.pagination ? `${result.pagination.total} submission${result.pagination.total === 1 ? '' : 's'}` : ''}
+            </Text>
             <MobileFilterDrawer
               title="Filter submissions"
               activeCount={countActive(filters.status, filters.job, filters.from || filters.to)}
