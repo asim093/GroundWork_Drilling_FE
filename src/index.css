@@ -29,69 +29,36 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Tabs: horizontal scroll on all screen sizes, with conditional fade gradients. */
+/* Tabs: horizontal scroll on all screen sizes. The native scrollbar is
+   pushed below the visible row (padding + negative margin) and clipped
+   by the wrapping .mantine-Group-root, since scrollbar-width/::-webkit-
+   scrollbar alone don't reliably hide it in every browser. */
 .mantine-Tabs-list {
   flex-wrap: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
-  /* Hide scrollbar for webkit browsers */
-  -webkit-scrollbar-width: none;
   scroll-behavior: smooth;
-  /* Default: no mask (will be applied conditionally based on scroll state) */
-  mask-image: none;
-  -webkit-mask-image: none;
-  transition: mask-image 200ms ease, -webkit-mask-image 200ms ease;
+  padding-bottom: 20px;
+  margin-bottom: -20px;
 }
 
-/* Show fade when user has scrolled right (content hidden on left) */
-.mantine-Tabs-list.has-scroll-left {
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 5%,
-    black 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 5%,
-    black 100%
-  );
+.mantine-Tabs-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
-/* Show fade when more content available to scroll right */
-.mantine-Tabs-list.has-scroll-right {
-  mask-image: linear-gradient(
-    to right,
-    black 0%,
-    black 85%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to right,
-    black 0%,
-    black 85%,
-    transparent 100%
-  );
+.mantine-Group-root:has(> .mantine-Tabs-list) {
+  overflow: hidden;
 }
 
-/* Show both fades when user can scroll in both directions */
-.mantine-Tabs-list.has-scroll-left.has-scroll-right {
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 5%,
-    black 85%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 5%,
-    black 85%,
-    transparent 100%
-  );
+/* Prevent a Select's dropdown list from fighting an ancestor Drawer's own
+   scroll container for touch-scroll ownership on mobile. */
+.mantine-Combobox-dropdown,
+.mantine-Combobox-options,
+.mantine-ScrollArea-viewport {
+  overscroll-behavior: contain;
 }
 
 .mantine-Tabs-tab {

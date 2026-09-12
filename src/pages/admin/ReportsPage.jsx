@@ -461,7 +461,6 @@ export const ReportsPage = () => {
   const filterFields = (
     <>
       <Select
-        comboboxProps={{ withinPortal: false }}
         label="Client"
         placeholder="All clients"
         data={clientOptions}
@@ -471,7 +470,6 @@ export const ReportsPage = () => {
         searchable
       />
       <Select
-        comboboxProps={{ withinPortal: false }}
         label="Job"
         placeholder="All jobs"
         data={jobOptions}
@@ -481,7 +479,6 @@ export const ReportsPage = () => {
         searchable
       />
       <Select
-        comboboxProps={{ withinPortal: false }}
         label="Employee"
         placeholder="All employees"
         data={employeeOptions}
@@ -491,7 +488,6 @@ export const ReportsPage = () => {
         searchable
       />
       <Select
-        comboboxProps={{ withinPortal: false }}
         label="Manager"
         placeholder="All managers"
         data={managerOptions}

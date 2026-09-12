@@ -19,9 +19,10 @@ export const MobileFilterDrawer = ({ activeCount = 0, children, title = 'Filters
         title={title}
         position="bottom"
         padding="md"
+        trapFocus={false}
         styles={{
-          content: { maxHeight: '70vh', height: 'auto' },
-          body: { maxHeight: 'calc(70vh - 60px)', overflowY: 'auto' }
+          content: { maxHeight: '70dvh', height: 'auto' },
+          body: { maxHeight: 'calc(70dvh - 60px)', overflowY: 'auto', overscrollBehavior: 'contain' }
         }}
       >
         <Stack gap="sm" pb="md">

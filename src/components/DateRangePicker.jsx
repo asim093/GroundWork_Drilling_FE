@@ -36,14 +36,7 @@ const formatDate = (value) =>
 
 const EMPTY_RANGE = { from: '', to: '' };
 
-export const DateRangePicker = ({
-  value,
-  onChange,
-  size,
-  radius = 'sm',
-  clearable = false,
-  withinPortal = true
-}) => {
+export const DateRangePicker = ({ value, onChange, size, radius = 'sm', clearable = false }) => {
   const [opened, setOpened] = useState(false);
   const [draft, setDraft] = useState(value || EMPTY_RANGE);
   const presets = buildPresets();
@@ -87,8 +80,6 @@ export const DateRangePicker = ({
       position="bottom-start"
       shadow="md"
       withArrow
-      withinPortal={withinPortal}
-      zIndex={320}
     >
       <Popover.Target>
         <Button

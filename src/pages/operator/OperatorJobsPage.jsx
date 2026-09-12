@@ -204,7 +204,6 @@ export const OperatorJobsPage = () => {
   const filterFields = (
     <>
       <Select
-        comboboxProps={{ withinPortal: false }}
         label="Rig"
         placeholder="All rigs"
         data={result.filters?.rigs || []}
@@ -215,7 +214,6 @@ export const OperatorJobsPage = () => {
       />
       {isCompleted ? null : (
         <Select
-        comboboxProps={{ withinPortal: false }}
           label="Today's activity"
           placeholder="Any day activity"
           data={TODAY_FILTER_OPTIONS}
@@ -225,7 +223,6 @@ export const OperatorJobsPage = () => {
         />
       )}
       <DateRangePicker
-          withinPortal={false}
         value={{ from: filters.from || '', to: filters.to || '' }}
         onChange={(range) => setFilters({ from: range.from || undefined, to: range.to || undefined })}
         clearable

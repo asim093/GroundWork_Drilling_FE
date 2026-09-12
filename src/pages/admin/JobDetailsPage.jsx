@@ -323,7 +323,6 @@ export const JobDetailsPage = () => {
               activeCount={[logShift, logStatus, logRange.from || logRange.to].filter(Boolean).length}
             >
               <Select
-                comboboxProps={{ withinPortal: false }}
                 label="Shift"
                 placeholder="All shifts"
                 data={SHIFT_OPTIONS}
@@ -332,7 +331,6 @@ export const JobDetailsPage = () => {
                 clearable
               />
               <Select
-                comboboxProps={{ withinPortal: false }}
                 label="Status"
                 placeholder="All statuses"
                 data={TIME_LOG_STATUS_OPTIONS}
@@ -344,7 +342,7 @@ export const JobDetailsPage = () => {
                 <Text size="sm" fw={500} mb={4}>
                   Date range
                 </Text>
-                <DateRangePicker withinPortal={false} value={logRange} onChange={setLogRange} clearable />
+                <DateRangePicker value={logRange} onChange={setLogRange} clearable />
               </div>
             </MobileFilterDrawer>
           </Group>
