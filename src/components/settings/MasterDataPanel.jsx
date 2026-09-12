@@ -18,6 +18,7 @@ import {
 import { SortableTh } from '../list/SortableTh.jsx';
 import { ListPagination } from '../list/ListPagination.jsx';
 import { MobileFilterDrawer } from '../list/MobileFilterDrawer.jsx';
+import { MobileSelect } from '../list/MobileSelect.jsx';
 import { MobileFab } from '../list/MobileFab.jsx';
 import { useListParams } from '../../hooks/useListParams.js';
 import { extractErrorMessage } from '../../services/api.js';
@@ -136,23 +137,20 @@ export const MasterDataPanel = ({ service, singular, plural, extraColumn }) => {
   const filterFields = (
     <>
       {extraColumn ? (
-        <Select
+        <MobileSelect
           label={extraColumn.label}
           placeholder={extraColumn.filterPlaceholder}
           data={filterOptions}
           value={filters[extraColumn.filterParam] || null}
           onChange={(value) => setFilter(extraColumn.filterParam, value)}
-          searchable
-          clearable
         />
       ) : null}
-      <Select
+      <MobileSelect
         label="State"
         placeholder="Any state"
         data={ACTIVE_FILTER_OPTIONS}
         value={filters.active || null}
         onChange={(value) => setFilter('active', value)}
-        clearable
       />
     </>
   );

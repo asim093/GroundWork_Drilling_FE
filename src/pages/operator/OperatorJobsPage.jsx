@@ -20,6 +20,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
+import { MobileSelect } from '../../components/list/MobileSelect.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { useListParams } from '../../hooks/useListParams.js';
@@ -203,22 +204,20 @@ export const OperatorJobsPage = () => {
 
   const filterFields = (
     <>
-      <Select
+      <MobileSelect
         label="Rig"
         placeholder="All rigs"
         data={result.filters?.rigs || []}
         value={filters.rig || null}
         onChange={(value) => setFilter('rig', value)}
-        clearable
       />
       {isCompleted ? null : (
-        <Select
+        <MobileSelect
           label="Today's activity"
           placeholder="Any day activity"
           data={TODAY_FILTER_OPTIONS}
           value={filters.today || null}
           onChange={(value) => setFilter('today', value)}
-          clearable
         />
       )}
       <DateRangePicker

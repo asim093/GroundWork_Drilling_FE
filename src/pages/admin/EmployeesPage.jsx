@@ -18,6 +18,7 @@ import {
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
+import { MobileSelect } from '../../components/list/MobileSelect.jsx';
 import { MobileFab } from '../../components/list/MobileFab.jsx';
 import { UserFormModal } from '../../components/admin/UserFormModal.jsx';
 import { EmployeeFormModal } from '../../components/admin/EmployeeFormModal.jsx';
@@ -201,29 +202,26 @@ const ManagersTab = () => {
 
   const filterFields = (
     <>
-      <Select
+      <MobileSelect
         label="Account"
         placeholder="Any account"
         data={STATUS_FILTER_OPTIONS}
         value={filters.status || null}
         onChange={(value) => setFilter('status', value)}
-        clearable
       />
-      <Select
+      <MobileSelect
         label="State"
         placeholder="Any state"
         data={ACTIVE_FILTER_OPTIONS}
         value={filters.active || null}
         onChange={(value) => setFilter('active', value)}
-        clearable
       />
-      <Select
+      <MobileSelect
         label="Manager type"
         placeholder="Any manager type"
         data={MANAGER_TYPE_OPTIONS}
         value={filters.employeeType || null}
         onChange={(value) => setFilter('employeeType', value)}
-        clearable
       />
     </>
   );
@@ -505,29 +503,26 @@ const CrewTab = () => {
 
   const filterFields = (
     <>
-      <Select
+      <MobileSelect
         label="Employee type"
         placeholder="Any employee type"
         data={EMPLOYEE_TYPE_OPTIONS}
         value={filters.employeeType || null}
         onChange={(value) => setFilter('employeeType', value)}
-        clearable
       />
-      <Select
+      <MobileSelect
         label="Category"
         placeholder="Any category"
         data={EMPLOYEE_CATEGORY_OPTIONS}
         value={filters.employeeCategory || null}
         onChange={(value) => setFilter('employeeCategory', value)}
-        clearable
       />
-      <Select
+      <MobileSelect
         label="State"
         placeholder="Any state"
         data={ACTIVE_FILTER_OPTIONS}
         value={filters.active || null}
         onChange={(value) => setFilter('active', value)}
-        clearable
       />
     </>
   );

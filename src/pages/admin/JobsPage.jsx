@@ -21,6 +21,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
+import { MobileSelect } from '../../components/list/MobileSelect.jsx';
 import { MobileFab } from '../../components/list/MobileFab.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { JobFormModal } from '../../components/admin/JobFormModal.jsx';
@@ -182,21 +183,19 @@ export const JobsPage = () => {
 
   const filterFields = (
     <>
-      <Select
+      <MobileSelect
         label="Manager"
         placeholder="All managers"
         data={managers.map((manager) => ({ value: manager.id, label: manager.name }))}
         value={filters.assignedUser || null}
         onChange={(value) => setFilter('assignedUser', value)}
-        clearable
       />
-      <Select
+      <MobileSelect
         label="Rig"
         placeholder="All rigs"
         data={rigs.map((rig) => ({ value: rig.id, label: rig.name }))}
         value={filters.rigNumber || null}
         onChange={(value) => setFilter('rigNumber', value)}
-        clearable
       />
       <DateRangePicker
         value={{ from: filters.from || '', to: filters.to || '' }}

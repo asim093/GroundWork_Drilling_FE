@@ -24,6 +24,7 @@ import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
+import { MobileSelect } from '../../components/list/MobileSelect.jsx';
 import { JOB_STATUS_COLORS } from '../../constants/jobs.js';
 import { TIME_LOG_STATUS_COLORS, TIME_LOG_STATUS_OPTIONS } from '../../constants/timeLogs.js';
 import { SHIFT_OPTIONS } from '../../constants/employees.js';
@@ -322,21 +323,19 @@ export const JobDetailsPage = () => {
               title="Filter log history"
               activeCount={[logShift, logStatus, logRange.from || logRange.to].filter(Boolean).length}
             >
-              <Select
+              <MobileSelect
                 label="Shift"
                 placeholder="All shifts"
                 data={SHIFT_OPTIONS}
                 value={logShift}
                 onChange={setLogShift}
-                clearable
               />
-              <Select
+              <MobileSelect
                 label="Status"
                 placeholder="All statuses"
                 data={TIME_LOG_STATUS_OPTIONS}
                 value={logStatus}
                 onChange={setLogStatus}
-                clearable
               />
               <div>
                 <Text size="sm" fw={500} mb={4}>

@@ -4,6 +4,7 @@ import { Badge, Card, Center, Group, Loader, Paper, Select, Stack, Table, Text }
 import { SortableTh } from '../../components/list/SortableTh.jsx';
 import { ListPagination } from '../../components/list/ListPagination.jsx';
 import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
+import { MobileSelect } from '../../components/list/MobileSelect.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { TIME_LOG_STATUS_OPTIONS, TIME_LOG_STATUS_COLORS } from '../../constants/timeLogs.js';
 import { useListParams } from '../../hooks/useListParams.js';
@@ -90,22 +91,19 @@ export const MySubmissionsPage = () => {
 
   const filterFields = (
     <>
-      <Select
+      <MobileSelect
         label="Status"
         placeholder="All statuses"
         data={TIME_LOG_STATUS_OPTIONS}
         value={filters.status || null}
         onChange={(value) => setFilter('status', value)}
-        clearable
       />
-      <Select
+      <MobileSelect
         label="Job"
         placeholder="All jobs"
         data={jobs.map((job) => ({ value: job.id, label: `${job.jobNumber} — ${job.clientName}` }))}
         value={filters.job || null}
         onChange={(value) => setFilter('job', value)}
-        searchable
-        clearable
       />
       <div>
         <Text size="sm" fw={500} mb={4}>

@@ -17,6 +17,7 @@ import { PersonHoursTable } from '../../components/reports/PersonHoursTable.jsx'
 import { LedgerReportTable } from '../../components/reports/LedgerReportTable.jsx';
 import { DateRangePicker } from '../../components/DateRangePicker.jsx';
 import { MobileFilterDrawer } from '../../components/list/MobileFilterDrawer.jsx';
+import { MobileSelect } from '../../components/list/MobileSelect.jsx';
 import { NavIcon } from '../../components/NavIcon.jsx';
 import { usePageTitle } from '../../context/PageTitleContext.jsx';
 import { currentMonthRange } from '../../lib/dateRange.js';
@@ -460,40 +461,33 @@ export const ReportsPage = () => {
 
   const filterFields = (
     <>
-      <Select
+      <MobileSelect
         label="Client"
         placeholder="All clients"
         data={clientOptions}
         value={client}
         onChange={setClient}
-        clearable
-        searchable
       />
-      <Select
+      <MobileSelect
         label="Job"
         placeholder="All jobs"
         data={jobOptions}
         value={job}
         onChange={setJob}
-        clearable
-        searchable
       />
-      <Select
+      <MobileSelect
         label="Employee"
         placeholder="All employees"
         data={employeeOptions}
         value={employee}
         onChange={setEmployee}
-        clearable
-        searchable
       />
-      <Select
+      <MobileSelect
         label="Manager"
         placeholder="All managers"
         data={managerOptions}
         value={manager}
         onChange={setManager}
-        clearable
       />
     </>
   );
